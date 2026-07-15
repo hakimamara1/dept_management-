@@ -7,6 +7,7 @@ import {
   Package,
   Receipt,
   Settings,
+  ShoppingBag,
   ShoppingCart,
   Users,
   Wallet
@@ -25,6 +26,7 @@ export const NAV_ITEMS: NavItem[] = [
   { path: '/', labelKey: 'nav.dashboard', icon: LayoutDashboard, comingSoon: false },
   { path: '/products', labelKey: 'nav.products', icon: Package, comingSoon: false },
   { path: '/suppliers', labelKey: 'nav.suppliers', icon: Users, comingSoon: false },
+  { path: '/customers', labelKey: 'nav.customers', icon: ShoppingBag, comingSoon: false },
   { path: '/purchase-orders', labelKey: 'nav.purchaseOrders', icon: ShoppingCart, comingSoon: false },
   { path: '/invoices', labelKey: 'nav.invoices', icon: Receipt, comingSoon: false },
   { path: '/payments', labelKey: 'nav.payments', icon: Wallet, comingSoon: false },

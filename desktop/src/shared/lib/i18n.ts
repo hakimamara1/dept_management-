@@ -15,6 +15,7 @@ const resources = {
       dashboard: 'الرئيسية',
       products: 'المنتجات',
       suppliers: 'الموردون والديون',
+      customers: 'العملاء',
       purchaseOrders: 'أوامر الشراء',
       invoices: 'الفواتير',
       payments: 'المدفوعات',
@@ -79,6 +80,23 @@ const resources = {
       subtitle: 'إنشاء ومتابعة أوامر الشراء قبل وصول الفواتير',
       newOrder: 'أمر شراء جديد',
       addItem: 'إضافة صنف'
+    },
+    customers: {
+      title: 'العملاء',
+      subtitle: 'إدارة عملاء الجملة، فواتيرهم، ومدفوعاتهم',
+      searchPlaceholder: 'ابحث باسم العميل...',
+      addCustomer: 'إضافة عميل',
+      currentBalance: 'الرصيد الحالي',
+      newInvoice: 'فاتورة جديدة',
+      recordPayment: 'تسجيل دفعة',
+      invoicesTab: 'الفواتير',
+      paymentsTab: 'المدفوعات',
+      statementTab: 'كشف الحساب',
+      reportsTab: 'التقارير',
+      previousBalance: 'الرصيد السابق',
+      invoiceAmount: 'مبلغ الفاتورة',
+      newBalance: 'الرصيد الجديد',
+      print: 'طباعة'
     }
   },
   fr: {
@@ -86,6 +104,7 @@ const resources = {
       dashboard: 'Tableau de bord',
       products: 'Produits',
       suppliers: 'Fournisseurs et dettes',
+      customers: 'Clients',
       purchaseOrders: 'Bons de commande',
       invoices: 'Factures',
       payments: 'Paiements',
@@ -150,6 +169,23 @@ const resources = {
       subtitle: 'Créer et suivre les bons de commande avant réception des factures',
       newOrder: 'Nouveau bon de commande',
       addItem: 'Ajouter un article'
+    },
+    customers: {
+      title: 'Clients',
+      subtitle: 'Gérer les clients grossistes, leurs factures et paiements',
+      searchPlaceholder: 'Rechercher un client...',
+      addCustomer: 'Ajouter un client',
+      currentBalance: 'Solde actuel',
+      newInvoice: 'Nouvelle facture',
+      recordPayment: 'Enregistrer un paiement',
+      invoicesTab: 'Factures',
+      paymentsTab: 'Paiements',
+      statementTab: 'Relevé de compte',
+      reportsTab: 'Rapports',
+      previousBalance: 'Solde précédent',
+      invoiceAmount: 'Montant de la facture',
+      newBalance: 'Nouveau solde',
+      print: 'Imprimer'
     }
   },
   en: {
@@ -157,6 +193,7 @@ const resources = {
       dashboard: 'Dashboard',
       products: 'Products',
       suppliers: 'Suppliers & Debt',
+      customers: 'Customers',
       purchaseOrders: 'Purchase Orders',
       invoices: 'Invoices',
       payments: 'Payments',
@@ -221,6 +258,23 @@ const resources = {
       subtitle: 'Create and track purchase orders before invoices arrive',
       newOrder: 'New purchase order',
       addItem: 'Add item'
+    },
+    customers: {
+      title: 'Customers',
+      subtitle: 'Manage wholesale customers, their invoices, and payments',
+      searchPlaceholder: 'Search by customer name...',
+      addCustomer: 'Add customer',
+      currentBalance: 'Current balance',
+      newInvoice: 'New invoice',
+      recordPayment: 'Record payment',
+      invoicesTab: 'Invoices',
+      paymentsTab: 'Payments',
+      statementTab: 'Account statement',
+      reportsTab: 'Reports',
+      previousBalance: 'Previous balance',
+      invoiceAmount: 'Invoice amount',
+      newBalance: 'New balance',
+      print: 'Print'
     }
   }
 } as const
@@ -233,6 +287,7 @@ type ProductsKey = keyof TranslationResources['products']
 type SuppliersKey = keyof TranslationResources['suppliers']
 type InvoicesKey = keyof TranslationResources['invoices']
 type PurchaseOrdersKey = keyof TranslationResources['purchaseOrders']
+type CustomersKey = keyof TranslationResources['customers']
 
 export type TranslationKey =
   | `nav.${NavKey}`
@@ -242,6 +297,7 @@ export type TranslationKey =
   | `suppliers.${SuppliersKey}`
   | `invoices.${InvoicesKey}`
   | `purchaseOrders.${PurchaseOrdersKey}`
+  | `customers.${CustomersKey}`
 
 export const rtlLanguages: AppLanguage[] = ['ar']
 

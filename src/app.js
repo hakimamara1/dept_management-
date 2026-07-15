@@ -20,6 +20,7 @@ app.use('/api/accounting', require('./routes/accounting'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/purchase-orders', require('./routes/purchaseOrders'));
 app.use('/api/payments', require('./routes/payments'));
+app.use('/api/customers', require('./routes/customers'));
 
 
 // Health check

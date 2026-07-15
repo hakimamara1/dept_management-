@@ -296,6 +296,118 @@ const QUERIES = {
         insertItem: `INSERT INTO purchase_order_items (purchase_order_id, product_id, quantity, expected_unit_price)
                       VALUES (?, ?, ?, ?)`,
         updateStatus: `UPDATE purchase_orders SET status = ? WHERE id = ?`
+    },
+
+    // ─── WHOLESALE CUSTOMERS ───
+    // Balance is never stored — every aggregate below is a correlated
+    // subquery (not a JOIN+GROUP BY) specifically to avoid the classic
+    // fan-out bug where joining sales_invoices AND customer_payments in
+    // the same query multiplies rows and overcounts both sums.
+    customers: {
+        getAll: `SELECT c.*,
+                    COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id), 0) as total_invoice_amount,
+                    COALESCE((SELECT COUNT(*) FROM sales_invoices WHERE customer_id = c.id), 0) as total_invoices,
+                    COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id), 0) as total_payment_amount,
+                    COALESCE((SELECT COUNT(*) FROM customer_payments WHERE customer_id = c.id), 0) as total_payments,
+                    (SELECT MAX(invoice_date) FROM sales_invoices WHERE customer_id = c.id) as last_invoice_date,
+                    (SELECT MAX(payment_date) FROM customer_payments WHERE customer_id = c.id) as last_payment_date,
+                    (COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id), 0)
+                     - COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id), 0)) as current_balance
+                  FROM customers c
+                  ORDER BY c.full_name`,
+        search: `SELECT c.*,
+                    COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id), 0) as total_invoice_amount,
+                    COALESCE((SELECT COUNT(*) FROM sales_invoices WHERE customer_id = c.id), 0) as total_invoices,
+                    COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id), 0) as total_payment_amount,
+                    COALESCE((SELECT COUNT(*) FROM customer_payments WHERE customer_id = c.id), 0) as total_payments,
+                    (SELECT MAX(invoice_date) FROM sales_invoices WHERE customer_id = c.id) as last_invoice_date,
+                    (SELECT MAX(payment_date) FROM customer_payments WHERE customer_id = c.id) as last_payment_date,
+                    (COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id), 0)
+                     - COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id), 0)) as current_balance
+                  FROM customers c
+                  WHERE c.full_name LIKE ?
+                  ORDER BY c.full_name
+                  LIMIT 20`,
+        getById: `SELECT * FROM customers WHERE id = ?`,
+        getSummary: `SELECT c.*,
+                    COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id), 0) as total_invoice_amount,
+                    COALESCE((SELECT COUNT(*) FROM sales_invoices WHERE customer_id = c.id), 0) as total_invoices,
+                    COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id), 0) as total_payment_amount,
+                    COALESCE((SELECT COUNT(*) FROM customer_payments WHERE customer_id = c.id), 0) as total_payments,
+                    (SELECT MAX(invoice_date) FROM sales_invoices WHERE customer_id = c.id) as last_invoice_date,
+                    (SELECT MAX(payment_date) FROM customer_payments WHERE customer_id = c.id) as last_payment_date,
+                    (COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id), 0)
+                     - COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id), 0)) as current_balance
+                  FROM customers c
+                  WHERE c.id = ?`,
+        insert: `INSERT INTO customers (full_name, phone, address, notes) VALUES (?, ?, ?, ?)`,
+        reports: {
+            getSummary: `SELECT
+                    (SELECT COUNT(*) FROM customers) as total_customers,
+                    (SELECT COALESCE(SUM(invoice_amount), 0) FROM sales_invoices) as total_invoice_value,
+                    (SELECT COALESCE(SUM(amount), 0) FROM customer_payments) as total_payment_value,
+                    ((SELECT COALESCE(SUM(invoice_amount), 0) FROM sales_invoices)
+                     - (SELECT COALESCE(SUM(amount), 0) FROM customer_payments)) as total_customer_debt,
+                    (SELECT CASE WHEN COUNT(*) = 0 THEN 0 ELSE AVG(invoice_amount) END FROM sales_invoices) as average_invoice_value`,
+            getLargestDebtors: `SELECT c.id, c.full_name,
+                    (COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id), 0)
+                     - COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id), 0)) as balance
+                  FROM customers c
+                  ORDER BY balance DESC
+                  LIMIT 10`,
+            getMostActive: `SELECT c.id, c.full_name,
+                    (COALESCE((SELECT COUNT(*) FROM sales_invoices WHERE customer_id = c.id), 0)
+                     + COALESCE((SELECT COUNT(*) FROM customer_payments WHERE customer_id = c.id), 0)) as activity_count
+                  FROM customers c
+                  ORDER BY activity_count DESC
+                  LIMIT 10`
+        }
+    },
+
+    // ─── SALES INVOICES (wholesale customers) ───
+    salesInvoices: {
+        getByCustomer: `SELECT * FROM sales_invoices WHERE customer_id = ? ORDER BY invoice_date DESC, id DESC`,
+        getById: `SELECT si.*, c.full_name as customer_name, c.phone as customer_phone
+                   FROM sales_invoices si
+                   JOIN customers c ON si.customer_id = c.id
+                   WHERE si.id = ? AND si.customer_id = ?`,
+        getItemsByInvoice: `SELECT * FROM sales_invoice_items WHERE invoice_id = ?`,
+        insert: `INSERT INTO sales_invoices
+                    (invoice_number, customer_id, invoice_date, invoice_amount, previous_balance, new_balance, notes)
+                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        updateInvoiceNumber: `UPDATE sales_invoices SET invoice_number = ? WHERE id = ?`,
+        insertItem: `INSERT INTO sales_invoice_items
+                        (invoice_id, product_name, unit, quantity, unit_price, line_total)
+                      VALUES (?, ?, ?, ?, ?, ?)`,
+        getCustomerBalance: `SELECT
+                    (COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = ?), 0)
+                     - COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = ?), 0)) as balance`,
+        // UNION ALL of both ledger sources + a running-total window function —
+        // nothing here is stored, the whole statement is regenerated on read.
+        getStatement: `SELECT entry_type, entry_id, entry_date, reference, amount,
+                    SUM(amount) OVER (
+                      ORDER BY entry_date, entry_created_at, entry_type, entry_id
+                      ROWS BETWEEN UNBOUNDED PRECEDING AND CURRENT ROW
+                    ) as balance
+                  FROM (
+                    SELECT 'invoice' as entry_type, id as entry_id, invoice_date as entry_date, created_at as entry_created_at,
+                           invoice_number as reference, invoice_amount as amount
+                    FROM sales_invoices WHERE customer_id = ?
+                    UNION ALL
+                    SELECT 'payment' as entry_type, id as entry_id, payment_date as entry_date, created_at as entry_created_at,
+                           payment_method as reference, -amount as amount
+                    FROM customer_payments WHERE customer_id = ?
+                  )
+                  ORDER BY entry_date, entry_created_at, entry_type, entry_id`
+    },
+
+    // ─── CUSTOMER PAYMENTS ───
+    // Deliberately never tied to an invoice_id — payments reduce the
+    // account balance as a whole, never a specific invoice.
+    customerPayments: {
+        getByCustomer: `SELECT * FROM customer_payments WHERE customer_id = ? ORDER BY payment_date DESC, id DESC`,
+        insert: `INSERT INTO customer_payments (customer_id, payment_date, amount, payment_method, notes)
+                  VALUES (?, ?, ?, ?, ?)`
     }
 };
 

@@ -53,5 +53,14 @@ export const queryKeys = {
     balanceSheet: ['reports', 'balance-sheet'] as const,
     profitLoss: ['reports', 'profit-loss'] as const,
     verify: ['reports', 'verify'] as const
+  },
+  customers: {
+    list: (query: string) => ['customers', 'list', query] as const,
+    detail: (id: number) => ['customers', 'detail', id] as const,
+    invoices: (customerId: number) => ['customers', customerId, 'invoices'] as const,
+    invoice: (customerId: number, invoiceId: number) => ['customers', customerId, 'invoices', invoiceId] as const,
+    payments: (customerId: number) => ['customers', customerId, 'payments'] as const,
+    statement: (customerId: number) => ['customers', customerId, 'statement'] as const,
+    reports: ['customers', 'reports'] as const
   }
 }

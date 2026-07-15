@@ -10,6 +10,7 @@ import { InvoicesPage, InvoiceReviewPage } from '@modules/invoices'
 import { PurchaseOrdersPage, PurchaseOrderDetailPage } from '@modules/purchase-orders'
 import { PaymentsPage } from '@modules/payments'
 import { ReportsPage } from '@modules/reports'
+import { CustomersPage, CustomerDetailPage, SalesInvoiceDetailPage } from '@modules/customers'
 
 function ComingSoonRoute({ item }: { item: (typeof NAV_ITEMS)[number] }) {
   const { t } = useI18n()
@@ -37,6 +38,9 @@ export function AppRouter() {
           <Route path="purchase-orders/:id" element={<PurchaseOrderDetailPage />} />
           <Route path="payments" element={<PaymentsPage />} />
           <Route path="reports" element={<ReportsPage />} />
+          <Route path="customers" element={<CustomersPage />} />
+          <Route path="customers/:id" element={<CustomerDetailPage />} />
+          <Route path="customers/:id/invoices/:invoiceId" element={<SalesInvoiceDetailPage />} />
           {NAV_ITEMS.filter((item) => item.comingSoon).map((item) => (
             <Route key={item.path} path={item.path.slice(1)} element={<ComingSoonRoute item={item} />} />
           ))}

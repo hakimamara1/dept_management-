@@ -275,3 +275,108 @@ export interface BalanceVerification {
   totalDebits: number
   totalCredits: number
 }
+
+// ── Wholesale Customers ───────────────────────────────────
+// Independent domain: no FK to products/suppliers, no stock or accounting
+// effects. Balance is never stored — always computed as
+// SUM(sales_invoices) - SUM(customer_payments) by the backend.
+export interface Customer {
+  id: number
+  full_name: string
+  phone: string | null
+  address: string | null
+  notes: string | null
+  created_at: string
+  updated_at: string
+  total_invoice_amount: number
+  total_invoices: number
+  total_payment_amount: number
+  total_payments: number
+  last_invoice_date: string | null
+  last_payment_date: string | null
+  current_balance: number
+}
+
+export interface CreateCustomerInput {
+  fullName: string
+  phone?: string
+  address?: string
+  notes?: string
+}
+
+export interface SalesInvoiceListItem {
+  id: number
+  invoice_number: string
+  customer_id: number
+  invoice_date: string
+  invoice_amount: number
+  previous_balance: number
+  new_balance: number
+  notes: string | null
+  created_at: string
+}
+
+export interface SalesInvoiceItem {
+  id: number
+  invoice_id: number
+  product_name: string
+  unit: string | null
+  quantity: number
+  unit_price: number
+  line_total: number
+}
+
+export interface SalesInvoiceDetail extends SalesInvoiceListItem {
+  customer_name: string
+  customer_phone: string | null
+  items: SalesInvoiceItem[]
+}
+
+export interface CreateSalesInvoiceItemInput {
+  productName: string
+  unit?: string
+  quantity: number
+  unitPrice: number
+}
+
+export interface CreateSalesInvoiceInput {
+  invoiceDate: string
+  notes?: string
+  items: CreateSalesInvoiceItemInput[]
+}
+
+export interface CustomerPayment {
+  id: number
+  customer_id: number
+  payment_date: string
+  amount: number
+  payment_method: string | null
+  notes: string | null
+  created_at: string
+}
+
+export interface RecordCustomerPaymentInput {
+  paymentDate: string
+  amount: number
+  paymentMethod?: string
+  notes?: string
+}
+
+export interface CustomerStatementEntry {
+  entry_type: 'invoice' | 'payment'
+  entry_id: number
+  entry_date: string
+  reference: string | null
+  amount: number
+  balance: number
+}
+
+export interface CustomerReportsSummary {
+  total_customers: number
+  total_invoice_value: number
+  total_payment_value: number
+  total_customer_debt: number
+  average_invoice_value: number
+  largestDebtors: { id: number; full_name: string; balance: number }[]
+  mostActive: { id: number; full_name: string; activity_count: number }[]
+}
