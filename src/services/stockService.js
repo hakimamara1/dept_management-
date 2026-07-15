@@ -171,7 +171,7 @@ class StockService {
      * @param {number} threshold
      */
     getLowStockProducts(threshold = 10) {
-        return db.prepare(QUERIES.products.getLowStock).all(threshold);
+        return db.stmts.stock.getLowStock.all(threshold);
     }
 
     /**

@@ -138,6 +138,91 @@ CREATE TABLE IF NOT EXISTS product_analytics (
     FOREIGN KEY (product_id) REFERENCES products(id)
 );
 
+-- ============================================
+-- PURCHASE ORDERS (tracking/intent only — no stock, debt, or
+-- accounting effects here; those still only happen when the real
+-- invoice arrives through the OCR pipeline)
+-- ============================================
+CREATE TABLE IF NOT EXISTS purchase_orders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    supplier_id INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'Draft',   -- 'Draft', 'Sent', 'Received', 'Cancelled'
+    order_date DATE NOT NULL,
+    expected_date DATE,
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
+);
+
+CREATE TABLE IF NOT EXISTS purchase_order_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    purchase_order_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    quantity DECIMAL(10,2) NOT NULL,
+    expected_unit_price DECIMAL(10,2),
+    FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+-- ============================================
+-- WHOLESALE CUSTOMERS (completely independent from inventory/stock/
+-- accounting/suppliers — customer balance is never stored, always
+-- computed as SUM(sales_invoices) - SUM(customer_payments); payments
+-- are never allocated to a specific invoice, only to the account)
+-- ============================================
+CREATE TABLE IF NOT EXISTS customers (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    full_name TEXT NOT NULL,
+    phone TEXT,
+    address TEXT,
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
+-- previous_balance/new_balance ARE stored here despite the "no stored
+-- balance" rule above — they are a historical fact on an immutable
+-- document (same pattern as purchase_invoices.previous_balance/new_balance),
+-- not a live balance that could drift.
+CREATE TABLE IF NOT EXISTS sales_invoices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    invoice_number TEXT NOT NULL UNIQUE,
+    customer_id INTEGER NOT NULL,
+    invoice_date DATE NOT NULL,
+    invoice_amount DECIMAL(15,2) NOT NULL,
+    previous_balance DECIMAL(15,2) NOT NULL,
+    new_balance DECIMAL(15,2) NOT NULL,
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES customers(id)
+);
+
+-- product_name is free text, deliberately NOT a FK to products — this
+-- module must not touch the purchasing-side inventory catalog.
+CREATE TABLE IF NOT EXISTS sales_invoice_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    invoice_id INTEGER NOT NULL,
+    product_name TEXT NOT NULL,
+    unit TEXT,
+    quantity DECIMAL(10,2) NOT NULL,
+    unit_price DECIMAL(10,2) NOT NULL,
+    line_total DECIMAL(15,2) NOT NULL,
+    FOREIGN KEY (invoice_id) REFERENCES sales_invoices(id)
+);
+
+-- Never linked to a specific invoice — payments reduce the account
+-- balance as a whole, not any one invoice.
+CREATE TABLE IF NOT EXISTS customer_payments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    customer_id INTEGER NOT NULL,
+    payment_date DATE NOT NULL,
+    amount DECIMAL(15,2) NOT NULL,
+    payment_method TEXT,
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (customer_id) REFERENCES customers(id)
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_aliases_normalized ON product_aliases(normalized_alias);
 CREATE INDEX IF NOT EXISTS idx_invoices_status ON purchase_invoices(status);
@@ -145,4 +230,9 @@ CREATE INDEX IF NOT EXISTS idx_invoices_supplier ON purchase_invoices(supplier_i
 CREATE INDEX IF NOT EXISTS idx_items_invoice ON purchase_invoice_items(invoice_id);
 CREATE INDEX IF NOT EXISTS idx_items_product ON purchase_invoice_items(product_id);
 CREATE INDEX IF NOT EXISTS idx_stock_product ON stock_movements(product_id);
+CREATE INDEX IF NOT EXISTS idx_po_items_po ON purchase_order_items(purchase_order_id);
+CREATE INDEX IF NOT EXISTS idx_po_supplier ON purchase_orders(supplier_id);
 CREATE INDEX IF NOT EXISTS idx_supplier_trans_supplier ON supplier_transactions(supplier_id);
+CREATE INDEX IF NOT EXISTS idx_sales_invoices_customer ON sales_invoices(customer_id);
+CREATE INDEX IF NOT EXISTS idx_sales_invoice_items_invoice ON sales_invoice_items(invoice_id);
+CREATE INDEX IF NOT EXISTS idx_customer_payments_customer ON customer_payments(customer_id);

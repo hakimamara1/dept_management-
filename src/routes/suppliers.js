@@ -31,6 +31,19 @@ router.get('/aging', (req, res) => {
     }
 });
 
+// GET /api/suppliers/:id
+router.get('/:id', (req, res) => {
+    try {
+        const supplier = db.stmts.suppliers.getById.get(parseInt(req.params.id));
+        if (!supplier) {
+            return res.status(404).json({ error: 'المورد غير موجود' });
+        }
+        res.json(supplier);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // GET /api/suppliers/:id/ledger
 router.get('/:id/ledger', (req, res) => {
     try {

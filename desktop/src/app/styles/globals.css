@@ -1,0 +1,123 @@
+@import "tailwindcss";
+@plugin "tailwindcss-animate";
+
+/*
+  Palette: deep teal accent (not the default shadcn blue/violet, not the
+  cream+terracotta combo) on a warm-neutral ground — reads as professional
+  ERP chrome (Linear/Notion/Stripe territory) rather than a themed "spice
+  shop" skin. Semantic colors (success/warning/destructive) are kept
+  distinct from the brand hue so a primary action never reads as a status.
+
+  Font: system stacks only — no Google Fonts / CDN import. This app is
+  offline-first (see index.html's CSP: no external style/font sources), so
+  a webfont that silently fails to load on first offline run is a real bug,
+  not a cosmetic one.
+*/
+
+:root {
+  --background: #fafaf8;
+  --foreground: #1c1b17;
+  --card: #ffffff;
+  --card-foreground: #1c1b17;
+  --popover: #ffffff;
+  --popover-foreground: #1c1b17;
+  --primary: #0f7a73;
+  --primary-foreground: #ffffff;
+  --secondary: #f0efe9;
+  --secondary-foreground: #1c1b17;
+  --muted: #f0efe9;
+  --muted-foreground: #726f63;
+  --accent: #e7f3f1;
+  --accent-foreground: #0f7a73;
+  --destructive: #b3261e;
+  --destructive-foreground: #ffffff;
+  --success: #1c7c4b;
+  --success-foreground: #ffffff;
+  --warning: #b8720a;
+  --warning-foreground: #ffffff;
+  --border: #e4e2d9;
+  --input: #e4e2d9;
+  --ring: #0f7a73;
+  --radius: 0.5rem;
+}
+
+.dark {
+  --background: #15171a;
+  --foreground: #ecebe6;
+  --card: #1b1e22;
+  --card-foreground: #ecebe6;
+  --popover: #1b1e22;
+  --popover-foreground: #ecebe6;
+  --primary: #2fbbaf;
+  --primary-foreground: #06201d;
+  --secondary: #22262b;
+  --secondary-foreground: #ecebe6;
+  --muted: #22262b;
+  --muted-foreground: #9a9990;
+  --accent: #16302e;
+  --accent-foreground: #6fdcd1;
+  --destructive: #e5534b;
+  --destructive-foreground: #1a0605;
+  --success: #34c77b;
+  --success-foreground: #06180e;
+  --warning: #e2a93b;
+  --warning-foreground: #241800;
+  --border: #2a2d31;
+  --input: #2a2d31;
+  --ring: #2fbbaf;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+
+  --font-sans:
+    "Segoe UI", "Noto Sans Arabic", "Noto Naskh Arabic", -apple-system,
+    "Helvetica Neue", Arial, sans-serif;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: "tnum" 1;
+  }
+  ::selection {
+    background-color: var(--accent);
+    color: var(--accent-foreground);
+  }
+}
+
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}

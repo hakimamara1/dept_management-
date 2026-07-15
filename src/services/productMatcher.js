@@ -184,13 +184,14 @@ class ProductMatcher {
         }
     }
 
+    // NOTE: only writes the alias (for future OCR matches). The current
+    // invoice's line item is updated separately by the caller, scoped to
+    // its own item id — this must never touch purchase_invoice_items
+    // directly, or it silently repoints every historical item that happens
+    // to share the same normalized OCR text across unrelated invoices.
     confirmMatch(ocrName, productId) {
         const normalized = normalizeArabic(ocrName);
         this.createAlias(productId, ocrName, normalized, 'user_confirmed', 1.0);
-
-        db.prepare(
-            'UPDATE purchase_invoice_items SET product_id = ?, match_status = ? WHERE normalized_ocr_name = ?'
-        ).run(productId, 'UserSelected', normalized);
     }
 
     createProductFromOcr(ocrName, itemData) {

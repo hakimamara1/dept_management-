@@ -62,6 +62,53 @@ class DatabaseManager {
                 getPriceHistory: this.db.prepare(QUERIES.products.getPriceHistory)
             },
 
+            // Invoices
+            invoices: {
+                getMonthlyTotals: this.db.prepare(QUERIES.invoices.getMonthlyTotals)
+            },
+
+            // Purchase Orders
+            purchaseOrders: {
+                getAll: this.db.prepare(QUERIES.purchaseOrders.getAll),
+                getById: this.db.prepare(QUERIES.purchaseOrders.getById),
+                getItemsByOrder: this.db.prepare(QUERIES.purchaseOrders.getItemsByOrder),
+                insert: this.db.prepare(QUERIES.purchaseOrders.insert),
+                insertItem: this.db.prepare(QUERIES.purchaseOrders.insertItem),
+                updateStatus: this.db.prepare(QUERIES.purchaseOrders.updateStatus)
+            },
+
+            // Wholesale Customers
+            customers: {
+                getAll: this.db.prepare(QUERIES.customers.getAll),
+                search: this.db.prepare(QUERIES.customers.search),
+                getById: this.db.prepare(QUERIES.customers.getById),
+                getSummary: this.db.prepare(QUERIES.customers.getSummary),
+                insert: this.db.prepare(QUERIES.customers.insert),
+                reports: {
+                    getSummary: this.db.prepare(QUERIES.customers.reports.getSummary),
+                    getLargestDebtors: this.db.prepare(QUERIES.customers.reports.getLargestDebtors),
+                    getMostActive: this.db.prepare(QUERIES.customers.reports.getMostActive)
+                }
+            },
+
+            // Sales Invoices (wholesale customers)
+            salesInvoices: {
+                getByCustomer: this.db.prepare(QUERIES.salesInvoices.getByCustomer),
+                getById: this.db.prepare(QUERIES.salesInvoices.getById),
+                getItemsByInvoice: this.db.prepare(QUERIES.salesInvoices.getItemsByInvoice),
+                insert: this.db.prepare(QUERIES.salesInvoices.insert),
+                updateInvoiceNumber: this.db.prepare(QUERIES.salesInvoices.updateInvoiceNumber),
+                insertItem: this.db.prepare(QUERIES.salesInvoices.insertItem),
+                getCustomerBalance: this.db.prepare(QUERIES.salesInvoices.getCustomerBalance),
+                getStatement: this.db.prepare(QUERIES.salesInvoices.getStatement)
+            },
+
+            // Customer Payments
+            customerPayments: {
+                getByCustomer: this.db.prepare(QUERIES.customerPayments.getByCustomer),
+                insert: this.db.prepare(QUERIES.customerPayments.insert)
+            },
+
             // Suppliers
             suppliers: {
                 getById: this.db.prepare(QUERIES.suppliers.getById),
@@ -78,7 +125,8 @@ class DatabaseManager {
                 getBySupplier: this.db.prepare(QUERIES.debt.getBySupplier),
                 getBalance: this.db.prepare(QUERIES.debt.getBalance),
                 getSupplierLedger: this.db.prepare(QUERIES.debt.getSupplierLedger),
-                getAgingReport: this.db.prepare(QUERIES.debt.getAgingReport)
+                getAgingReport: this.db.prepare(QUERIES.debt.getAgingReport),
+                getAllPayments: this.db.prepare(QUERIES.debt.getAllPayments)
             },
 
             // Accounting
