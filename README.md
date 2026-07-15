@@ -1,6 +1,6 @@
 # مدير الفواتير — Invoice, Stock & Supplier Debt Manager
 
-A Node.js/Express + SQLite backend (with a plain HTML/CSS/JS Arabic RTL frontend) for ingesting OCR-extracted **purchase invoices**, matching their line items to a product catalog and their sender to a supplier record, and cascading the result into **stock movements**, a **supplier debt ledger**, and **double-entry accounting**.
+A Node.js/Express + SQLite backend (with an Electron + React + TypeScript desktop app) for ingesting OCR-extracted **purchase invoices**, matching their line items to a product catalog and their sender to a supplier record, and cascading the result into **stock movements**, a **supplier debt ledger**, and **double-entry accounting**.
 
 Currency: `دج` (Algerian Dinar). UI language: Arabic (RTL). Domain: wholesale/retail purchasing (oils, groceries, etc. — see `invoice.json` for a sample).
 
@@ -32,32 +32,34 @@ Currency: `دج` (Algerian Dinar). UI language: Arabic (RTL). Domain: wholesale/
 ## Architecture
 
 ```
-frontend/ (static HTML/CSS/JS, RTL)         src/ (Express API on :3000)
-┌─────────────────────────────┐             ┌───────────────────────────────┐
-│ index.html (SPA shell)      │  fetch()    │ app.js  → routes/*.js          │
-│ js/api.js  (BASE=:3000)  ───┼────────────▶│   invoices / products /        │
-│ js/{dashboard,submit,       │             │   suppliers / stock /          │
-│   pending,products,stock,   │             │   accounting / analytics       │
-│   suppliers,accounting}.js  │             │        │                       │
-└─────────────────────────────┘             │        ▼                       │
-                                             │ services/                     │
-                                             │   invoiceProcessor (orchestrator)
-                                             │   validationService           │
-                                             │   supplierMatcher             │
-                                             │   productMatcher (fuzzy match)│
-                                             │   stockService                │
-                                             │   debtService                 │
-                                             │   accountingService           │
-                                             │        │                       │
-                                             │        ▼                       │
-                                             │ config/database.js            │
-                                             │   (better-sqlite3, WAL)       │
-                                             │   models/schema.sql           │
-                                             │   models/queries.js           │
-                                             └───────────────────────────────┘
+desktop/ (Electron + React 19 + TS)          src/ (Express API, spawned locally on :3000)
+┌─────────────────────────────────┐          ┌───────────────────────────────┐
+│ electron/main  → spawns backend,│  fetch() │ app.js  → routes/*.js          │
+│   health-checks /health,        │ ────────▶│   invoices / products /        │
+│   opens the BrowserWindow       │127.0.0.1 │   suppliers / stock /          │
+│ electron/preload → minimal      │  :3000   │   accounting / analytics       │
+│   contextBridge (no data IPC)   │          │        │                       │
+│ src/modules/{dashboard,products}│          │        ▼                       │
+│   (2 modules built; 8 more are  │          │ services/                     │
+│   routed to a ComingSoonPage)   │          │   invoiceProcessor (orchestrator)
+│ src/shared → TanStack Query API │          │   validationService           │
+│   client, Zustand ui-store,     │          │   supplierMatcher             │
+│   shadcn/ui primitives, the     │          │   productMatcher (fuzzy match)│
+│   generic DataTable             │          │   stockService                │
+└─────────────────────────────────┘          │   debtService                 │
+                                              │   accountingService           │
+                                              │        │                       │
+                                              │        ▼                       │
+                                              │ config/database.js            │
+                                              │   (better-sqlite3, WAL)       │
+                                              │   models/schema.sql           │
+                                              │   models/queries.js           │
+                                              └───────────────────────────────┘
 ```
 
 `invoiceProcessor.processOcrResult()` is the single pipeline every invoice goes through; `executeBusinessLogic()` is the fan-out into stock/debt/accounting, called both on auto-approval and on manual approval so the two code paths stay in sync.
+
+The desktop app is genuinely offline-first: Electron spawns the same Express/SQLite backend as a local child process on launch (see `desktop/electron/main/backend-process.ts`) rather than talking to anything over the network — nothing about the purchasing/stock/debt/accounting pipeline changed to build the new frontend.
 
 ## Tech stack
 
@@ -66,7 +68,8 @@ frontend/ (static HTML/CSS/JS, RTL)         src/ (Express API on :3000)
 | Runtime | Node.js, CommonJS |
 | HTTP framework | Express 5 |
 | Database | SQLite via `better-sqlite3` (synchronous, WAL journal mode, FK enforcement on) |
-| Frontend | No framework — static HTML + vanilla JS modules + hand-written CSS, Cairo font, RTL layout |
+| Desktop shell | Electron, spawning the Express backend as a local child process |
+| Frontend | React 19 + TypeScript + Vite, Tailwind v4 + shadcn/ui (hand-written, not CLI-generated), Zustand (UI state), TanStack Query (server state), TanStack Table, React Hook Form + Zod, Recharts, React Router (`HashRouter`), Sonner |
 | Fuzzy matching | Hand-rolled Jaro-Winkler + token-overlap (products), substring/length-ratio (suppliers) |
 | File upload | `multer` is a declared dependency but **no upload route currently uses it** — invoices arrive as already-extracted JSON, not images |
 | Config | `dotenv` is a declared dependency but **unused** — port (`3000`) and DB path are hardcoded |
@@ -144,14 +147,28 @@ Base URL: `http://localhost:3000`
 
 ## Running it locally
 
+**Backend only** (API on `:3000`):
+
 ```bash
 npm install          # already present in node_modules, but for a fresh clone
-node src/app.js       # starts the API on http://localhost:3000
+node src/app.js
 ```
 
 There is no `npm start` script defined yet — add `"start": "node src/app.js"` to `package.json` if you want one.
 
-The frontend is static and **not served by Express** (no `express.static` in `app.js`). Open [`frontend/index.html`](frontend/index.html) directly in a browser, or serve the `frontend/` folder with any static server (e.g. `npx serve frontend`). `frontend/js/api.js` hard-codes `BASE = 'http://localhost:3000'`, so the API must be running on that exact host/port; CORS is fully open (`cors()` with no origin restriction) so this works from any origin, including `file://`.
+**Desktop app** (spawns the backend itself — no need to run it separately):
+
+```bash
+cd desktop
+npm install
+npm run dev            # launches Electron + the Vite dev server
+npm run build           # production build (out/main, out/preload, out/renderer)
+npm run typecheck        # tsc -b --noEmit across main/preload/renderer
+```
+
+`desktop/electron/main/backend-process.ts` spawns `node ../src/app.js` on launch, polls `/health` until it's up, then opens the window — see the desktop app's own architecture notes there and in `desktop/src/app/router.tsx`. Two modules are built (Dashboard, Products); the rest of the sidebar routes to an honest "coming soon" placeholder rather than a fake screen.
+
+**Packaging note**: dev mode spawns the backend with the system `node`, which is fine for development. A packaged build needs `better-sqlite3` rebuilt against Electron's Node ABI (`@electron/rebuild`) and the child launched via `ELECTRON_RUN_AS_NODE` instead — not set up yet, see [Known gaps](#known-gaps--things-to-fix-before-production).
 
 To try the invoice pipeline end-to-end, POST the contents of [`invoice.json`](invoice.json) to `/api/invoices/ocr` — it's a real sample of the JSON shape the OCR step is expected to produce.
 
@@ -174,10 +191,18 @@ src/
     accountingService.js     Double-entry journal
   utils/arabicNormalizer.js  Diacritics/letter-variant/filler-word normalization
   data/invoices.db(-wal/-shm) SQLite database files (WAL mode)
-frontend/
-  index.html                 SPA shell (sidebar nav, RTL)
-  js/{api,dashboard,submit,pending,products,stock,suppliers,accounting}.js
-  css/style.css
+desktop/
+  electron/main               BrowserWindow, backend child-process spawn + health check
+  electron/preload            Minimal contextBridge (no data IPC — renderer uses HTTP)
+  src/app/                    Providers, HashRouter, AppShell/Sidebar/Topbar, ComingSoonPage
+  src/modules/dashboard/      Built: stat cards, attention panel, who-to-call, purchase trend chart
+  src/modules/products/       Built: DataTable, create-product form, price-history sheet
+  src/shared/
+    components/ui/            Hand-written shadcn/ui primitives (not CLI-generated)
+    components/data-table/    Generic TanStack Table wrapper reused by every module
+    lib/{api-client,query-client,i18n,format,utils}.ts
+    store/ui-store.ts         Zustand: sidebar, theme, language
+    types/api.ts               Hand-written mirror of the backend's JSON shapes
 invoice.json                 Sample OCR output used as API input
 invoices.db                  Stray empty DB file at repo root (unused — the real one is src/data/invoices.db)
 ```
@@ -192,5 +217,8 @@ invoices.db                  Stray empty DB file at repo root (unused — the re
 - **`dotenv` and `multer` are installed but not wired up** — port/DB path are hardcoded, and there's no route that accepts an uploaded invoice image, meaning OCR extraction must currently happen entirely outside this codebase.
 - **Sales side is scaffolded but not connected** — `AccountingService.recordSale` and `stockService.recordSale` exist, but no route calls them, so the system is purchase-only today.
 - **No pagination** on most list endpoints (products search caps at 10, suppliers search at 20, but stock summary / trial balance / aging return everything).
-- **CORS is wide open** and the frontend's API base URL is hardcoded to `localhost:3000`, so this isn't deploy-ready as-is.
+- **CORS is wide open** and the desktop app's API base URL is hardcoded to `127.0.0.1:3000` (`desktop/src/shared/lib/api-client.ts`), so this isn't deploy-ready as-is.
+- **Electron packaging isn't set up yet** — dev mode spawns the backend with the system `node`; a real packaged build needs `better-sqlite3` rebuilt against Electron's Node ABI (`@electron/rebuild`) and the backend child launched via `ELECTRON_RUN_AS_NODE`, plus an `electron-builder` config. See `desktop/electron/main/backend-process.ts` for the exact spot this plugs into.
+- **8 of the 10 planned modules aren't built** — Suppliers & Debt, Purchase Orders, Invoices/OCR, Payments, Reports, Notifications, Settings, and AI Assistant all route to a `ComingSoonPage` placeholder today. Dashboard and Products are the only modules with real functionality.
+- **Backend-already-running edge case** — if a backend is already listening on port 3000 (e.g. left over from manual `node src/app.js` testing) when Electron launches, its own spawned child can end up racing it rather than detecting and reusing the existing instance. Harmless in practice (the existing server keeps serving), but `backend-process.ts` doesn't currently check before spawning.
 # dept_management-

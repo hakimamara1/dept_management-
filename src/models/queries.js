@@ -32,11 +32,17 @@ const QUERIES = {
                  GROUP BY p.id
                  ORDER BY p.name
                  LIMIT 20`,
+        // NOTE: HAVING repeats the aggregate expression rather than referencing
+        // the "current_stock" alias — products has its own (always-stale, never-
+        // written-to) current_stock column, and SQLite resolves a bare identifier
+        // in HAVING against real columns in scope before SELECT-list aliases, so
+        // `HAVING current_stock < ?` was silently comparing against that stale
+        // column (always 0) and returning every product regardless of threshold.
         getLowStock: `SELECT p.*, COALESCE(SUM(sm.quantity), 0) as current_stock
                       FROM products p
                       LEFT JOIN stock_movements sm ON p.id = sm.product_id
                       GROUP BY p.id
-                      HAVING current_stock < ?
+                      HAVING COALESCE(SUM(sm.quantity), 0) < ?
                       ORDER BY current_stock ASC`,
         getPriceHistory: `SELECT
                              pii.unit_price,
@@ -208,7 +214,12 @@ const QUERIES = {
                            LEFT JOIN purchase_invoices pi ON s.id = pi.supplier_id AND pi.status = 'Approved'
                            GROUP BY s.id
                            ORDER BY s.current_balance DESC`,
-        getTopDebtors: `SELECT name, current_balance FROM suppliers ORDER BY current_balance DESC LIMIT 10`
+        getTopDebtors: `SELECT name, current_balance FROM suppliers ORDER BY current_balance DESC LIMIT 10`,
+        getAllPayments: `SELECT st.*, s.name as supplier_name
+                          FROM supplier_transactions st
+                          JOIN suppliers s ON st.supplier_id = s.id
+                          WHERE st.transaction_type = 'payment'
+                          ORDER BY st.created_at DESC`
     },
 
     // ─── ACCOUNTING ───
@@ -250,7 +261,7 @@ const QUERIES = {
                           GROUP BY pa.product_id
                           ORDER BY pa.total_purchased DESC
                           LIMIT 20`,
-        getDashboardStats: `SELECT 
+        getDashboardStats: `SELECT
                                 (SELECT COUNT(*) FROM purchase_invoices WHERE status = 'Pending Review') as pending_invoices,
                                 (SELECT COUNT(*) FROM purchase_invoices WHERE status = 'Approved') as approved_invoices,
 
@@ -258,6 +269,33 @@ const QUERIES = {
                                 (SELECT COALESCE(SUM(current_balance), 0) FROM suppliers) as total_debt,
                                 (SELECT COUNT(*) FROM products) as total_products,
                                 (SELECT COUNT(*) FROM product_aliases) as total_aliases`
+    },
+
+    // ─── PURCHASE ORDERS ───
+    purchaseOrders: {
+        getAll: `SELECT
+                    po.*,
+                    s.name as supplier_name,
+                    COUNT(poi.id) as item_count,
+                    COALESCE(SUM(poi.quantity * poi.expected_unit_price), 0) as expected_total
+                  FROM purchase_orders po
+                  JOIN suppliers s ON po.supplier_id = s.id
+                  LEFT JOIN purchase_order_items poi ON poi.purchase_order_id = po.id
+                  GROUP BY po.id
+                  ORDER BY po.created_at DESC`,
+        getById: `SELECT po.*, s.name as supplier_name, s.phone as supplier_phone
+                   FROM purchase_orders po
+                   JOIN suppliers s ON po.supplier_id = s.id
+                   WHERE po.id = ?`,
+        getItemsByOrder: `SELECT poi.*, p.name as product_name, p.unit
+                            FROM purchase_order_items poi
+                            JOIN products p ON poi.product_id = p.id
+                            WHERE poi.purchase_order_id = ?`,
+        insert: `INSERT INTO purchase_orders (supplier_id, status, order_date, expected_date, notes)
+                  VALUES (?, ?, ?, ?, ?)`,
+        insertItem: `INSERT INTO purchase_order_items (purchase_order_id, product_id, quantity, expected_unit_price)
+                      VALUES (?, ?, ?, ?)`,
+        updateStatus: `UPDATE purchase_orders SET status = ? WHERE id = ?`
     }
 };
 

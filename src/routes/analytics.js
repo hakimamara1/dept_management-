@@ -18,4 +18,14 @@ router.get('/dashboard', (req, res) => {
     }
 });
 
+// GET /api/analytics/purchase-trend
+router.get('/purchase-trend', (req, res) => {
+    try {
+        const trend = db.stmts.invoices.getMonthlyTotals.all();
+        res.json(trend);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

@@ -138,6 +138,32 @@ CREATE TABLE IF NOT EXISTS product_analytics (
     FOREIGN KEY (product_id) REFERENCES products(id)
 );
 
+-- ============================================
+-- PURCHASE ORDERS (tracking/intent only — no stock, debt, or
+-- accounting effects here; those still only happen when the real
+-- invoice arrives through the OCR pipeline)
+-- ============================================
+CREATE TABLE IF NOT EXISTS purchase_orders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    supplier_id INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'Draft',   -- 'Draft', 'Sent', 'Received', 'Cancelled'
+    order_date DATE NOT NULL,
+    expected_date DATE,
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (supplier_id) REFERENCES suppliers(id)
+);
+
+CREATE TABLE IF NOT EXISTS purchase_order_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    purchase_order_id INTEGER NOT NULL,
+    product_id INTEGER NOT NULL,
+    quantity DECIMAL(10,2) NOT NULL,
+    expected_unit_price DECIMAL(10,2),
+    FOREIGN KEY (purchase_order_id) REFERENCES purchase_orders(id),
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_aliases_normalized ON product_aliases(normalized_alias);
 CREATE INDEX IF NOT EXISTS idx_invoices_status ON purchase_invoices(status);
@@ -145,4 +171,6 @@ CREATE INDEX IF NOT EXISTS idx_invoices_supplier ON purchase_invoices(supplier_i
 CREATE INDEX IF NOT EXISTS idx_items_invoice ON purchase_invoice_items(invoice_id);
 CREATE INDEX IF NOT EXISTS idx_items_product ON purchase_invoice_items(product_id);
 CREATE INDEX IF NOT EXISTS idx_stock_product ON stock_movements(product_id);
+CREATE INDEX IF NOT EXISTS idx_po_items_po ON purchase_order_items(purchase_order_id);
+CREATE INDEX IF NOT EXISTS idx_po_supplier ON purchase_orders(supplier_id);
 CREATE INDEX IF NOT EXISTS idx_supplier_trans_supplier ON supplier_transactions(supplier_id);
