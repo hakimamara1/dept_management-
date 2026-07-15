@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>مدير الفواتير — Debt Management</title>
+  <meta name="description" content="نظام إدارة الفواتير ومطابقة المنتجات مع دعم كامل للغة العربية" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='28'>🧾</text></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+<div id="app">
+
+  <!-- ══════════════════════════════════════
+       SIDEBAR
+  ══════════════════════════════════════ -->
+  <aside id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">🧾</div>
+      <div class="logo-title">مدير الفواتير</div>
+      <div class="logo-sub">نظام إدارة الديون والمنتجات</div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-item active" id="nav-dashboard" onclick="switchView('dashboard')">
+        <span class="nav-icon">📊</span>
+        <span>الرئيسية</span>
+      </div>
+      <div class="nav-item" id="nav-submit" onclick="switchView('submit')">
+        <span class="nav-icon">📥</span>
+        <span>رفع فاتورة</span>
+      </div>
+      <div class="nav-item" id="nav-pending" onclick="switchView('pending')">
+        <span class="nav-icon">🕐</span>
+        <span>الفواتير المعلقة</span>
+        <span class="nav-badge" id="nav-badge-pending">0</span>
+      </div>
+      <div class="nav-item" id="nav-products" onclick="switchView('products')">
+        <span class="nav-icon">📦</span>
+        <span>المنتجات</span>
+      </div>
+      <div class="nav-item" id="nav-stock" onclick="switchView('stock')">
+        <span class="nav-icon">🔄</span>
+        <span>المخازن والسلع</span>
+      </div>
+      <div class="nav-item" id="nav-suppliers" onclick="switchView('suppliers')">
+        <span class="nav-icon">🤝</span>
+        <span>الموردون والديون</span>
+      </div>
+      <div class="nav-item" id="nav-accounting" onclick="switchView('accounting')">
+        <span class="nav-icon">🧮</span>
+        <span>المحاسبة والدفاتر</span>
+      </div>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="server-status">
+        <div class="status-dot" id="status-dot"></div>
+        <span id="status-text">جاري الفحص...</span>
+      </div>
+      <div class="time-display mt-8" id="clock"></div>
+    </div>
+  </aside>
+
+  <!-- ══════════════════════════════════════
+       MAIN
+  ══════════════════════════════════════ -->
+  <main id="main">
+
+    <!-- Topbar -->
+    <div id="topbar">
+      <div class="page-title" id="page-title">الرئيسية</div>
+      <div class="topbar-right">
+        <button class="btn btn-primary btn-sm" onclick="switchView('submit')" id="topbar-submit-btn">
+          ➕ رفع فاتورة
+        </button>
+      </div>
+    </div>
+
+    <!-- ── VIEW: DASHBOARD ────────────────────── -->
+    <section class="view active" id="view-dashboard">
+      <!-- Stats Row -->
+      <div class="stats-grid">
+        <div class="stat-card" onclick="switchView('pending')" style="cursor:pointer">
+          <div class="stat-icon amber">🕐</div>
+          <div>
+            <div class="stat-value" id="stat-pending">—</div>
+            <div class="stat-label">فواتير معلقة</div>
+          </div>
+        </div>
+        <div class="stat-card" onclick="switchView('pending')" style="cursor:pointer">
+          <div class="stat-icon rose">⚠️</div>
+          <div>
+            <div class="stat-value" id="stat-pending-items">—</div>
+            <div class="stat-label">منتجات بحاجة مطابقة</div>
+          </div>
+        </div>
+        <div class="stat-card" onclick="switchView('suppliers')" style="cursor:pointer">
+          <div class="stat-icon indigo">💸</div>
+          <div>
+            <div class="stat-value" id="stat-total-debt">—</div>
+            <div class="stat-label">الديون المستحقة</div>
+          </div>
+        </div>
+        <div class="stat-card" onclick="switchView('stock')" style="cursor:pointer">
+          <div class="stat-icon emerald">📦</div>
+          <div>
+            <div class="stat-value" id="stat-stock-value">—</div>
+            <div class="stat-label">قيمة المخزون بالدج</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Actions -->
+      <div class="card mb-20">
+        <div class="card-title">⚡ إجراءات سريعة</div>
+        <div class="quick-actions mt-12">
+          <button class="btn btn-primary" onclick="switchView('submit')">📥 رفع فاتورة JSON</button>
+          <button class="btn btn-ghost" onclick="switchView('pending')">🕐 مراجعة الفواتير المعلقة</button>
+          <button class="btn btn-ghost" onclick="switchView('products')">📦 بحث في المنتجات</button>
+          <button class="btn btn-ghost" onclick="checkHealth()">🔄 فحص الخادم</button>
+        </div>
+      </div>
+
+      <!-- Recent Pending Table -->
+      <div class="card">
+        <div class="section-header">
+          <div>
+            <div class="section-title">🕐 آخر الفواتير المعلقة</div>
+            <div class="section-sub">تحتاج إلى مراجعة ومطابقة منتجات</div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="switchView('pending')">عرض الكل ←</button>
+        </div>
+        <div class="table-wrap" style="border:none">
+          <table>
+            <thead>
+              <tr>
+                <th>رقم الفاتورة</th>
+                <th>المورد</th>
+                <th>التاريخ</th>
+                <th>المبلغ</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody id="recent-pending-tbody">
+              <tr class="loading-row">
+                <td colspan="5"><span class="spinner"></span> جاري التحميل...</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── VIEW: SUBMIT INVOICE ───────────────── -->
+    <section class="view" id="view-submit">
+      <div style="max-width:860px;margin:0 auto">
+
+        <div class="section-header mb-20">
+          <div>
+            <div class="section-title">📥 رفع فاتورة جديدة</div>
+            <div class="section-sub">ارفع ملف JSON أو الصق محتواه مباشرة</div>
+          </div>
+        </div>
+
+        <!-- Drop Zone -->
+        <div class="card mb-16">
+          <div class="card-title">📂 رفع ملف JSON</div>
+          <div class="drop-zone mt-12" id="drop-zone">
+            <input type="file" id="file-input" accept=".json" />
+            <div class="drop-icon">📂</div>
+            <div class="drop-title">اسحب ملف JSON هنا</div>
+            <div class="drop-sub">أو انقر للاختيار · يدعم ملفات .json فقط</div>
+          </div>
+        </div>
+
+        <div class="divider">أو الصق JSON مباشرة</div>
+
+        <!-- Paste JSON -->
+        <div class="card mb-16">
+          <div class="form-group mb-12">
+            <label class="form-label">محتوى JSON للفاتورة</label>
+            <textarea class="form-control" id="json-area"
+              placeholder='{ "invoice_number": "1403", "supplier": { "name": "..." }, "items": [...] }'
+              rows="8"
+            ></textarea>
+          </div>
+          <div style="display:flex;gap:10px">
+            <button class="btn btn-ghost" id="btn-parse">🔍 تحليل JSON</button>
+            <button class="btn btn-ghost" id="btn-clear">🗑️ مسح</button>
+          </div>
+        </div>
+
+        <!-- Preview (hidden until parsed) -->
+        <div id="invoice-preview" style="display:none">
+          <div class="card mb-16">
+            <div class="card-title mb-16">👁️ معاينة الفاتورة</div>
+            <div class="invoice-header-grid">
+              <div class="inv-field">
+                <div class="inv-field-label">المورد</div>
+                <div class="inv-field-value" id="prev-supplier">—</div>
+              </div>
+              <div class="inv-field">
+                <div class="inv-field-label">رقم الفاتورة</div>
+                <div class="inv-field-value" id="prev-inv-num">—</div>
+              </div>
+              <div class="inv-field">
+                <div class="inv-field-label">التاريخ</div>
+                <div class="inv-field-value" id="prev-inv-date">—</div>
+              </div>
+              <div class="inv-field">
+                <div class="inv-field-label">العملة</div>
+                <div class="inv-field-value" id="prev-currency">—</div>
+              </div>
+              <div class="inv-field">
+                <div class="inv-field-label">الرصيد السابق</div>
+                <div class="inv-field-value" id="prev-prev-bal">—</div>
+              </div>
+              <div class="inv-field">
+                <div class="inv-field-label">مبلغ الفاتورة</div>
+                <div class="inv-field-value" style="color:var(--accent-light)" id="prev-amount">—</div>
+              </div>
+              <div class="inv-field">
+                <div class="inv-field-label">الخصم</div>
+                <div class="inv-field-value" id="prev-discount">—</div>
+              </div>
+              <div class="inv-field">
+                <div class="inv-field-label">الرصيد الجديد</div>
+                <div class="inv-field-value" style="color:var(--warning);font-size:1.05rem" id="prev-new-bal">—</div>
+              </div>
+            </div>
+            <div class="inv-field mt-12">
+              <div class="inv-field-label">الملاحظات</div>
+              <div class="inv-field-value" id="prev-notes" style="font-size:.88rem;font-weight:400;color:var(--text-secondary)">—</div>
+            </div>
+
+            <!-- Items Table -->
+            <div class="section-header mt-20 mb-12">
+              <div class="fw-700">
+                📦 البنود
+                <span class="badge badge-info" style="margin-right:8px" id="prev-items-count">0</span>
+              </div>
+              <div style="font-size:.85rem;color:var(--accent-light);font-weight:700" id="prev-total-sum">—</div>
+            </div>
+            <div class="table-wrap" style="border:none">
+              <table>
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>المنتج</th>
+                    <th>التعبئة</th>
+                    <th>الكمية</th>
+                    <th>سعر الوحدة</th>
+                    <th>المجموع</th>
+                  </tr>
+                </thead>
+                <tbody id="prev-items-tbody"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Submit Button -->
+          <button class="btn btn-primary btn-lg" id="btn-submit-invoice" disabled
+            style="width:100%;justify-content:center">
+            🚀 إرسال الفاتورة للمعالجة
+          </button>
+        </div>
+
+        <!-- Result Panel -->
+        <div id="submit-result" class="result-panel"></div>
+
+      </div>
+    </section>
+
+    <!-- ── VIEW: PENDING REVIEW ───────────────── -->
+    <section class="view" id="view-pending">
+      <div class="section-header mb-20">
+        <div>
+          <div class="section-title">🕐 الفواتير المعلقة</div>
+          <div class="section-sub">انقر على فاتورة لمراجعتها وتحديد المنتجات</div>
+        </div>
+        <button class="btn btn-ghost btn-sm" onclick="loadPendingInvoices()">🔄 تحديث</button>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>رقم الفاتورة</th>
+              <th>المورد</th>
+              <th>التاريخ</th>
+              <th>المبلغ</th>
+              <th>البنود</th>
+              <th>الحالة</th>
+            </tr>
+          </thead>
+          <tbody id="pending-tbody">
+            <tr class="loading-row">
+              <td colspan="6"><span class="spinner"></span> جاري التحميل...</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ── VIEW: PRODUCTS ─────────────────────── -->
+    <section class="view" id="view-products">
+      <div class="section-header mb-20">
+        <div>
+          <div class="section-title">📦 إدارة المنتجات</div>
+          <div class="section-sub">بحث في المنتجات وإضافة منتجات جديدة</div>
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="toggleAddProductForm()">➕ إضافة منتج</button>
+      </div>
+
+      <!-- Add Product Form (hidden) -->
+      <div id="add-product-form" style="display:none" class="card mb-20">
+        <div class="card-title mb-16">➕ إضافة منتج جديد</div>
+        <div class="grid-2">
+          <div class="form-group mb-0">
+            <label class="form-label">اسم المنتج *</label>
+            <input type="text" id="prod-name" class="form-control" placeholder="مثال: زيت الكابتن 250ml" />
+          </div>
+          <div class="form-group mb-0">
+            <label class="form-label">الباركود</label>
+            <input type="text" id="prod-barcode" class="form-control" placeholder="اختياري" />
+          </div>
+          <div class="form-group mb-0">
+            <label class="form-label">الفئة</label>
+            <input type="text" id="prod-category" class="form-control" placeholder="مثال: زيوت، توابل..." />
+          </div>
+          <div class="form-group mb-0">
+            <label class="form-label">الوحدة</label>
+            <select id="prod-unit" class="form-control">
+              <option value="piece">قطعة</option>
+              <option value="kg">كيلو</option>
+              <option value="box">علبة</option>
+              <option value="liter">لتر</option>
+              <option value="g">غرام</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:10px;margin-top:16px">
+          <button class="btn btn-primary" id="btn-save-product">💾 حفظ المنتج</button>
+          <button class="btn btn-ghost" onclick="toggleAddProductForm()">إلغاء</button>
+        </div>
+      </div>
+
+      <!-- Search -->
+      <div class="card mb-16">
+        <div class="search-wrap mb-0">
+          <span class="search-icon">🔍</span>
+          <input type="text" id="product-search-input" class="form-control"
+            placeholder="ابحث باسم المنتج بالعربية أو الفرنسية..." />
+        </div>
+      </div>
+
+      <!-- Results Table -->
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>اسم المنتج</th>
+              <th>الباركود</th>
+              <th>الفئة</th>
+              <th>الوحدة</th>
+              <th>المخزون</th>
+              <th>التكلفة</th>
+              <th>سعر الشراء</th>
+            </tr>
+          </thead>
+          <tbody id="products-tbody">
+            <tr>
+              <td colspan="7" style="text-align:center;padding:50px;color:var(--text-muted)">
+                ابحث عن منتج بكتابة اسمه أعلاه
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      </div>
+    </section>
+
+    <!-- ── VIEW: STOCK & MOVEMENTS ────────────── -->
+    <section class="view" id="view-stock">
+      <div class="section-header mb-20">
+        <div>
+          <div class="section-title">🔄 المخازن وحركة السلع</div>
+          <div class="section-sub">متابعة الكميات، متوسط التكلفة، وجرد المخزون</div>
+        </div>
+        <div class="flex gap-8">
+          <div class="stat-card" style="padding: 10px 16px; margin: 0; background: var(--bg-surface);">
+            <div class="text-xs text-muted">إجمالي قيمة المخزون</div>
+            <div class="fw-700" style="color:var(--success)" id="stock-total-value-display">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub Tabs -->
+      <div class="card mb-16" style="padding: 6px; border-color: var(--border);">
+        <div class="flex gap-8">
+          <button class="btn btn-primary btn-sm subtab-btn-stock active" id="btn-stock-summary" onclick="switchStockSubTab('summary')">📦 ملخص المخازن</button>
+          <button class="btn btn-ghost btn-sm subtab-btn-stock" id="btn-stock-movements" onclick="switchStockSubTab('movements')">🔄 حركة السلع</button>
+          <button class="btn btn-ghost btn-sm subtab-btn-stock" id="btn-stock-low" onclick="switchStockSubTab('low')">⚠️ تنبيهات النقص</button>
+        </div>
+      </div>
+
+      <!-- Tab: Summary -->
+      <div id="stock-tab-summary" class="stock-tab-content">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>المنتج</th>
+                <th>الفئة</th>
+                <th>الوحدة</th>
+                <th>المخزون المتوفر</th>
+                <th>متوسط التكلفة (WAC)</th>
+                <th>قيمة المخزون (دج)</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="stock-summary-tbody">
+              <tr class="loading-row"><td colspan="7"><span class="spinner"></span> جاري تحميل المخزون...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Movements -->
+      <div id="stock-tab-movements" class="stock-tab-content" style="display:none">
+        <div class="card mb-16" style="padding:14px; background: rgba(255,255,255,0.02);">
+          <div class="flex items-center gap-12 flex-wrap">
+            <div class="flex items-center gap-8">
+              <label class="text-sm">من:</label>
+              <input type="date" id="stock-start-date" class="form-control form-control-sm" style="width:140px; padding:4px 8px;" />
+            </div>
+            <div class="flex items-center gap-8">
+              <label class="text-sm">إلى:</label>
+              <input type="date" id="stock-end-date" class="form-control form-control-sm" style="width:140px; padding:4px 8px;" />
+            </div>
+            <button class="btn btn-primary btn-sm" onclick="loadStockMovements()">🔍 تصفية</button>
+            <button class="btn btn-ghost btn-sm" onclick="clearStockMovementsFilter()">🔄 الكل</button>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>التاريخ والوقت</th>
+                <th>المنتج</th>
+                <th>نوع الحركة</th>
+                <th>الكمية</th>
+                <th>سعر الحركة</th>
+                <th>المرجع / البيان</th>
+              </tr>
+            </thead>
+            <tbody id="stock-movements-tbody">
+              <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted)">حدد فترة لعرض الحركات</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Low Stock -->
+      <div id="stock-tab-low" class="stock-tab-content" style="display:none">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>المنتج</th>
+                <th>الفئة</th>
+                <th>الوحدة</th>
+                <th>المخزون المتوفر</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody id="stock-low-tbody">
+              <tr class="loading-row"><td colspan="5"><span class="spinner"></span> جاري التحميل...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── VIEW: SUPPLIERS & DEBT ────────────── -->
+    <section class="view" id="view-suppliers">
+      <div class="section-header mb-20">
+        <div>
+          <div class="section-title">🤝 الموردون والديون</div>
+          <div class="section-sub">إدارة حسابات الموردين وتتبع الديون والمدفوعات</div>
+        </div>
+        <div class="flex gap-8">
+          <div class="stat-card" style="padding: 10px 16px; margin: 0; background: var(--bg-surface);">
+            <div class="text-xs text-muted">إجمالي الديون القائمة</div>
+            <div class="fw-700" style="color:var(--danger)" id="suppliers-total-debt-display">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Sub Tabs -->
+      <div class="card mb-16" style="padding: 6px; border-color: var(--border);">
+        <div class="flex gap-8">
+          <button class="btn btn-primary btn-sm subtab-btn-suppliers active" id="btn-suppliers-list" onclick="switchSuppliersSubTab('list')">🤝 كشف الديون المستحقة</button>
+          <button class="btn btn-ghost btn-sm subtab-btn-suppliers" id="btn-suppliers-aging" onclick="switchSuppliersSubTab('aging')">⏳ تقرير أعمار الديون</button>
+        </div>
+      </div>
+
+      <!-- Tab: Suppliers List -->
+      <div id="suppliers-tab-list" class="suppliers-tab-content">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>اسم المورد</th>
+                <th>رقم الهاتف</th>
+                <th>السجل التجاري</th>
+                <th>الديون القائمة (دج)</th>
+                <th>الإجراءات</th>
+              </tr>
+            </thead>
+            <tbody id="suppliers-list-tbody">
+              <tr class="loading-row"><td colspan="5"><span class="spinner"></span> جاري تحميل الموردين...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Debt Aging -->
+      <div id="suppliers-tab-aging" class="suppliers-tab-content" style="display:none">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>المورد</th>
+                <th>الرصيد الكلي</th>
+                <th>0 - 30 يوم</th>
+                <th>30 - 60 يوم</th>
+                <th>60 - 90 يوم</th>
+                <th>90+ يوم</th>
+              </tr>
+            </thead>
+            <tbody id="suppliers-aging-tbody">
+              <tr class="loading-row"><td colspan="6"><span class="spinner"></span> جاري تحميل تقرير الأعمار...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── VIEW: ACCOUNTING & LEDGERS ─────────── -->
+    <section class="view" id="view-accounting">
+      <div class="section-header mb-20">
+        <div>
+          <div class="section-title">🧮 المحاسبة والقيد المزدوج</div>
+          <div class="section-sub">تطابق الحسابات، الميزانية، الحسابات الختامية، ودفاتر الأستاذ</div>
+        </div>
+        <div id="accounting-status-badge">
+          <!-- Live check status -->
+        </div>
+      </div>
+
+      <!-- Sub Tabs -->
+      <div class="card mb-16" style="padding: 6px; border-color: var(--border);">
+        <div class="flex gap-8 flex-wrap">
+          <button class="btn btn-primary btn-sm subtab-btn-accounting active" id="btn-accounting-trial" onclick="switchAccountingSubTab('trial')">⚖️ ميزان المراجعة</button>
+          <button class="btn btn-ghost btn-sm subtab-btn-accounting" id="btn-accounting-balance" onclick="switchAccountingSubTab('balance')">🏛️ الميزانية العمومية</button>
+          <button class="btn btn-ghost btn-sm subtab-btn-accounting" id="btn-accounting-pl" onclick="switchAccountingSubTab('pl')">📊 الأرباح والخسائر</button>
+          <button class="btn btn-ghost btn-sm subtab-btn-accounting" id="btn-accounting-ledger" onclick="switchAccountingSubTab('ledger')">📖 دفاتر الأستاذ</button>
+        </div>
+      </div>
+
+      <!-- Tab: Trial Balance -->
+      <div id="accounting-tab-trial" class="accounting-tab-content">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>رمز الحساب</th>
+                <th>اسم الحساب</th>
+                <th>مدين (Debits)</th>
+                <th>دائن (Credits)</th>
+                <th>صافي الرصيد الحالي</th>
+              </tr>
+            </thead>
+            <tbody id="accounting-trial-tbody">
+              <tr class="loading-row"><td colspan="5"><span class="spinner"></span> جاري تحميل ميزان المراجعة...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Tab: Balance Sheet -->
+      <div id="accounting-tab-balance" class="accounting-tab-content" style="display:none">
+        <div class="grid-2">
+          <!-- Assets Card -->
+          <div class="card">
+            <div class="card-title text-success mb-12">🟢 الأصول (Assets)</div>
+            <div class="table-wrap" style="border:none">
+              <table>
+                <tbody id="balance-sheet-assets-tbody">
+                  <!-- Dynamic asset lines -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+          <!-- Liabilities Card -->
+          <div class="card">
+            <div class="card-title text-danger mb-12">🔴 الخصوم والالتزامات (Liabilities)</div>
+            <div class="table-wrap" style="border:none">
+              <table>
+                <tbody id="balance-sheet-liabilities-tbody">
+                  <!-- Dynamic liability lines -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="card mt-16" style="background: rgba(99,102,241,0.1); border-color: var(--accent-hover);">
+          <div class="flex justify-between items-center">
+            <div>
+              <div class="fw-700" style="font-size: 1.1rem;">صافي القيمة / حقوق الملكية (Net Worth)</div>
+              <div class="text-xs text-muted mt-4">إجمالي الأصول مطروحاً منه إجمالي الخصوم والالتزامات</div>
+            </div>
+            <div class="fw-800" style="font-size:1.4rem;" id="accounting-networth-display">—</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Profit & Loss -->
+      <div id="accounting-tab-pl" class="accounting-tab-content" style="display:none">
+        <div class="card" style="max-width: 600px; margin: 0 auto;">
+          <div class="card-title mb-16">حساب الأرباح والخسائر التقديري</div>
+          <div style="display:flex; flex-direction:column; gap:16px;">
+            <div class="flex justify-between items-center" style="border-bottom: 1px solid var(--border); padding-bottom:8px;">
+              <span class="text-secondary">إجمالي المبيعات (Sales Revenue)</span>
+              <span class="fw-700 text-success" id="pl-sales">—</span>
+            </div>
+            <div class="flex justify-between items-center" style="border-bottom: 1px solid var(--border); padding-bottom:8px;">
+              <span class="text-secondary">تكلفة البضاعة المباعة (COGS)</span>
+              <span class="fw-700 text-danger" id="pl-cogs">—</span>
+            </div>
+            <div class="flex justify-between items-center" style="border-bottom: 1px solid var(--border); padding-bottom:8px; background: rgba(255,255,255,0.01); padding:4px 8px; border-radius:4px;">
+              <span class="fw-700">مجمل الربح (Gross Profit)</span>
+              <span class="fw-800 text-success" id="pl-gross-profit">—</span>
+            </div>
+            <div class="flex justify-between items-center" style="border-bottom: 1px solid var(--border); padding-bottom:8px;">
+              <span class="text-secondary">المشتريات الإجمالية (Purchases)</span>
+              <span class="fw-700" id="pl-purchases">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: Ledgers -->
+      <div id="accounting-tab-ledger" class="accounting-tab-content" style="display:none">
+        <div class="card mb-16" style="padding:14px; background: rgba(255,255,255,0.02);">
+          <div class="flex items-center gap-12">
+            <label class="form-label mb-0" style="white-space:nowrap">دفتر حساب:</label>
+            <select id="accounting-ledger-select" class="form-control" style="max-width:240px" onchange="loadAccountLedgerData()">
+              <option value="inventory">مخزون السلع (Inventory)</option>
+              <option value="accounts_payable">حسابات الموردين الدائنة (Accounts Payable)</option>
+              <option value="cash">الصندوق النقدي (Cash)</option>
+              <option value="bank">حساب البنك (Bank)</option>
+              <option value="sales">المبيعات (Sales Revenue)</option>
+              <option value="cogs">تكلفة المبيعات (COGS)</option>
+              <option value="discount_received">الخصومات المكتسبة (Discounts)</option>
+              <option value="tax_payable">الضرائب المستحقة (VAT)</option>
+            </select>
+          </div>
+        </div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>التاريخ</th>
+                <th>البيان والوصف</th>
+                <th>مدين (Debit +)</th>
+                <th>دائن (Credit -)</th>
+                <th>الرصيد بعد العملية</th>
+              </tr>
+            </thead>
+            <tbody id="accounting-ledger-tbody">
+              <!-- Ledgers list -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+
+  </main>
+</div>
+
+<!-- ══════════════════════════════════════
+     REVIEW MODAL
+══════════════════════════════════════ -->
+<div class="modal-overlay" id="review-modal" onclick="handleOverlayClick(event)">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="modal-inv-title">مراجعة الفاتورة</div>
+        <div class="text-muted text-sm mt-4">راجع بنود الفاتورة وقم بمطابقة المنتجات</div>
+      </div>
+      <button class="modal-close" onclick="closeModal()" aria-label="إغلاق">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body-content">
+      <!-- Populated dynamically -->
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-success" id="btn-approve" onclick="approveInvoice()" disabled>
+        ✅ اعتماد الفاتورة
+      </button>
+      <button class="btn btn-ghost" onclick="closeModal()">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     RECORD PAYMENT MODAL
+══════════════════════════════════════ -->
+<div class="modal-overlay" id="payment-modal" onclick="handleOverlayClick(event)">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">تسجيل دفعة لمورد</div>
+        <div class="text-muted text-sm mt-4">تسجيل دفعة مالية لتخفيض الدين المستحق للمورد</div>
+      </div>
+      <button class="modal-close" onclick="closePaymentModal()" aria-label="إغلاق">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="payment-form" onsubmit="submitPaymentForm(event)">
+        <input type="hidden" id="pay-supplier-id" />
+        <div class="form-group mb-16">
+          <label class="form-label">المورد</label>
+          <input type="text" id="pay-supplier-name" class="form-control" readonly style="opacity: 0.75;" />
+        </div>
+        <div class="grid-2 mb-16">
+          <div class="form-group mb-0">
+            <label class="form-label">المبلغ المدفوع * (دج)</label>
+            <input type="number" id="pay-amount" class="form-control" step="0.01" required placeholder="مثال: 45000" />
+          </div>
+          <div class="form-group mb-0">
+            <label class="form-label">تاريخ العملية</label>
+            <input type="date" id="pay-date" class="form-control" required />
+          </div>
+        </div>
+        <div class="grid-2 mb-16">
+          <div class="form-group mb-0">
+            <label class="form-label">طريقة الدفع</label>
+            <select id="pay-method" class="form-control">
+              <option value="cash">نقداً (Cash)</option>
+              <option value="bank">حساب البنك / شيك (Bank)</option>
+            </select>
+          </div>
+          <div class="form-group mb-0">
+            <label class="form-label">رقم المرجع / الشيك</label>
+            <input type="text" id="pay-reference" class="form-control" placeholder="اختياري" />
+          </div>
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label">ملاحظات / البيان</label>
+          <textarea id="pay-notes" class="form-control" rows="2" placeholder="البيان المصاحب للقيد..."></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="submit" form="payment-form" class="btn btn-primary" id="btn-save-payment">💾 حفظ الدفع</button>
+      <button class="btn btn-ghost" onclick="closePaymentModal()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     SUPPLIER STATEMENT MODAL
+══════════════════════════════════════ -->
+<div class="modal-overlay" id="statement-modal" onclick="handleOverlayClick(event)">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width: 860px;">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="statement-modal-title">كشف حساب المورد</div>
+        <div class="text-muted text-sm mt-4">حركة الديون، الفواتير المعتمدة، والدفعات المالية المسجلة</div>
+      </div>
+      <button class="modal-close" onclick="closeStatementModal()" aria-label="إغلاق">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="card mb-16" style="padding: 10px; background: rgba(255,255,255,0.015);">
+        <div class="flex items-center gap-12 flex-wrap">
+          <input type="hidden" id="statement-supplier-id" />
+          <div class="flex items-center gap-8">
+            <span class="text-sm text-muted">من:</span>
+            <input type="date" id="statement-start-date" class="form-control" style="width:135px; padding:4px 8px; font-size:.85rem;" />
+          </div>
+          <div class="flex items-center gap-8">
+            <span class="text-sm text-muted">إلى:</span>
+            <input type="date" id="statement-end-date" class="form-control" style="width:135px; padding:4px 8px; font-size:.85rem;" />
+          </div>
+          <button class="btn btn-primary btn-sm" onclick="filterStatement()">🔍 تصفية</button>
+          <button class="btn btn-ghost btn-sm" onclick="clearStatementFilter()">🔄 إزالة التصفية</button>
+        </div>
+      </div>
+      <div class="table-wrap" style="max-height: 380px; overflow-y: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>التاريخ</th>
+              <th>نوع العملية</th>
+              <th>البيان والوصف</th>
+              <th>القيمة (دج)</th>
+              <th>الرصيد بعد العملية</th>
+            </tr>
+          </thead>
+          <tbody id="statement-tbody">
+            <!-- Populated dynamically -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closeStatementModal()">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     ADJUST STOCK MODAL
+══════════════════════════════════════ -->
+<div class="modal-overlay" id="stock-adjust-modal" onclick="handleOverlayClick(event)">
+  <div class="modal" role="dialog" aria-modal="true">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title">تسوية وتعديل المخزون</div>
+        <div class="text-muted text-sm mt-4">تسوية رصيد المخزون للمنتج وجرد الكميات الفعلية</div>
+      </div>
+      <button class="modal-close" onclick="closeStockAdjustModal()" aria-label="إغلاق">✕</button>
+    </div>
+    <div class="modal-body">
+      <form id="stock-adjust-form" onsubmit="submitStockAdjustForm(event)">
+        <input type="hidden" id="adjust-product-id" />
+        <div class="form-group mb-16">
+          <label class="form-label">المنتج</label>
+          <input type="text" id="adjust-product-name" class="form-control" readonly style="opacity: 0.75;" />
+        </div>
+        <div class="grid-2 mb-16">
+          <div class="form-group mb-0">
+            <label class="form-label">المخزون الدفتري الحالي</label>
+            <input type="text" id="adjust-current-stock" class="form-control" readonly style="opacity: 0.75;" />
+          </div>
+          <div class="form-group mb-0">
+            <label class="form-label">الكمية الفعلية بالمخزن *</label>
+            <input type="number" id="adjust-actual-qty" class="form-control" step="0.01" required placeholder="مثال: 120" />
+          </div>
+        </div>
+        <div class="form-group mb-0">
+          <label class="form-label">سبب التعديل / البيان *</label>
+          <input type="text" id="adjust-reason" class="form-control" required placeholder="مثال: جرد دوري، معالجة تالف..." />
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button type="submit" form="stock-adjust-form" class="btn btn-primary" id="btn-save-stock-adjust">💾 حفظ التسوية</button>
+      <button class="btn btn-ghost" onclick="closeStockAdjustModal()">إلغاء</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     MODAL: PRODUCT PRICE HISTORY
+══════════════════════════════════════ -->
+<div class="modal-overlay" id="price-history-modal" onclick="handleOverlayClick(event)">
+  <div class="modal" role="dialog" aria-modal="true" style="max-width:720px">
+    <div class="modal-header">
+      <div>
+        <div class="modal-title" id="price-history-title">📈 سجل الأسعار</div>
+        <div class="text-muted text-sm mt-4">اتجاه سعر الشراء لهذا المنتج عبر الفواتير المعتمدة</div>
+      </div>
+      <button class="modal-close" onclick="closePriceHistoryModal()" aria-label="إغلاق">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="ph-stats" id="price-history-stats"></div>
+
+      <div class="ph-chart-card">
+        <div class="ph-chart-wrap" id="price-history-chart" dir="ltr"></div>
+      </div>
+
+      <div class="table-wrap mt-16">
+        <table>
+          <thead>
+            <tr>
+              <th>التاريخ</th>
+              <th>سعر الوحدة</th>
+              <th>الكمية</th>
+              <th>المورد</th>
+              <th>الفاتورة</th>
+            </tr>
+          </thead>
+          <tbody id="price-history-table-body"></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="closePriceHistoryModal()">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════
+     TOAST CONTAINER
+══════════════════════════════════════ -->
+<div id="toast-container"></div>
+
+<!-- ══════════════════════════════════════
+     SCRIPTS
+══════════════════════════════════════ -->
+<script src="js/api.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/submit.js"></script>
+<script src="js/pending.js"></script>
+<script src="js/products.js"></script>
+<script src="js/stock.js"></script>
+<script src="js/suppliers.js"></script>
+<script src="js/accounting.js"></script>
+
+<script>
+// ── SPA Router ────────────────────────────────────────────
+const views = ['dashboard', 'submit', 'pending', 'products', 'stock', 'suppliers', 'accounting'];
+const pageTitles = {
+  dashboard:  'الرئيسية',
+  submit:     'رفع فاتورة',
+  pending:    'الفواتير المعلقة',
+  products:   'إدارة المنتجات',
+  stock:      'المخازن وحركة السلع',
+  suppliers:  'الموردون والديون',
+  accounting: 'المحاسبة والقيد المزدوج'
+};
+
+function switchView(name) {
+  // Hide all
+  views.forEach(v => {
+    document.getElementById(`view-${v}`)?.classList.remove('active');
+    document.getElementById(`nav-${v}`)?.classList.remove('active');
+  });
+  // Show target
+  document.getElementById(`view-${name}`)?.classList.add('active');
+  document.getElementById(`nav-${name}`)?.classList.add('active');
+  document.getElementById('page-title').textContent = pageTitles[name] || name;
+
+  // Load data
+  if (name === 'dashboard') loadDashboard();
+  if (name === 'pending')   loadPendingInvoices();
+  if (name === 'stock')     loadStockView();
+  if (name === 'suppliers') loadSuppliersView();
+  if (name === 'accounting') loadAccountingView();
+}
+
+// ── Modal overlay click ───────────────────────────────────
+function handleOverlayClick(e) {
+  if (e.target === document.getElementById('review-modal')) closeModal();
+  if (e.target === document.getElementById('payment-modal')) closePaymentModal();
+  if (e.target === document.getElementById('statement-modal')) closeStatementModal();
+  if (e.target === document.getElementById('stock-adjust-modal')) closeStockAdjustModal();
+  if (e.target === document.getElementById('price-history-modal')) closePriceHistoryModal();
+}
+
+// ── Server status ─────────────────────────────────────────
+function updateServerStatus(online) {
+  const dot  = document.getElementById('status-dot');
+  const text = document.getElementById('status-text');
+  dot.className  = 'status-dot ' + (online ? 'online' : 'offline');
+  text.textContent = online ? 'الخادم متصل' : 'الخادم غير متصل';
+}
+
+async function checkHealth() {
+  try {
+    await api.health();
+    updateServerStatus(true);
+    toast('الخادم يعمل بشكل طبيعي ✅', 'success');
+  } catch {
+    updateServerStatus(false);
+    toast('تعذر الاتصال بالخادم ❌', 'error');
+  }
+}
+
+// ── Clock ─────────────────────────────────────────────────
+function updateClock() {
+  const now = new Date();
+  document.getElementById('clock').textContent =
+    now.toLocaleTimeString('ar-DZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+}
+
+// ── Init ──────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  // Init modules
+  initSubmitView();
+  initProductsView();
+  initStockView();
+  initSuppliersView();
+  initAccountingView();
+
+  // Start clock
+  updateClock();
+  setInterval(updateClock, 1000);
+
+  // Health check every 30s
+  checkHealth();
+  setInterval(checkHealth, 30000);
+
+  // Load initial view
+  loadDashboard();
+});
+
+// Keyboard: Escape closes modal
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    closeModal();
+    closePaymentModal();
+    closeStatementModal();
+    closeStockAdjustModal();
+  }
+});
+</script>
+
+</body>
+</html>
