@@ -14,6 +14,8 @@ export interface PickedProduct {
   /** Carried through so callers (e.g. Purchase Orders) can default a price field to it. */
   lastPurchasePrice?: number | null
   averageCost?: number | null
+  /** Carried through so callers (e.g. Customers' sales invoices) can suggest a selling price. */
+  defaultSalePrice?: number | null
 }
 
 interface ProductPickerProps {
@@ -21,6 +23,15 @@ interface ProductPickerProps {
   onChange: (product: PickedProduct | null) => void
   placeholder?: string
   disabled?: boolean
+  /**
+   * Optional: fires on every keystroke with the raw typed text, in addition
+   * to `onChange` (which only fires on selection or on clearing to empty).
+   * Lets a caller keep a free-text field in sync even when the user never
+   * picks a catalog suggestion — used by the Customers module, where a
+   * sales-invoice line item is valid free text with no catalog link.
+   * Purchase Orders doesn't pass this and its behavior is unchanged.
+   */
+  onQueryChange?: (text: string) => void
 }
 
 /**
@@ -29,7 +40,7 @@ interface ProductPickerProps {
  * Invoices (line-item match) and Purchase Orders (line items) need it —
  * feature modules stay decoupled from each other, this is the shared piece.
  */
-export function ProductPicker({ value, onChange, placeholder = 'ابحث عن منتج...', disabled }: ProductPickerProps) {
+export function ProductPicker({ value, onChange, placeholder = 'ابحث عن منتج...', disabled, onQueryChange }: ProductPickerProps) {
   const [query, setQuery] = useState(value?.name ?? '')
   const [open, setOpen] = useState(false)
   const debouncedQuery = useDebouncedValue(query.trim(), 250)
@@ -59,6 +70,7 @@ export function ProductPicker({ value, onChange, placeholder = 'ابحث عن م
           onChange={(e) => {
             setQuery(e.target.value)
             setOpen(true)
+            onQueryChange?.(e.target.value)
             if (!e.target.value) onChange(null)
           }}
           onBlur={() => setTimeout(() => setOpen(false), 120)}
@@ -83,7 +95,8 @@ export function ProductPicker({ value, onChange, placeholder = 'ابحث عن م
                     name: product.name,
                     unit: product.unit,
                     lastPurchasePrice: product.last_purchase_price,
-                    averageCost: product.average_cost
+                    averageCost: product.average_cost,
+                    defaultSalePrice: product.default_sale_price
                   })
                   setQuery(product.name)
                   setOpen(false)

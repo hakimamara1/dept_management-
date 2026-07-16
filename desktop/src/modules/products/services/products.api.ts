@@ -8,8 +8,11 @@ export const productsApi = {
     apiClient.post<{ id: number }>('/api/products', {
       ...data,
       barcode: data.barcode || null,
-      category: data.category || null
+      category: data.category || null,
+      defaultSalePrice: data.defaultSalePrice ?? null
     }),
   getPriceHistory: (productId: number) =>
-    apiClient.get<PriceHistoryResponse>(`/api/products/${productId}/price-history`)
+    apiClient.get<PriceHistoryResponse>(`/api/products/${productId}/price-history`),
+  updateSalePrice: (productId: number, defaultSalePrice: number) =>
+    apiClient.patch<Product>(`/api/products/${productId}/price`, { defaultSalePrice })
 }

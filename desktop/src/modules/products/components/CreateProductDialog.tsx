@@ -134,6 +134,27 @@ export function CreateProductDialog() {
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="defaultSalePrice"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>سعر البيع المقترح</FormLabel>
+                  <FormControl>
+                    <Input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="اختياري"
+                      value={field.value ?? ''}
+                      onChange={(e) => field.onChange(e.target.value === '' ? null : e.target.valueAsNumber)}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             <DialogFooter>
               <Button type="button" variant="ghost" onClick={() => setOpen(false)}>
                 {t('common.cancel')}

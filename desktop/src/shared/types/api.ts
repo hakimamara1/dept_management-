@@ -13,6 +13,7 @@ export interface Product {
   current_stock: number | null
   last_purchase_price: number | null
   average_cost: number | null
+  default_sale_price: number | null
   created_at: string
 }
 
@@ -319,6 +320,7 @@ export interface SalesInvoiceListItem {
 export interface SalesInvoiceItem {
   id: number
   invoice_id: number
+  product_id: number | null
   product_name: string
   unit: string | null
   quantity: number
@@ -333,6 +335,7 @@ export interface SalesInvoiceDetail extends SalesInvoiceListItem {
 }
 
 export interface CreateSalesInvoiceItemInput {
+  productId?: number | null
   productName: string
   unit?: string
   quantity: number

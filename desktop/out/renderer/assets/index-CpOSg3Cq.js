@@ -26289,22 +26289,22 @@ const createLucideIcon = (iconName, iconNode) => {
   Component.displayName = toPascalCase(iconName);
   return Component;
 };
-const __iconNode$L = [
+const __iconNode$M = [
   ["path", { d: "M12 5v14", key: "s699le" }],
   ["path", { d: "m19 12-7 7-7-7", key: "1idqje" }]
 ];
-const ArrowDown = createLucideIcon("arrow-down", __iconNode$L);
-const __iconNode$K = [
+const ArrowDown = createLucideIcon("arrow-down", __iconNode$M);
+const __iconNode$L = [
   ["path", { d: "M5 12h14", key: "1ays0h" }],
   ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
 ];
-const ArrowRight = createLucideIcon("arrow-right", __iconNode$K);
-const __iconNode$J = [
+const ArrowRight = createLucideIcon("arrow-right", __iconNode$L);
+const __iconNode$K = [
   ["path", { d: "m5 12 7-7 7 7", key: "hav0vg" }],
   ["path", { d: "M12 19V5", key: "x0mq9r" }]
 ];
-const ArrowUp = createLucideIcon("arrow-up", __iconNode$J);
-const __iconNode$I = [
+const ArrowUp = createLucideIcon("arrow-up", __iconNode$K);
+const __iconNode$J = [
   ["path", { d: "M10.268 21a2 2 0 0 0 3.464 0", key: "vwvbt9" }],
   [
     "path",
@@ -26314,8 +26314,8 @@ const __iconNode$I = [
     }
   ]
 ];
-const Bell = createLucideIcon("bell", __iconNode$I);
-const __iconNode$H = [
+const Bell = createLucideIcon("bell", __iconNode$J);
+const __iconNode$I = [
   ["path", { d: "M12 8V4H8", key: "hb8ula" }],
   ["rect", { width: "16", height: "12", x: "4", y: "8", rx: "2", key: "enze0r" }],
   ["path", { d: "M2 14h2", key: "vft8re" }],
@@ -26323,8 +26323,8 @@ const __iconNode$H = [
   ["path", { d: "M15 13v2", key: "1xurst" }],
   ["path", { d: "M9 13v2", key: "rq6x2g" }]
 ];
-const Bot = createLucideIcon("bot", __iconNode$H);
-const __iconNode$G = [
+const Bot = createLucideIcon("bot", __iconNode$I);
+const __iconNode$H = [
   [
     "path",
     {
@@ -26356,71 +26356,71 @@ const __iconNode$G = [
   ["path", { d: "m12 8 4.74-2.85", key: "3rx089" }],
   ["path", { d: "M12 13.5V8", key: "1io7kd" }]
 ];
-const Boxes = createLucideIcon("boxes", __iconNode$G);
-const __iconNode$F = [
+const Boxes = createLucideIcon("boxes", __iconNode$H);
+const __iconNode$G = [
   ["path", { d: "M8 2v4", key: "1cmpym" }],
   ["path", { d: "M16 2v4", key: "4m81vk" }],
   ["rect", { width: "18", height: "18", x: "3", y: "4", rx: "2", key: "1hopcy" }],
   ["path", { d: "M3 10h18", key: "8toen8" }]
 ];
-const Calendar = createLucideIcon("calendar", __iconNode$F);
-const __iconNode$E = [
+const Calendar = createLucideIcon("calendar", __iconNode$G);
+const __iconNode$F = [
   ["path", { d: "M3 3v16a2 2 0 0 0 2 2h16", key: "c24i48" }],
   ["path", { d: "m19 9-5 5-4-4-3 3", key: "2osh9i" }]
 ];
-const ChartLine = createLucideIcon("chart-line", __iconNode$E);
-const __iconNode$D = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
-const Check = createLucideIcon("check", __iconNode$D);
-const __iconNode$C = [["path", { d: "m15 18-6-6 6-6", key: "1wnfg3" }]];
-const ChevronLeft = createLucideIcon("chevron-left", __iconNode$C);
-const __iconNode$B = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-const ChevronDown = createLucideIcon("chevron-down", __iconNode$B);
-const __iconNode$A = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
-const ChevronRight = createLucideIcon("chevron-right", __iconNode$A);
-const __iconNode$z = [
+const ChartLine = createLucideIcon("chart-line", __iconNode$F);
+const __iconNode$E = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
+const Check = createLucideIcon("check", __iconNode$E);
+const __iconNode$D = [["path", { d: "m15 18-6-6 6-6", key: "1wnfg3" }]];
+const ChevronLeft = createLucideIcon("chevron-left", __iconNode$D);
+const __iconNode$C = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+const ChevronDown = createLucideIcon("chevron-down", __iconNode$C);
+const __iconNode$B = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
+const ChevronRight = createLucideIcon("chevron-right", __iconNode$B);
+const __iconNode$A = [
   ["path", { d: "m11 17-5-5 5-5", key: "13zhaf" }],
   ["path", { d: "m18 17-5-5 5-5", key: "h8a8et" }]
 ];
-const ChevronsLeft = createLucideIcon("chevrons-left", __iconNode$z);
-const __iconNode$y = [
+const ChevronsLeft = createLucideIcon("chevrons-left", __iconNode$A);
+const __iconNode$z = [
   ["path", { d: "m6 17 5-5-5-5", key: "xnjwq" }],
   ["path", { d: "m13 17 5-5-5-5", key: "17xmmf" }]
 ];
-const ChevronsRight = createLucideIcon("chevrons-right", __iconNode$y);
-const __iconNode$x = [
+const ChevronsRight = createLucideIcon("chevrons-right", __iconNode$z);
+const __iconNode$y = [
   ["path", { d: "m7 15 5 5 5-5", key: "1hf1tw" }],
   ["path", { d: "m7 9 5-5 5 5", key: "sgt6xg" }]
 ];
-const ChevronsUpDown = createLucideIcon("chevrons-up-down", __iconNode$x);
-const __iconNode$w = [
+const ChevronsUpDown = createLucideIcon("chevrons-up-down", __iconNode$y);
+const __iconNode$x = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
 ];
-const CircleCheck = createLucideIcon("circle-check", __iconNode$w);
-const __iconNode$v = [
+const CircleCheck = createLucideIcon("circle-check", __iconNode$x);
+const __iconNode$w = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "m15 9-6 6", key: "1uzhvr" }],
   ["path", { d: "m9 9 6 6", key: "z0biqf" }]
 ];
-const CircleX = createLucideIcon("circle-x", __iconNode$v);
-const __iconNode$u = [
+const CircleX = createLucideIcon("circle-x", __iconNode$w);
+const __iconNode$v = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "M12 6v6l4 2", key: "mmk7yg" }]
 ];
-const Clock = createLucideIcon("clock", __iconNode$u);
-const __iconNode$t = [
+const Clock = createLucideIcon("clock", __iconNode$v);
+const __iconNode$u = [
   ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
   ["path", { d: "M9 3v18", key: "fh3hqa" }],
   ["path", { d: "M15 3v18", key: "14nvp0" }]
 ];
-const Columns3 = createLucideIcon("columns-3", __iconNode$t);
-const __iconNode$s = [
+const Columns3 = createLucideIcon("columns-3", __iconNode$u);
+const __iconNode$t = [
   ["path", { d: "M12 15V3", key: "m9g1x1" }],
   ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
   ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
 ];
-const Download = createLucideIcon("download", __iconNode$s);
-const __iconNode$r = [
+const Download = createLucideIcon("download", __iconNode$t);
+const __iconNode$s = [
   [
     "path",
     {
@@ -26433,14 +26433,14 @@ const __iconNode$r = [
   ["path", { d: "M16 13H8", key: "t4e002" }],
   ["path", { d: "M16 17H8", key: "z1uh3a" }]
 ];
-const FileText = createLucideIcon("file-text", __iconNode$r);
-const __iconNode$q = [
+const FileText = createLucideIcon("file-text", __iconNode$s);
+const __iconNode$r = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20", key: "13o1zl" }],
   ["path", { d: "M2 12h20", key: "9i4pu4" }]
 ];
-const Globe = createLucideIcon("globe", __iconNode$q);
-const __iconNode$p = [
+const Globe = createLucideIcon("globe", __iconNode$r);
+const __iconNode$q = [
   ["polyline", { points: "22 12 16 12 14 15 10 15 8 12 2 12", key: "o97t9d" }],
   [
     "path",
@@ -26450,21 +26450,21 @@ const __iconNode$p = [
     }
   ]
 ];
-const Inbox = createLucideIcon("inbox", __iconNode$p);
-const __iconNode$o = [
+const Inbox = createLucideIcon("inbox", __iconNode$q);
+const __iconNode$p = [
   ["rect", { width: "7", height: "9", x: "3", y: "3", rx: "1", key: "10lvy0" }],
   ["rect", { width: "7", height: "5", x: "14", y: "3", rx: "1", key: "16une8" }],
   ["rect", { width: "7", height: "9", x: "14", y: "12", rx: "1", key: "1hutg5" }],
   ["rect", { width: "7", height: "5", x: "3", y: "16", rx: "1", key: "ldoo1y" }]
 ];
-const LayoutDashboard = createLucideIcon("layout-dashboard", __iconNode$o);
-const __iconNode$n = [
+const LayoutDashboard = createLucideIcon("layout-dashboard", __iconNode$p);
+const __iconNode$o = [
   ["rect", { width: "20", height: "14", x: "2", y: "3", rx: "2", key: "48i651" }],
   ["line", { x1: "8", x2: "16", y1: "21", y2: "21", key: "1svkeh" }],
   ["line", { x1: "12", x2: "12", y1: "17", y2: "21", key: "vw1qmm" }]
 ];
-const Monitor = createLucideIcon("monitor", __iconNode$n);
-const __iconNode$m = [
+const Monitor = createLucideIcon("monitor", __iconNode$o);
+const __iconNode$n = [
   [
     "path",
     {
@@ -26473,8 +26473,8 @@ const __iconNode$m = [
     }
   ]
 ];
-const Moon = createLucideIcon("moon", __iconNode$m);
-const __iconNode$l = [
+const Moon = createLucideIcon("moon", __iconNode$n);
+const __iconNode$m = [
   ["path", { d: "M12 22V12", key: "d0xqtd" }],
   ["path", { d: "M16 17h6", key: "1ook5g" }],
   ["path", { d: "M19 14v6", key: "1ckrd5" }],
@@ -26488,8 +26488,8 @@ const __iconNode$l = [
   ["path", { d: "M3.29 7 12 12l8.71-5", key: "19ckod" }],
   ["path", { d: "m7.5 4.27 8.997 5.148", key: "9yrvtv" }]
 ];
-const PackagePlus = createLucideIcon("package-plus", __iconNode$l);
-const __iconNode$k = [
+const PackagePlus = createLucideIcon("package-plus", __iconNode$m);
+const __iconNode$l = [
   ["path", { d: "M12 22V12", key: "d0xqtd" }],
   ["path", { d: "m16.5 14.5 5 5", key: "ozpm51" }],
   ["path", { d: "m16.5 19.5 5-5", key: "syf6b9" }],
@@ -26503,8 +26503,8 @@ const __iconNode$k = [
   ["path", { d: "M3.29 7 12 12l8.71-5", key: "19ckod" }],
   ["path", { d: "m7.5 4.27 8.997 5.148", key: "9yrvtv" }]
 ];
-const PackageX = createLucideIcon("package-x", __iconNode$k);
-const __iconNode$j = [
+const PackageX = createLucideIcon("package-x", __iconNode$l);
+const __iconNode$k = [
   [
     "path",
     {
@@ -26516,7 +26516,18 @@ const __iconNode$j = [
   ["polyline", { points: "3.29 7 12 12 20.71 7", key: "ousv84" }],
   ["path", { d: "m7.5 4.27 9 5.15", key: "1c824w" }]
 ];
-const Package = createLucideIcon("package", __iconNode$j);
+const Package = createLucideIcon("package", __iconNode$k);
+const __iconNode$j = [
+  [
+    "path",
+    {
+      d: "M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z",
+      key: "1a8usu"
+    }
+  ],
+  ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
+];
+const Pencil = createLucideIcon("pencil", __iconNode$j);
 const __iconNode$i = [
   ["path", { d: "M13 2a9 9 0 0 1 9 9", key: "1itnx2" }],
   ["path", { d: "M13 6a5 5 0 0 1 5 5", key: "11nki7" }],
@@ -55210,9 +55221,11 @@ const productsApi = {
   create: (data) => apiClient.post("/api/products", {
     ...data,
     barcode: data.barcode || null,
-    category: data.category || null
+    category: data.category || null,
+    defaultSalePrice: data.defaultSalePrice ?? null
   }),
-  getPriceHistory: (productId) => apiClient.get(`/api/products/${productId}/price-history`)
+  getPriceHistory: (productId) => apiClient.get(`/api/products/${productId}/price-history`),
+  updateSalePrice: (productId, defaultSalePrice) => apiClient.patch(`/api/products/${productId}/price`, { defaultSalePrice })
 };
 function useProductSearch(rawQuery) {
   const query = useDebouncedValue(rawQuery.trim(), 300);
@@ -55679,6 +55692,150 @@ function PriceHistorySheet({ productId, productName, open, onOpenChange }) {
     ] }) })
   ] }) });
 }
+var NAME = "Label";
+var Label$1 = reactExports.forwardRef((props, forwardedRef) => {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    Primitive.label,
+    {
+      ...props,
+      ref: forwardedRef,
+      onMouseDown: (event) => {
+        const target = event.target;
+        if (target.closest("button, input, select, textarea")) return;
+        props.onMouseDown?.(event);
+        if (!event.defaultPrevented && event.detail > 1) event.preventDefault();
+      }
+    }
+  );
+});
+Label$1.displayName = NAME;
+var Root = Label$1;
+const Label = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+  Root,
+  {
+    ref,
+    className: cn$1(
+      "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
+      className
+    ),
+    ...props
+  }
+));
+Label.displayName = Root.displayName;
+const Dialog = Dialog$1;
+const DialogTrigger = DialogTrigger$1;
+const DialogPortal = DialogPortal$1;
+const DialogOverlay = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+  DialogOverlay$1,
+  {
+    ref,
+    className: cn$1(
+      "fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+      className
+    ),
+    ...props
+  }
+));
+DialogOverlay.displayName = DialogOverlay$1.displayName;
+const DialogContent = reactExports.forwardRef(({ className, children, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogPortal, { children: [
+  /* @__PURE__ */ jsxRuntimeExports.jsx(DialogOverlay, {}),
+  /* @__PURE__ */ jsxRuntimeExports.jsxs(
+    DialogContent$1,
+    {
+      ref,
+      className: cn$1(
+        "fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border border-border bg-card p-6 shadow-lg duration-200",
+        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+        className
+      ),
+      ...props,
+      children: [
+        children,
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogClose, { className: "absolute end-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(X, { className: "size-4" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "sr-only", children: "إغلاق" })
+        ] })
+      ]
+    }
+  )
+] }));
+DialogContent.displayName = DialogContent$1.displayName;
+const DialogHeader = ({ className, ...props }) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: cn$1("flex flex-col gap-1.5 text-start", className), ...props });
+DialogHeader.displayName = "DialogHeader";
+const DialogFooter = ({ className, ...props }) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: cn$1("flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className), ...props });
+DialogFooter.displayName = "DialogFooter";
+const DialogTitle = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+  DialogTitle$1,
+  {
+    ref,
+    className: cn$1("text-base font-semibold leading-none", className),
+    ...props
+  }
+));
+DialogTitle.displayName = DialogTitle$1.displayName;
+const DialogDescription = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+  DialogDescription$1,
+  {
+    ref,
+    className: cn$1("text-sm text-muted-foreground", className),
+    ...props
+  }
+));
+DialogDescription.displayName = DialogDescription$1.displayName;
+function useUpdateProductPrice() {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: ({ productId, defaultSalePrice }) => productsApi.updateSalePrice(productId, defaultSalePrice),
+    onSuccess: () => {
+      toast.success("تم تحديث سعر البيع");
+      queryClient2.invalidateQueries({ queryKey: ["products", "search"] });
+    },
+    onError: (error) => {
+      toast.error("فشل تحديث السعر", { description: error.message });
+    }
+  });
+}
+function EditSalePriceDialog({ product, onOpenChange }) {
+  const [price, setPrice] = reactExports.useState("");
+  const updatePrice = useUpdateProductPrice();
+  reactExports.useEffect(() => {
+    setPrice(product?.default_sale_price != null ? String(product.default_sale_price) : "");
+  }, [product]);
+  function handleSave() {
+    if (!product) return;
+    const parsed = Number(price);
+    if (price === "" || Number.isNaN(parsed) || parsed < 0) return;
+    updatePrice.mutate(
+      { productId: product.id, defaultSalePrice: parsed },
+      { onSuccess: () => onOpenChange(false) }
+    );
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Dialog, { open: product != null, onOpenChange, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogContent, { className: "sm:max-w-sm", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: "سعر البيع المقترح" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: product?.name })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid gap-2", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Label, { htmlFor: "sale-price", children: "السعر (دج)" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Input,
+        {
+          id: "sale-price",
+          type: "number",
+          step: "0.01",
+          min: "0",
+          value: price,
+          onChange: (e) => setPrice(e.target.value),
+          autoFocus: true
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogFooter, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "ghost", onClick: () => onOpenChange(false), children: "إلغاء" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", onClick: handleSave, disabled: updatePrice.isPending, children: updatePrice.isPending ? "جاري الحفظ..." : "حفظ" })
+    ] })
+  ] }) });
+}
 const UNIT_LABELS = {
   piece: "قطعة",
   kg: "كيلو",
@@ -55690,6 +55847,7 @@ function ProductsTable() {
   const { t: t2 } = useI18n();
   const [query, setQuery] = reactExports.useState("");
   const [priceHistoryProduct, setPriceHistoryProduct] = reactExports.useState(null);
+  const [editPriceProduct, setEditPriceProduct] = reactExports.useState(null);
   const { data, isLoading, error } = useProductSearch(query);
   const columns2 = [
     {
@@ -55741,6 +55899,23 @@ function ProductsTable() {
       ] })
     },
     {
+      accessorKey: "default_sale_price",
+      header: "سعر البيع",
+      meta: { exportLabel: "سعر البيع" },
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          type: "button",
+          onClick: () => setEditPriceProduct(row.original),
+          className: "group flex items-center gap-1.5 text-xs hover:text-primary",
+          children: [
+            row.original.default_sale_price != null ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums font-medium text-foreground", children: formatCurrency(row.original.default_sale_price) }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: "تعيين سعر" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Pencil, { className: "size-3 text-muted-foreground opacity-0 group-hover:opacity-100" })
+          ]
+        }
+      )
+    },
+    {
       id: "actions",
       header: "سعر الشراء",
       enableHiding: false,
@@ -55783,7 +55958,8 @@ function ProductsTable() {
         open: priceHistoryProduct != null,
         onOpenChange: (open) => !open && setPriceHistoryProduct(null)
       }
-    )
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(EditSalePriceDialog, { product: editPriceProduct, onOpenChange: (open) => !open && setEditPriceProduct(null) })
   ] });
 }
 var isCheckBoxInput = (element) => element.type === "checkbox";
@@ -61969,96 +62145,6 @@ function u(n2, t2, u2) {
   };
   throw new Error("Invalid input: not a Zod schema");
 }
-const Dialog = Dialog$1;
-const DialogTrigger = DialogTrigger$1;
-const DialogPortal = DialogPortal$1;
-const DialogOverlay = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  DialogOverlay$1,
-  {
-    ref,
-    className: cn$1(
-      "fixed inset-0 z-50 bg-black/50 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
-      className
-    ),
-    ...props
-  }
-));
-DialogOverlay.displayName = DialogOverlay$1.displayName;
-const DialogContent = reactExports.forwardRef(({ className, children, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogPortal, { children: [
-  /* @__PURE__ */ jsxRuntimeExports.jsx(DialogOverlay, {}),
-  /* @__PURE__ */ jsxRuntimeExports.jsxs(
-    DialogContent$1,
-    {
-      ref,
-      className: cn$1(
-        "fixed left-1/2 top-1/2 z-50 grid w-full max-w-lg -translate-x-1/2 -translate-y-1/2 gap-4 rounded-lg border border-border bg-card p-6 shadow-lg duration-200",
-        "data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
-        className
-      ),
-      ...props,
-      children: [
-        children,
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogClose, { className: "absolute end-4 top-4 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(X, { className: "size-4" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "sr-only", children: "إغلاق" })
-        ] })
-      ]
-    }
-  )
-] }));
-DialogContent.displayName = DialogContent$1.displayName;
-const DialogHeader = ({ className, ...props }) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: cn$1("flex flex-col gap-1.5 text-start", className), ...props });
-DialogHeader.displayName = "DialogHeader";
-const DialogFooter = ({ className, ...props }) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: cn$1("flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className), ...props });
-DialogFooter.displayName = "DialogFooter";
-const DialogTitle = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  DialogTitle$1,
-  {
-    ref,
-    className: cn$1("text-base font-semibold leading-none", className),
-    ...props
-  }
-));
-DialogTitle.displayName = DialogTitle$1.displayName;
-const DialogDescription = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  DialogDescription$1,
-  {
-    ref,
-    className: cn$1("text-sm text-muted-foreground", className),
-    ...props
-  }
-));
-DialogDescription.displayName = DialogDescription$1.displayName;
-var NAME = "Label";
-var Label$1 = reactExports.forwardRef((props, forwardedRef) => {
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    Primitive.label,
-    {
-      ...props,
-      ref: forwardedRef,
-      onMouseDown: (event) => {
-        const target = event.target;
-        if (target.closest("button, input, select, textarea")) return;
-        props.onMouseDown?.(event);
-        if (!event.defaultPrevented && event.detail > 1) event.preventDefault();
-      }
-    }
-  );
-});
-Label$1.displayName = NAME;
-var Root = Label$1;
-const Label = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  Root,
-  {
-    ref,
-    className: cn$1(
-      "text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70",
-      className
-    ),
-    ...props
-  }
-));
-Label.displayName = Root.displayName;
 const Form = FormProvider;
 const FormFieldContext = reactExports.createContext({});
 function FormField(props) {
@@ -64259,13 +64345,18 @@ const productSchema = object({
   name: string().trim().min(1, "اسم المنتج مطلوب").max(200, "الاسم طويل جداً"),
   barcode: string().trim().max(64).optional().or(literal("")),
   category: string().trim().max(100).optional().or(literal("")),
-  unit: _enum(["piece", "kg", "box", "liter", "g"])
+  unit: _enum(["piece", "kg", "box", "liter", "g"]),
+  // Suggested selling price — separate from purchase cost, used to autofill
+  // wholesale sales-invoice line prices. Optional: many products won't have
+  // one set until someone in Sales needs it.
+  defaultSalePrice: number().min(0, "السعر لا يمكن أن يكون سالباً").nullable().optional()
 });
 const productFormDefaults = {
   name: "",
   barcode: "",
   category: "",
-  unit: "piece"
+  unit: "piece",
+  defaultSalePrice: null
 };
 function CreateProductDialog() {
   const { t: t2 } = useI18n();
@@ -64345,6 +64436,28 @@ function CreateProductDialog() {
                 /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectTrigger, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, {}) }) }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: PRODUCT_UNITS.map((u2) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: u2.value, children: u2.label }, u2.value)) })
               ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
+            ] })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          FormField,
+          {
+            control: form.control,
+            name: "defaultSalePrice",
+            render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "سعر البيع المقترح" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                Input,
+                {
+                  type: "number",
+                  step: "0.01",
+                  min: "0",
+                  placeholder: "اختياري",
+                  value: field.value ?? "",
+                  onChange: (e) => field.onChange(e.target.value === "" ? null : e.target.valueAsNumber)
+                }
+              ) }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
             ] })
           }
@@ -65083,7 +65196,7 @@ function useInvoiceReview(id) {
     queryFn: () => invoicesApi.getReview(id)
   });
 }
-function ProductPicker({ value, onChange, placeholder = "ابحث عن منتج...", disabled }) {
+function ProductPicker({ value, onChange, placeholder = "ابحث عن منتج...", disabled, onQueryChange }) {
   const [query, setQuery] = reactExports.useState(value?.name ?? "");
   const [open, setOpen] = reactExports.useState(false);
   const debouncedQuery = useDebouncedValue(query.trim(), 250);
@@ -65110,6 +65223,7 @@ function ProductPicker({ value, onChange, placeholder = "ابحث عن منتج.
           onChange: (e) => {
             setQuery(e.target.value);
             setOpen(true);
+            onQueryChange?.(e.target.value);
             if (!e.target.value) onChange(null);
           },
           onBlur: () => setTimeout(() => setOpen(false), 120)
@@ -65131,7 +65245,8 @@ function ProductPicker({ value, onChange, placeholder = "ابحث عن منتج.
             name: product.name,
             unit: product.unit,
             lastPurchasePrice: product.last_purchase_price,
-            averageCost: product.average_cost
+            averageCost: product.average_cost,
+            defaultSalePrice: product.default_sale_price
           });
           setQuery(product.name);
           setOpen(false);
@@ -66519,6 +66634,7 @@ function useCustomerStatement(customerId) {
   });
 }
 const salesInvoiceItemSchema = object({
+  productId: number().nullable().optional(),
   productName: string().trim().min(1, "اسم الصنف مطلوب"),
   unit: string().trim().max(30).optional().or(literal("")),
   quantity: number().positive("الكمية يجب أن تكون أكبر من الصفر"),
@@ -66532,7 +66648,7 @@ const createSalesInvoiceSchema = object({
 const createSalesInvoiceDefaults = {
   invoiceDate: (/* @__PURE__ */ new Date()).toISOString().split("T")[0],
   notes: "",
-  items: [{ productName: "", unit: "", quantity: 1, unitPrice: 0 }]
+  items: [{ productId: null, productName: "", unit: "", quantity: 1, unitPrice: 0 }]
 };
 function CreateSalesInvoiceSheet({ customerId, previousBalance }) {
   const { t: t2 } = useI18n();
@@ -66597,7 +66713,7 @@ function CreateSalesInvoiceSheet({ customerId, previousBalance }) {
               type: "button",
               variant: "ghost",
               size: "sm",
-              onClick: () => append2({ productName: "", unit: "", quantity: 1, unitPrice: 0 }),
+              onClick: () => append2({ productId: null, productName: "", unit: "", quantity: 1, unitPrice: 0 }),
               children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { className: "size-3.5" }),
                 "إضافة صنف"
@@ -66613,7 +66729,34 @@ function CreateSalesInvoiceSheet({ customerId, previousBalance }) {
               name: `items.${index2}.productName`,
               render: ({ field: nameField }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
                 /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { className: "text-xs", children: "الصنف" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "اسم الصنف", ...nameField }) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                  ProductPicker,
+                  {
+                    value: null,
+                    placeholder: "اسم الصنف أو ابحث في الكتالوج...",
+                    onQueryChange: (text2) => {
+                      nameField.onChange(text2);
+                      form.setValue(`items.${index2}.productId`, null, { shouldDirty: true });
+                    },
+                    onChange: (product) => {
+                      if (!product) return;
+                      nameField.onChange(product.name);
+                      form.setValue(`items.${index2}.productId`, product.id, { shouldDirty: true });
+                      const unitFieldName = `items.${index2}.unit`;
+                      if (product.unit && !form.getValues(unitFieldName)) {
+                        form.setValue(unitFieldName, product.unit, { shouldDirty: true });
+                      }
+                      const priceFieldName = `items.${index2}.unitPrice`;
+                      const currentPrice = form.getValues(priceFieldName);
+                      if (product.defaultSalePrice != null && (!currentPrice || Number.isNaN(currentPrice))) {
+                        form.setValue(priceFieldName, product.defaultSalePrice, {
+                          shouldDirty: true,
+                          shouldValidate: true
+                        });
+                      }
+                    }
+                  }
+                ) }),
                 /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
               ] })
             }

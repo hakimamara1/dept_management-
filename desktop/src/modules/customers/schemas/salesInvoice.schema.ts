@@ -1,8 +1,13 @@
 import { z } from 'zod'
 
-// Items are free text (no ProductPicker) — this module is deliberately
-// decoupled from the purchasing-side product catalog.
+// productName/unit/unitPrice are always the source of truth (free-text
+// snapshot on an immutable invoice line, per the module's decoupling rule).
+// productId is an OPTIONAL link back to the catalog for reporting/autocomplete
+// convenience only — picking a product via ProductPicker fills productId +
+// productName + unit, but a line typed freehand is equally valid and just
+// leaves productId null. Never used for stock/inventory logic.
 const salesInvoiceItemSchema = z.object({
+  productId: z.number().nullable().optional(),
   productName: z.string().trim().min(1, 'اسم الصنف مطلوب'),
   unit: z.string().trim().max(30).optional().or(z.literal('')),
   quantity: z.number().positive('الكمية يجب أن تكون أكبر من الصفر'),
@@ -20,5 +25,5 @@ export type CreateSalesInvoiceFormValues = z.infer<typeof createSalesInvoiceSche
 export const createSalesInvoiceDefaults: CreateSalesInvoiceFormValues = {
   invoiceDate: new Date().toISOString().split('T')[0],
   notes: '',
-  items: [{ productName: '', unit: '', quantity: 1, unitPrice: 0 }]
+  items: [{ productId: null, productName: '', unit: '', quantity: 1, unitPrice: 0 }]
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
-import { LineChart, Search } from 'lucide-react'
+import { LineChart, Pencil, Search } from 'lucide-react'
 import { Input } from '@shared/components/ui/input'
 import { Button } from '@shared/components/ui/button'
 import { DataTable } from '@shared/components/data-table/DataTable'
@@ -12,6 +12,7 @@ import { cn } from '@shared/lib/utils'
 import type { Product } from '@shared/types/api'
 import { useProductSearch } from '../hooks/useProductSearch'
 import { PriceHistorySheet } from './PriceHistorySheet'
+import { EditSalePriceDialog } from './EditSalePriceDialog'
 
 const UNIT_LABELS: Record<string, string> = {
   piece: 'قطعة',
@@ -25,6 +26,7 @@ export function ProductsTable() {
   const { t } = useI18n()
   const [query, setQuery] = useState('')
   const [priceHistoryProduct, setPriceHistoryProduct] = useState<Product | null>(null)
+  const [editPriceProduct, setEditPriceProduct] = useState<Product | null>(null)
 
   const { data, isLoading, error } = useProductSearch(query)
 
@@ -82,6 +84,27 @@ export function ProductsTable() {
       )
     },
     {
+      accessorKey: 'default_sale_price',
+      header: 'سعر البيع',
+      meta: { exportLabel: 'سعر البيع' },
+      cell: ({ row }) => (
+        <button
+          type="button"
+          onClick={() => setEditPriceProduct(row.original)}
+          className="group flex items-center gap-1.5 text-xs hover:text-primary"
+        >
+          {row.original.default_sale_price != null ? (
+            <span className="tabular-nums font-medium text-foreground">
+              {formatCurrency(row.original.default_sale_price)}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">تعيين سعر</span>
+          )}
+          <Pencil className="size-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
+        </button>
+      )
+    },
+    {
       id: 'actions',
       header: 'سعر الشراء',
       enableHiding: false,
@@ -128,6 +151,8 @@ export function ProductsTable() {
         open={priceHistoryProduct != null}
         onOpenChange={(open) => !open && setPriceHistoryProduct(null)}
       />
+
+      <EditSalePriceDialog product={editPriceProduct} onOpenChange={(open) => !open && setEditPriceProduct(null)} />
     </>
   )
 }
