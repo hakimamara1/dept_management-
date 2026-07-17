@@ -165,6 +165,8 @@ export interface InvoiceReviewHeader {
   new_balance: number | null
   status: InvoiceStatus
   validation_errors: string | null
+  notes: string | null
+  approved_at: string | null
 }
 
 export interface InvoiceReviewItem {
@@ -173,6 +175,7 @@ export interface InvoiceReviewItem {
   product_id: number | null
   line_number: number
   ocr_product_name: string
+  unit: string | null
   quantity: number
   unit_price: number
   total_price: number
@@ -188,13 +191,30 @@ export interface InvoiceReviewResponse {
   items: InvoiceReviewItem[]
 }
 
-export type InvoiceDecisionAction = 'select_existing' | 'create_new'
+// Only meaningful while the invoice is still Pending Review — the backend
+// rejects all of these once it's Approved. productId resolves to an
+// existing product; createNewProduct creates one on the spot. Omitting
+// both just corrects name/quantity/unit/unitPrice without touching the match.
+export interface NewProductInput {
+  unit: string
+}
 
-export interface InvoiceDecision {
-  itemId: number
-  action: InvoiceDecisionAction
-  productId?: number
+export interface UpdateInvoiceItemInput {
+  productName?: string
+  quantity?: number
   unit?: string
+  unitPrice?: number
+  productId?: number
+  createNewProduct?: NewProductInput
+}
+
+export interface AddInvoiceItemInput {
+  productName: string
+  quantity: number
+  unit?: string
+  unitPrice: number
+  productId?: number
+  createNewProduct?: NewProductInput
 }
 
 // ── Purchase Orders ───────────────────────────────────────

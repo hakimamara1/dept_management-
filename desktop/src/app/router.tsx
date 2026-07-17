@@ -6,7 +6,7 @@ import { useI18n } from '@shared/lib/i18n'
 import { DashboardPage } from '@modules/dashboard'
 import { ProductsPage } from '@modules/products'
 import { SuppliersPage, SupplierDetailPage } from '@modules/suppliers'
-import { InvoicesPage, InvoiceReviewPage } from '@modules/invoices'
+import { InvoicesPage, InvoiceReviewPage, InvoiceViewPage } from '@modules/invoices'
 import { PurchaseOrdersPage, PurchaseOrderDetailPage } from '@modules/purchase-orders'
 import { PaymentsPage } from '@modules/payments'
 import { ReportsPage } from '@modules/reports'
@@ -34,6 +34,7 @@ export function AppRouter() {
           <Route path="suppliers/:id" element={<SupplierDetailPage />} />
           <Route path="invoices" element={<InvoicesPage />} />
           <Route path="invoices/:id/review" element={<InvoiceReviewPage />} />
+          <Route path="invoices/:id" element={<InvoiceViewPage />} />
           <Route path="purchase-orders" element={<PurchaseOrdersPage />} />
           <Route path="purchase-orders/:id" element={<PurchaseOrderDetailPage />} />
           <Route path="payments" element={<PaymentsPage />} />

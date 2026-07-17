@@ -13028,9 +13028,9 @@ function createRetryer(config2) {
   let failureCount = 0;
   let continueFn;
   const thenable = pendingThenable();
-  const isResolved2 = () => thenable.status !== "pending";
+  const isResolved = () => thenable.status !== "pending";
   const cancel = (cancelOptions) => {
-    if (!isResolved2()) {
+    if (!isResolved()) {
       const error = new CancelledError(cancelOptions);
       reject(error);
       config2.onCancel?.(error);
@@ -13045,13 +13045,13 @@ function createRetryer(config2) {
   const canContinue = () => focusManager.isFocused() && (config2.networkMode === "always" || onlineManager.isOnline()) && config2.canRun();
   const canStart = () => canFetch(config2.networkMode) && config2.canRun();
   const resolve = (value) => {
-    if (!isResolved2()) {
+    if (!isResolved()) {
       continueFn?.();
       thenable.resolve(value);
     }
   };
   const reject = (value) => {
-    if (!isResolved2()) {
+    if (!isResolved()) {
       continueFn?.();
       thenable.reject(value);
     }
@@ -13059,20 +13059,20 @@ function createRetryer(config2) {
   const pause = () => {
     return new Promise((continueResolve) => {
       continueFn = (value) => {
-        if (isResolved2() || canContinue()) {
+        if (isResolved() || canContinue()) {
           continueResolve(value);
         }
       };
       config2.onPause?.();
     }).then(() => {
       continueFn = void 0;
-      if (!isResolved2()) {
+      if (!isResolved()) {
         config2.onContinue?.();
       }
     });
   };
   const run = () => {
-    if (isResolved2()) {
+    if (isResolved()) {
       return;
     }
     let promiseOrValue;
@@ -13083,7 +13083,7 @@ function createRetryer(config2) {
       promiseOrValue = Promise.reject(error);
     }
     Promise.resolve(promiseOrValue).then(resolve).catch((error) => {
-      if (isResolved2()) {
+      if (isResolved()) {
         return;
       }
       const retry = config2.retry ?? (environmentManager.isServer() ? 0 : 3);
@@ -18897,7 +18897,7 @@ function useControllableState({
   const setValue = reactExports.useCallback(
     (nextValue) => {
       if (isControlled) {
-        const value2 = isFunction$4(nextValue) ? nextValue(prop) : nextValue;
+        const value2 = isFunction$5(nextValue) ? nextValue(prop) : nextValue;
         if (value2 !== prop) {
           onChangeRef.current?.(value2);
         }
@@ -18927,7 +18927,7 @@ function useUncontrolledState({
   }, [value, prevValueRef]);
   return [value, setValue, onChangeRef];
 }
-function isFunction$4(value) {
+function isFunction$5(value) {
   return typeof value === "function";
 }
 var VISUALLY_HIDDEN_STYLES = Object.freeze({
@@ -19012,12 +19012,12 @@ var TooltipProvider$1 = (props) => {
 TooltipProvider$1.displayName = PROVIDER_NAME$1;
 var TOOLTIP_NAME = "Tooltip";
 var [TooltipContextProvider, useTooltipContext] = createTooltipContext(TOOLTIP_NAME);
-var TRIGGER_NAME$3 = "TooltipTrigger";
+var TRIGGER_NAME$4 = "TooltipTrigger";
 var TooltipTrigger = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopeTooltip, ...triggerProps } = props;
-    const context = useTooltipContext(TRIGGER_NAME$3, __scopeTooltip);
-    const providerContext = useTooltipProviderContext(TRIGGER_NAME$3, __scopeTooltip);
+    const context = useTooltipContext(TRIGGER_NAME$4, __scopeTooltip);
+    const providerContext = useTooltipProviderContext(TRIGGER_NAME$4, __scopeTooltip);
     const popperScope = usePopperScope$2(__scopeTooltip);
     const ref = reactExports.useRef(null);
     const composedRefs = useComposedRefs(forwardedRef, ref, context.onTriggerChange);
@@ -19061,7 +19061,7 @@ var TooltipTrigger = reactExports.forwardRef(
     ) });
   }
 );
-TooltipTrigger.displayName = TRIGGER_NAME$3;
+TooltipTrigger.displayName = TRIGGER_NAME$4;
 var PORTAL_NAME$4 = "TooltipPortal";
 var [PortalProvider$3, usePortalContext$3] = createTooltipContext(PORTAL_NAME$4, {
   forceMount: void 0
@@ -26289,22 +26289,22 @@ const createLucideIcon = (iconName, iconNode) => {
   Component.displayName = toPascalCase(iconName);
   return Component;
 };
-const __iconNode$M = [
+const __iconNode$N = [
   ["path", { d: "M12 5v14", key: "s699le" }],
   ["path", { d: "m19 12-7 7-7-7", key: "1idqje" }]
 ];
-const ArrowDown = createLucideIcon("arrow-down", __iconNode$M);
-const __iconNode$L = [
+const ArrowDown = createLucideIcon("arrow-down", __iconNode$N);
+const __iconNode$M = [
   ["path", { d: "M5 12h14", key: "1ays0h" }],
   ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
 ];
-const ArrowRight = createLucideIcon("arrow-right", __iconNode$L);
-const __iconNode$K = [
+const ArrowRight = createLucideIcon("arrow-right", __iconNode$M);
+const __iconNode$L = [
   ["path", { d: "m5 12 7-7 7 7", key: "hav0vg" }],
   ["path", { d: "M12 19V5", key: "x0mq9r" }]
 ];
-const ArrowUp = createLucideIcon("arrow-up", __iconNode$K);
-const __iconNode$J = [
+const ArrowUp = createLucideIcon("arrow-up", __iconNode$L);
+const __iconNode$K = [
   ["path", { d: "M10.268 21a2 2 0 0 0 3.464 0", key: "vwvbt9" }],
   [
     "path",
@@ -26314,8 +26314,8 @@ const __iconNode$J = [
     }
   ]
 ];
-const Bell = createLucideIcon("bell", __iconNode$J);
-const __iconNode$I = [
+const Bell = createLucideIcon("bell", __iconNode$K);
+const __iconNode$J = [
   ["path", { d: "M12 8V4H8", key: "hb8ula" }],
   ["rect", { width: "16", height: "12", x: "4", y: "8", rx: "2", key: "enze0r" }],
   ["path", { d: "M2 14h2", key: "vft8re" }],
@@ -26323,8 +26323,8 @@ const __iconNode$I = [
   ["path", { d: "M15 13v2", key: "1xurst" }],
   ["path", { d: "M9 13v2", key: "rq6x2g" }]
 ];
-const Bot = createLucideIcon("bot", __iconNode$I);
-const __iconNode$H = [
+const Bot = createLucideIcon("bot", __iconNode$J);
+const __iconNode$I = [
   [
     "path",
     {
@@ -26356,70 +26356,83 @@ const __iconNode$H = [
   ["path", { d: "m12 8 4.74-2.85", key: "3rx089" }],
   ["path", { d: "M12 13.5V8", key: "1io7kd" }]
 ];
-const Boxes = createLucideIcon("boxes", __iconNode$H);
-const __iconNode$G = [
+const Boxes = createLucideIcon("boxes", __iconNode$I);
+const __iconNode$H = [
   ["path", { d: "M8 2v4", key: "1cmpym" }],
   ["path", { d: "M16 2v4", key: "4m81vk" }],
   ["rect", { width: "18", height: "18", x: "3", y: "4", rx: "2", key: "1hopcy" }],
   ["path", { d: "M3 10h18", key: "8toen8" }]
 ];
-const Calendar = createLucideIcon("calendar", __iconNode$G);
-const __iconNode$F = [
+const Calendar = createLucideIcon("calendar", __iconNode$H);
+const __iconNode$G = [
   ["path", { d: "M3 3v16a2 2 0 0 0 2 2h16", key: "c24i48" }],
   ["path", { d: "m19 9-5 5-4-4-3 3", key: "2osh9i" }]
 ];
-const ChartLine = createLucideIcon("chart-line", __iconNode$F);
-const __iconNode$E = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
-const Check = createLucideIcon("check", __iconNode$E);
-const __iconNode$D = [["path", { d: "m15 18-6-6 6-6", key: "1wnfg3" }]];
-const ChevronLeft = createLucideIcon("chevron-left", __iconNode$D);
-const __iconNode$C = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-const ChevronDown = createLucideIcon("chevron-down", __iconNode$C);
-const __iconNode$B = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
-const ChevronRight = createLucideIcon("chevron-right", __iconNode$B);
-const __iconNode$A = [
+const ChartLine = createLucideIcon("chart-line", __iconNode$G);
+const __iconNode$F = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
+const Check = createLucideIcon("check", __iconNode$F);
+const __iconNode$E = [["path", { d: "m15 18-6-6 6-6", key: "1wnfg3" }]];
+const ChevronLeft = createLucideIcon("chevron-left", __iconNode$E);
+const __iconNode$D = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+const ChevronDown = createLucideIcon("chevron-down", __iconNode$D);
+const __iconNode$C = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
+const ChevronRight = createLucideIcon("chevron-right", __iconNode$C);
+const __iconNode$B = [
   ["path", { d: "m11 17-5-5 5-5", key: "13zhaf" }],
   ["path", { d: "m18 17-5-5 5-5", key: "h8a8et" }]
 ];
-const ChevronsLeft = createLucideIcon("chevrons-left", __iconNode$A);
-const __iconNode$z = [
+const ChevronsLeft = createLucideIcon("chevrons-left", __iconNode$B);
+const __iconNode$A = [
   ["path", { d: "m6 17 5-5-5-5", key: "xnjwq" }],
   ["path", { d: "m13 17 5-5-5-5", key: "17xmmf" }]
 ];
-const ChevronsRight = createLucideIcon("chevrons-right", __iconNode$z);
-const __iconNode$y = [
+const ChevronsRight = createLucideIcon("chevrons-right", __iconNode$A);
+const __iconNode$z = [
   ["path", { d: "m7 15 5 5 5-5", key: "1hf1tw" }],
   ["path", { d: "m7 9 5-5 5 5", key: "sgt6xg" }]
 ];
-const ChevronsUpDown = createLucideIcon("chevrons-up-down", __iconNode$y);
-const __iconNode$x = [
+const ChevronsUpDown = createLucideIcon("chevrons-up-down", __iconNode$z);
+const __iconNode$y = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
 ];
-const CircleCheck = createLucideIcon("circle-check", __iconNode$x);
-const __iconNode$w = [
+const CircleCheck = createLucideIcon("circle-check", __iconNode$y);
+const __iconNode$x = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "m15 9-6 6", key: "1uzhvr" }],
   ["path", { d: "m9 9 6 6", key: "z0biqf" }]
 ];
-const CircleX = createLucideIcon("circle-x", __iconNode$w);
-const __iconNode$v = [
+const CircleX = createLucideIcon("circle-x", __iconNode$x);
+const __iconNode$w = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "M12 6v6l4 2", key: "mmk7yg" }]
 ];
-const Clock = createLucideIcon("clock", __iconNode$v);
-const __iconNode$u = [
+const Clock = createLucideIcon("clock", __iconNode$w);
+const __iconNode$v = [
   ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
   ["path", { d: "M9 3v18", key: "fh3hqa" }],
   ["path", { d: "M15 3v18", key: "14nvp0" }]
 ];
-const Columns3 = createLucideIcon("columns-3", __iconNode$u);
-const __iconNode$t = [
+const Columns3 = createLucideIcon("columns-3", __iconNode$v);
+const __iconNode$u = [
   ["path", { d: "M12 15V3", key: "m9g1x1" }],
   ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
   ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
 ];
-const Download = createLucideIcon("download", __iconNode$t);
+const Download = createLucideIcon("download", __iconNode$u);
+const __iconNode$t = [
+  [
+    "path",
+    {
+      d: "M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z",
+      key: "1oefj6"
+    }
+  ],
+  ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5", key: "wfsgrz" }],
+  ["path", { d: "M12 18v-6", key: "17g6i2" }],
+  ["path", { d: "m9 15 3 3 3-3", key: "1npd3o" }]
+];
+const FileDown = createLucideIcon("file-down", __iconNode$t);
 const __iconNode$s = [
   [
     "path",
@@ -26578,11 +26591,19 @@ const __iconNode$e = [
 ];
 const Scale = createLucideIcon("scale", __iconNode$e);
 const __iconNode$d = [
+  ["circle", { cx: "6", cy: "6", r: "3", key: "1lh9wr" }],
+  ["path", { d: "M8.12 8.12 12 12", key: "1alkpv" }],
+  ["path", { d: "M20 4 8.12 15.88", key: "xgtan2" }],
+  ["circle", { cx: "6", cy: "18", r: "3", key: "fqmcym" }],
+  ["path", { d: "M14.8 14.8 20 20", key: "ptml3r" }]
+];
+const Scissors = createLucideIcon("scissors", __iconNode$d);
+const __iconNode$c = [
   ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
   ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
 ];
-const Search = createLucideIcon("search", __iconNode$d);
-const __iconNode$c = [
+const Search = createLucideIcon("search", __iconNode$c);
+const __iconNode$b = [
   [
     "path",
     {
@@ -26592,8 +26613,8 @@ const __iconNode$c = [
   ],
   ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
 ];
-const Settings = createLucideIcon("settings", __iconNode$c);
-const __iconNode$b = [
+const Settings = createLucideIcon("settings", __iconNode$b);
+const __iconNode$a = [
   ["path", { d: "M16 10a4 4 0 0 1-8 0", key: "1ltviw" }],
   ["path", { d: "M3.103 6.034h17.794", key: "awc11p" }],
   [
@@ -26604,8 +26625,8 @@ const __iconNode$b = [
     }
   ]
 ];
-const ShoppingBag = createLucideIcon("shopping-bag", __iconNode$b);
-const __iconNode$a = [
+const ShoppingBag = createLucideIcon("shopping-bag", __iconNode$a);
+const __iconNode$9 = [
   ["circle", { cx: "8", cy: "21", r: "1", key: "jimo8o" }],
   ["circle", { cx: "19", cy: "21", r: "1", key: "13723u" }],
   [
@@ -26616,20 +26637,7 @@ const __iconNode$a = [
     }
   ]
 ];
-const ShoppingCart = createLucideIcon("shopping-cart", __iconNode$a);
-const __iconNode$9 = [
-  [
-    "path",
-    {
-      d: "M11.017 2.814a1 1 0 0 1 1.966 0l1.051 5.558a2 2 0 0 0 1.594 1.594l5.558 1.051a1 1 0 0 1 0 1.966l-5.558 1.051a2 2 0 0 0-1.594 1.594l-1.051 5.558a1 1 0 0 1-1.966 0l-1.051-5.558a2 2 0 0 0-1.594-1.594l-5.558-1.051a1 1 0 0 1 0-1.966l5.558-1.051a2 2 0 0 0 1.594-1.594z",
-      key: "1s2grr"
-    }
-  ],
-  ["path", { d: "M20 2v4", key: "1rf3ol" }],
-  ["path", { d: "M22 4h-4", key: "gwowj6" }],
-  ["circle", { cx: "4", cy: "20", r: "2", key: "6kqj1y" }]
-];
-const Sparkles = createLucideIcon("sparkles", __iconNode$9);
+const ShoppingCart = createLucideIcon("shopping-cart", __iconNode$9);
 const __iconNode$8 = [
   ["circle", { cx: "12", cy: "12", r: "4", key: "4exip2" }],
   ["path", { d: "M12 2v2", key: "tus03m" }],
@@ -26877,7 +26885,8 @@ async function request(path, init) {
 const apiClient = {
   get: (path) => request(path),
   post: (path, body) => request(path, { method: "POST", body: body !== void 0 ? JSON.stringify(body) : void 0 }),
-  patch: (path, body) => request(path, { method: "PATCH", body: body !== void 0 ? JSON.stringify(body) : void 0 })
+  patch: (path, body) => request(path, { method: "PATCH", body: body !== void 0 ? JSON.stringify(body) : void 0 }),
+  delete: (path) => request(path, { method: "DELETE" })
 };
 function useBackendHealth() {
   return useQuery({
@@ -28679,13 +28688,13 @@ var MenuCheckboxItem = reactExports.forwardRef(
       MenuItem,
       {
         role: "menuitemcheckbox",
-        "aria-checked": isIndeterminate(checked) ? "mixed" : checked,
+        "aria-checked": isIndeterminate$1(checked) ? "mixed" : checked,
         ...checkboxItemProps,
         ref: forwardedRef,
         "data-state": getCheckedState(checked),
         onSelect: composeEventHandlers$1(
           checkboxItemProps.onSelect,
-          () => onCheckedChange?.(isIndeterminate(checked) ? true : !checked),
+          () => onCheckedChange?.(isIndeterminate$1(checked) ? true : !checked),
           { checkForDefaultPrevented: false }
         )
       }
@@ -28743,7 +28752,7 @@ var MenuItemIndicator = reactExports.forwardRef(
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
       Presence,
       {
-        present: forceMount || isIndeterminate(indicatorContext.checked) || indicatorContext.checked === true,
+        present: forceMount || isIndeterminate$1(indicatorContext.checked) || indicatorContext.checked === true,
         children: /* @__PURE__ */ jsxRuntimeExports.jsx(
           Primitive.span,
           {
@@ -28942,11 +28951,11 @@ MenuSubContent.displayName = SUB_CONTENT_NAME$1;
 function getOpenState(open) {
   return open ? "open" : "closed";
 }
-function isIndeterminate(checked) {
+function isIndeterminate$1(checked) {
   return checked === "indeterminate";
 }
 function getCheckedState(checked) {
-  return isIndeterminate(checked) ? "indeterminate" : checked ? "checked" : "unchecked";
+  return isIndeterminate$1(checked) ? "indeterminate" : checked ? "checked" : "unchecked";
 }
 function focusFirst(candidates) {
   const PREVIOUSLY_FOCUSED_ELEMENT = document.activeElement;
@@ -29050,11 +29059,11 @@ var DropdownMenu$1 = (props) => {
   );
 };
 DropdownMenu$1.displayName = DROPDOWN_MENU_NAME;
-var TRIGGER_NAME$2 = "DropdownMenuTrigger";
+var TRIGGER_NAME$3 = "DropdownMenuTrigger";
 var DropdownMenuTrigger$1 = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopeDropdownMenu, disabled = false, ...triggerProps } = props;
-    const context = useDropdownMenuContext(TRIGGER_NAME$2, __scopeDropdownMenu);
+    const context = useDropdownMenuContext(TRIGGER_NAME$3, __scopeDropdownMenu);
     const menuScope = useMenuScope(__scopeDropdownMenu);
     const composedRefs = useComposedRefs(forwardedRef, context.triggerRef);
     return /* @__PURE__ */ jsxRuntimeExports.jsx(Anchor2, { asChild: true, ...menuScope, children: /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -29086,7 +29095,7 @@ var DropdownMenuTrigger$1 = reactExports.forwardRef(
     ) });
   }
 );
-DropdownMenuTrigger$1.displayName = TRIGGER_NAME$2;
+DropdownMenuTrigger$1.displayName = TRIGGER_NAME$3;
 var PORTAL_NAME$2 = "DropdownMenuPortal";
 var DropdownMenuPortal = (props) => {
   const { __scopeDropdownMenu, ...portalProps } = props;
@@ -29184,13 +29193,13 @@ var DropdownMenuRadioItem = reactExports.forwardRef((props, forwardedRef) => {
   return /* @__PURE__ */ jsxRuntimeExports.jsx(RadioItem, { ...menuScope, ...radioItemProps, ref: forwardedRef });
 });
 DropdownMenuRadioItem.displayName = RADIO_ITEM_NAME;
-var INDICATOR_NAME = "DropdownMenuItemIndicator";
+var INDICATOR_NAME$1 = "DropdownMenuItemIndicator";
 var DropdownMenuItemIndicator = reactExports.forwardRef((props, forwardedRef) => {
   const { __scopeDropdownMenu, ...itemIndicatorProps } = props;
   const menuScope = useMenuScope(__scopeDropdownMenu);
   return /* @__PURE__ */ jsxRuntimeExports.jsx(ItemIndicator, { ...menuScope, ...itemIndicatorProps, ref: forwardedRef });
 });
-DropdownMenuItemIndicator.displayName = INDICATOR_NAME;
+DropdownMenuItemIndicator.displayName = INDICATOR_NAME$1;
 var SEPARATOR_NAME$1 = "DropdownMenuSeparator";
 var DropdownMenuSeparator$1 = reactExports.forwardRef((props, forwardedRef) => {
   const { __scopeDropdownMenu, ...separatorProps } = props;
@@ -32412,7 +32421,7 @@ function isPlainObject$2(value) {
   const Ctor = O.hasOwnProperty.call(proto, CONSTRUCTOR) && proto[CONSTRUCTOR];
   if (Ctor === Object)
     return true;
-  if (!isFunction$3(Ctor))
+  if (!isFunction$4(Ctor))
     return false;
   let ctorString = cachedCtorStrings.get(Ctor);
   if (ctorString === void 0) {
@@ -32459,7 +32468,7 @@ var isArray = Array.isArray;
 var isMap = (target) => target instanceof Map;
 var isSet = (target) => target instanceof Set;
 var isObjectish = (target) => typeof target === "object";
-var isFunction$3 = (target) => typeof target === "function";
+var isFunction$4 = (target) => typeof target === "function";
 var isBoolean$2 = (target) => typeof target === "boolean";
 function isArrayIndex(value) {
   const n2 = +value;
@@ -32993,7 +33002,7 @@ var Immer2 = class {
     this.useStrictShallowCopy_ = false;
     this.useStrictIteration_ = false;
     this.produce = (base, recipe, patchListener) => {
-      if (isFunction$3(base) && !isFunction$3(recipe)) {
+      if (isFunction$4(base) && !isFunction$4(recipe)) {
         const defaultBase = recipe;
         recipe = base;
         const self2 = this;
@@ -33001,9 +33010,9 @@ var Immer2 = class {
           return self2.produce(base2, (draft) => recipe.call(this, draft, ...args));
         };
       }
-      if (!isFunction$3(recipe))
+      if (!isFunction$4(recipe))
         die(6);
-      if (patchListener !== void 0 && !isFunction$3(patchListener))
+      if (patchListener !== void 0 && !isFunction$4(patchListener))
         die(7);
       let result;
       if (isDraftable(base)) {
@@ -33043,7 +33052,7 @@ var Immer2 = class {
         die(1, base);
     };
     this.produceWithPatches = (base, recipe) => {
-      if (isFunction$3(base)) {
+      if (isFunction$4(base)) {
         return (state, ...args) => this.produceWithPatches(state, (draft) => base(draft, ...args));
       }
       let patches, inversePatches;
@@ -52276,7 +52285,7 @@ function makeStateUpdater(key, instance) {
     });
   };
 }
-function isFunction$2(d) {
+function isFunction$3(d) {
   return d instanceof Function;
 }
 function isNumberArray(d) {
@@ -52849,7 +52858,7 @@ const ColumnFiltering = {
     };
     column.getFilterFn = () => {
       var _table$options$filter, _table$options$filter2;
-      return isFunction$2(column.columnDef.filterFn) ? column.columnDef.filterFn : column.columnDef.filterFn === "auto" ? column.getAutoFilterFn() : (
+      return isFunction$3(column.columnDef.filterFn) ? column.columnDef.filterFn : column.columnDef.filterFn === "auto" ? column.getAutoFilterFn() : (
         // @ts-ignore
         (_table$options$filter = (_table$options$filter2 = table.options.filterFns) == null ? void 0 : _table$options$filter2[column.columnDef.filterFn]) != null ? _table$options$filter : filterFns[column.columnDef.filterFn]
       );
@@ -53091,7 +53100,7 @@ const ColumnGrouping = {
       if (!column) {
         throw new Error();
       }
-      return isFunction$2(column.columnDef.aggregationFn) ? column.columnDef.aggregationFn : column.columnDef.aggregationFn === "auto" ? column.getAutoAggregationFn() : (_table$options$aggreg = (_table$options$aggreg2 = table.options.aggregationFns) == null ? void 0 : _table$options$aggreg2[column.columnDef.aggregationFn]) != null ? _table$options$aggreg : aggregationFns[column.columnDef.aggregationFn];
+      return isFunction$3(column.columnDef.aggregationFn) ? column.columnDef.aggregationFn : column.columnDef.aggregationFn === "auto" ? column.getAutoAggregationFn() : (_table$options$aggreg = (_table$options$aggreg2 = table.options.aggregationFns) == null ? void 0 : _table$options$aggreg2[column.columnDef.aggregationFn]) != null ? _table$options$aggreg : aggregationFns[column.columnDef.aggregationFn];
     };
   },
   createTable: (table) => {
@@ -53694,7 +53703,7 @@ const GlobalFiltering = {
       const {
         globalFilterFn
       } = table.options;
-      return isFunction$2(globalFilterFn) ? globalFilterFn : globalFilterFn === "auto" ? table.getGlobalAutoFilterFn() : (_table$options$filter = (_table$options$filter2 = table.options.filterFns) == null ? void 0 : _table$options$filter2[globalFilterFn]) != null ? _table$options$filter : filterFns[globalFilterFn];
+      return isFunction$3(globalFilterFn) ? globalFilterFn : globalFilterFn === "auto" ? table.getGlobalAutoFilterFn() : (_table$options$filter = (_table$options$filter2 = table.options.filterFns) == null ? void 0 : _table$options$filter2[globalFilterFn]) != null ? _table$options$filter : filterFns[globalFilterFn];
     };
     table.setGlobalFilter = (updater) => {
       table.options.onGlobalFilterChange == null || table.options.onGlobalFilterChange(updater);
@@ -54534,7 +54543,7 @@ const RowSorting = {
       if (!column) {
         throw new Error();
       }
-      return isFunction$2(column.columnDef.sortingFn) ? column.columnDef.sortingFn : column.columnDef.sortingFn === "auto" ? column.getAutoSortingFn() : (_table$options$sortin = (_table$options$sortin2 = table.options.sortingFns) == null ? void 0 : _table$options$sortin2[column.columnDef.sortingFn]) != null ? _table$options$sortin : sortingFns[column.columnDef.sortingFn];
+      return isFunction$3(column.columnDef.sortingFn) ? column.columnDef.sortingFn : column.columnDef.sortingFn === "auto" ? column.getAutoSortingFn() : (_table$options$sortin = (_table$options$sortin2 = table.options.sortingFns) == null ? void 0 : _table$options$sortin2[column.columnDef.sortingFn]) != null ? _table$options$sortin : sortingFns[column.columnDef.sortingFn];
     };
     column.toggleSorting = (desc, multi) => {
       const nextSortingOrder = column.getNextSortingOrder();
@@ -55273,11 +55282,11 @@ var Dialog$1 = (props) => {
   );
 };
 Dialog$1.displayName = DIALOG_NAME;
-var TRIGGER_NAME$1 = "DialogTrigger";
+var TRIGGER_NAME$2 = "DialogTrigger";
 var DialogTrigger$1 = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopeDialog, ...triggerProps } = props;
-    const context = useDialogContext(TRIGGER_NAME$1, __scopeDialog);
+    const context = useDialogContext(TRIGGER_NAME$2, __scopeDialog);
     const composedTriggerRef = useComposedRefs(forwardedRef, context.triggerRef);
     return /* @__PURE__ */ jsxRuntimeExports.jsx(
       Primitive.button,
@@ -55286,7 +55295,7 @@ var DialogTrigger$1 = reactExports.forwardRef(
         "aria-haspopup": "dialog",
         "aria-expanded": context.open,
         "aria-controls": context.open ? context.contentId : void 0,
-        "data-state": getState(context.open),
+        "data-state": getState$1(context.open),
         ...triggerProps,
         ref: composedTriggerRef,
         onClick: composeEventHandlers$1(props.onClick, context.onOpenToggle)
@@ -55294,7 +55303,7 @@ var DialogTrigger$1 = reactExports.forwardRef(
     );
   }
 );
-DialogTrigger$1.displayName = TRIGGER_NAME$1;
+DialogTrigger$1.displayName = TRIGGER_NAME$2;
 var PORTAL_NAME$1 = "DialogPortal";
 var [PortalProvider$1, usePortalContext$1] = createDialogContext(PORTAL_NAME$1, {
   forceMount: void 0
@@ -55328,7 +55337,7 @@ var DialogOverlayImpl = reactExports.forwardRef(
       /* @__PURE__ */ jsxRuntimeExports.jsx(ReactRemoveScroll, { as: Slot$1, allowPinchZoom: true, shards: [context.contentRef], children: /* @__PURE__ */ jsxRuntimeExports.jsx(
         Primitive.div,
         {
-          "data-state": getState(context.open),
+          "data-state": getState$1(context.open),
           ...overlayProps,
           ref: composedRefs,
           style: { pointerEvents: "auto", ...overlayProps.style }
@@ -55441,7 +55450,7 @@ var DialogContentImpl = reactExports.forwardRef(
             id: context.contentId,
             "aria-describedby": context.descriptionId,
             "aria-labelledby": context.titleId,
-            "data-state": getState(context.open),
+            "data-state": getState$1(context.open),
             ...contentProps,
             ref: forwardedRef,
             deferPointerDownOutside: true,
@@ -55487,7 +55496,7 @@ var DialogClose = reactExports.forwardRef(
   }
 );
 DialogClose.displayName = CLOSE_NAME;
-function getState(open) {
+function getState$1(open) {
   return open ? "open" : "closed";
 }
 const Sheet = Dialog$1;
@@ -56039,7 +56048,7 @@ var get = (object2, path, defaultValue) => {
   return isUndefined(result) || result === object2 ? isUndefined(object2[path]) ? defaultValue : object2[path] : result;
 };
 var isBoolean = (value) => typeof value === "boolean";
-var isFunction$1 = (value) => typeof value === "function";
+var isFunction$2 = (value) => typeof value === "function";
 var set = (object2, path, value) => {
   let index2 = -1;
   const tempPath = isKey(path) ? [path] : stringToPath(path);
@@ -56306,10 +56315,10 @@ function useController(props) {
   const ref = React.useCallback((elm) => {
     if (elm) {
       _proxyRef.current = {
-        focus: () => isFunction$1(elm.focus) && elm.focus(),
-        select: () => isFunction$1(elm.select) && elm.select(),
-        setCustomValidity: (message) => isFunction$1(elm.setCustomValidity) && elm.setCustomValidity(message),
-        reportValidity: () => isFunction$1(elm.reportValidity) && elm.reportValidity()
+        focus: () => isFunction$2(elm.focus) && elm.focus(),
+        select: () => isFunction$2(elm.select) && elm.select(),
+        setCustomValidity: (message) => isFunction$2(elm.setCustomValidity) && elm.setCustomValidity(message),
+        reportValidity: () => isFunction$2(elm.reportValidity) && elm.reportValidity()
       };
     }
     const field2 = get(control._fields, name);
@@ -56540,7 +56549,7 @@ function unset(object2, path) {
 }
 var objectHasFunction = (data) => {
   for (const key in data) {
-    if (isFunction$1(data[key])) {
+    if (isFunction$2(data[key])) {
       return true;
     }
   }
@@ -56672,7 +56681,7 @@ const ASYNC_FUNCTION = "AsyncFunction";
 var hasPromiseValidation = (fieldReference) => {
   if (!fieldReference || !fieldReference.validate)
     return false;
-  if (isFunction$1(fieldReference.validate)) {
+  if (isFunction$2(fieldReference.validate)) {
     return fieldReference.validate.constructor.name === ASYNC_FUNCTION;
   }
   if (isObject$1(fieldReference.validate)) {
@@ -56904,7 +56913,7 @@ var validateField = async (field, disabledFieldNames, formValues, validateAllFie
     }
   }
   if (validate) {
-    if (isFunction$1(validate)) {
+    if (isFunction$2(validate)) {
       const result = await validate(inputValue, formValues);
       const validateError = getValidateError(result, inputRef);
       if (validateError) {
@@ -56975,7 +56984,7 @@ function createFormControl(props = {}) {
   };
   let _formState = {
     ...cloneObject(DEFAULT_FORM_STATE),
-    isLoading: isFunction$1(_options.defaultValues),
+    isLoading: isFunction$2(_options.defaultValues),
     errors: _options.errors || {},
     disabled: _options.disabled || false
   };
@@ -57416,7 +57425,7 @@ function createFormControl(props = {}) {
   };
   const setValue = (name, value, options2 = {}) => _setValue(name, value, options2, false);
   const setValues = (formValues, options2 = {}) => {
-    const updatedFormValues = isFunction$1(formValues) ? formValues(_formValues) : formValues;
+    const updatedFormValues = isFunction$2(formValues) ? formValues(_formValues) : formValues;
     if (!deepEqual(_formValues, updatedFormValues)) {
       _formValues = {
         ..._formValues,
@@ -57616,7 +57625,7 @@ function createFormControl(props = {}) {
     options2 && options2.shouldFocus && ref && ref.focus && ref.focus();
   };
   const watch = (name, defaultValue) => {
-    if (isFunction$1(name)) {
+    if (isFunction$2(name)) {
       _valuesSubscriberCount++;
       const { unsubscribe } = _subjects.state.subscribe({
         next: (payload) => "values" in payload && name(payload.values || _getWatch(void 0, defaultValue), payload)
@@ -57973,7 +57982,7 @@ function createFormControl(props = {}) {
       defaultValues: _defaultValues
     });
   };
-  const reset = (formValues, keepStateOptions) => _reset(isFunction$1(formValues) ? formValues(_formValues) : formValues, { ..._options.resetOptions, ...keepStateOptions });
+  const reset = (formValues, keepStateOptions) => _reset(isFunction$2(formValues) ? formValues(_formValues) : formValues, { ..._options.resetOptions, ...keepStateOptions });
   const setFocus = (name, options2 = {}) => {
     const field = get(_fields, name);
     const fieldReference = field && field._f;
@@ -57982,7 +57991,7 @@ function createFormControl(props = {}) {
       if (fieldRef.focus) {
         setTimeout(() => {
           fieldRef.focus();
-          options2.shouldSelect && isFunction$1(fieldRef.select) && fieldRef.select();
+          options2.shouldSelect && isFunction$2(fieldRef.select) && fieldRef.select();
         });
       }
     }
@@ -57994,7 +58003,7 @@ function createFormControl(props = {}) {
       ...formState
     };
   };
-  const _resetDefaultValues = () => isFunction$1(_options.defaultValues) && _options.defaultValues().then((values) => {
+  const _resetDefaultValues = () => isFunction$2(_options.defaultValues) && _options.defaultValues().then((values) => {
     reset(values, _options.resetOptions);
     _subjects.state.next({
       isLoading: false
@@ -58401,10 +58410,10 @@ function useForm(props = {}) {
   const _formControlProp = React.useRef(props.formControl);
   const [formState, updateFormState] = React.useState(() => ({
     ...cloneObject(DEFAULT_FORM_STATE),
-    isLoading: isFunction$1(props.defaultValues),
+    isLoading: isFunction$2(props.defaultValues),
     errors: props.errors || {},
     disabled: props.disabled || false,
-    defaultValues: isFunction$1(props.defaultValues) ? void 0 : props.defaultValues
+    defaultValues: isFunction$2(props.defaultValues) ? void 0 : props.defaultValues
   }));
   if (!_formControl.current || props.formControl && _formControlProp.current !== props.formControl) {
     _formControlProp.current = props.formControl;
@@ -58413,7 +58422,7 @@ function useForm(props = {}) {
         ...props.formControl,
         formState
       };
-      if (props.defaultValues && !isFunction$1(props.defaultValues)) {
+      if (props.defaultValues && !isFunction$2(props.defaultValues)) {
         props.formControl.reset(props.defaultValues, props.resetOptions);
       }
     } else {
@@ -62351,7 +62360,7 @@ function SelectProvider(props) {
       scope: __scopeSelect,
       onNativeOptionAdd: handleNativeOptionAdd,
       onNativeOptionRemove: handleNativeOptionRemove,
-      children: isFunction(internal_do_not_use_render) ? internal_do_not_use_render(context) : children
+      children: isFunction$1(internal_do_not_use_render) ? internal_do_not_use_render(context) : children
     }
   ) }) }) });
 }
@@ -62376,12 +62385,12 @@ var Select$1 = (props) => {
   );
 };
 Select$1.displayName = SELECT_NAME;
-var TRIGGER_NAME = "SelectTrigger";
+var TRIGGER_NAME$1 = "SelectTrigger";
 var SelectTrigger$1 = reactExports.forwardRef(
   (props, forwardedRef) => {
     const { __scopeSelect, disabled = false, ...triggerProps } = props;
     const popperScope = usePopperScope(__scopeSelect);
-    const context = useSelectContext(TRIGGER_NAME, __scopeSelect);
+    const context = useSelectContext(TRIGGER_NAME$1, __scopeSelect);
     const isDisabled = context.disabled || disabled;
     const composedRefs = useComposedRefs(forwardedRef, context.onTriggerChange);
     const getItems = useCollection(__scopeSelect);
@@ -62453,7 +62462,7 @@ var SelectTrigger$1 = reactExports.forwardRef(
     ) });
   }
 );
-SelectTrigger$1.displayName = TRIGGER_NAME;
+SelectTrigger$1.displayName = TRIGGER_NAME$1;
 var VALUE_NAME = "SelectValue";
 var SelectValue$1 = reactExports.forwardRef(
   (props, forwardedRef) => {
@@ -63320,10 +63329,10 @@ var SelectArrow = reactExports.forwardRef(
   }
 );
 SelectArrow.displayName = ARROW_NAME;
-var BUBBLE_INPUT_NAME = "SelectBubbleInput";
+var BUBBLE_INPUT_NAME$1 = "SelectBubbleInput";
 var SelectBubbleInput = reactExports.forwardRef(
   ({ __scopeSelect, ...props }, forwardedRef) => {
-    const context = useSelectContext(BUBBLE_INPUT_NAME, __scopeSelect);
+    const context = useSelectContext(BUBBLE_INPUT_NAME$1, __scopeSelect);
     const { value, onValueChange, required: required2, disabled, name, autoComplete, form } = context;
     const { nativeOptions, nativeSelectKey } = context;
     const ref = reactExports.useRef(null);
@@ -63372,8 +63381,8 @@ var SelectBubbleInput = reactExports.forwardRef(
     );
   }
 );
-SelectBubbleInput.displayName = BUBBLE_INPUT_NAME;
-function isFunction(value) {
+SelectBubbleInput.displayName = BUBBLE_INPUT_NAME$1;
+function isFunction$1(value) {
   return typeof value === "function";
 }
 function shouldShowPlaceholder(value) {
@@ -64940,7 +64949,13 @@ const invoicesApi = {
   getApproved: (limit = 100) => apiClient.get(`/api/invoices/approved?limit=${limit}`),
   getReview: (id) => apiClient.get(`/api/invoices/${id}/review`),
   submit: (ocrJson) => apiClient.post("/api/invoices/ocr", ocrJson),
-  approve: (id, decisions) => apiClient.post(`/api/invoices/${id}/approve`, { decisions })
+  // Approve takes no body anymore — matching happens beforehand via the
+  // item-editing calls below, the backend just checks everything is resolved.
+  approve: (id) => apiClient.post(`/api/invoices/${id}/approve`),
+  updateItem: (invoiceId, itemId, data) => apiClient.patch(`/api/invoices/${invoiceId}/items/${itemId}`, data),
+  addItem: (invoiceId, data) => apiClient.post(`/api/invoices/${invoiceId}/items`, data),
+  deleteItem: (invoiceId, itemId) => apiClient.delete(`/api/invoices/${invoiceId}/items/${itemId}`),
+  updateNotes: (invoiceId, notes) => apiClient.patch(`/api/invoices/${invoiceId}/notes`, { notes })
 };
 function usePendingInvoices() {
   return useQuery({
@@ -64976,10 +64991,8 @@ function useSubmitInvoice() {
   return useMutation({
     mutationFn: (ocrJson) => invoicesApi.submit(ocrJson),
     onSuccess: (result) => {
-      const message = result.status === "Approved" ? `تم اعتماد الفاتورة تلقائياً (رقم ${result.invoiceId})` : `تم استلام الفاتورة وهي بانتظار المراجعة (رقم ${result.invoiceId})`;
-      toast.success(message);
+      toast.success(`تم استلام الفاتورة (رقم ${result.invoiceId}) — راجعها قبل الاعتماد`);
       queryClient2.invalidateQueries({ queryKey: queryKeys.invoices.pending });
-      queryClient2.invalidateQueries({ queryKey: ["invoices", "approved"] });
     },
     onError: (error) => {
       toast.error("فشل رفع الفاتورة", { description: error.message });
@@ -64989,7 +65002,7 @@ function useSubmitInvoice() {
 function useApproveInvoice(invoiceId) {
   const queryClient2 = useQueryClient();
   return useMutation({
-    mutationFn: (decisions) => invoicesApi.approve(invoiceId, decisions),
+    mutationFn: () => invoicesApi.approve(invoiceId),
     onSuccess: () => {
       toast.success("تم اعتماد الفاتورة بنجاح");
       queryClient2.invalidateQueries({ queryKey: queryKeys.invoices.pending });
@@ -64998,6 +65011,58 @@ function useApproveInvoice(invoiceId) {
     },
     onError: (error) => {
       toast.error("فشل اعتماد الفاتورة", { description: error.message });
+    }
+  });
+}
+function useUpdateInvoiceItem(invoiceId) {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: ({ itemId, data }) => invoicesApi.updateItem(invoiceId, itemId, data),
+    onSuccess: () => {
+      queryClient2.invalidateQueries({ queryKey: queryKeys.invoices.review(invoiceId) });
+      queryClient2.invalidateQueries({ queryKey: queryKeys.invoices.pending });
+    },
+    onError: (error) => {
+      toast.error("فشل تعديل الصنف", { description: error.message });
+    }
+  });
+}
+function useAddInvoiceItem(invoiceId) {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => invoicesApi.addItem(invoiceId, data),
+    onSuccess: () => {
+      queryClient2.invalidateQueries({ queryKey: queryKeys.invoices.review(invoiceId) });
+      queryClient2.invalidateQueries({ queryKey: queryKeys.invoices.pending });
+    },
+    onError: (error) => {
+      toast.error("فشل إضافة الصنف", { description: error.message });
+    }
+  });
+}
+function useDeleteInvoiceItem(invoiceId) {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: (itemId) => invoicesApi.deleteItem(invoiceId, itemId),
+    onSuccess: () => {
+      queryClient2.invalidateQueries({ queryKey: queryKeys.invoices.review(invoiceId) });
+      queryClient2.invalidateQueries({ queryKey: queryKeys.invoices.pending });
+    },
+    onError: (error) => {
+      toast.error("فشل حذف الصنف", { description: error.message });
+    }
+  });
+}
+function useUpdateInvoiceNotes(invoiceId) {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: (notes) => invoicesApi.updateNotes(invoiceId, notes),
+    onSuccess: () => {
+      toast.success("تم حفظ الملاحظات");
+      queryClient2.invalidateQueries({ queryKey: queryKeys.invoices.review(invoiceId) });
+    },
+    onError: (error) => {
+      toast.error("فشل حفظ الملاحظات", { description: error.message });
     }
   });
 }
@@ -65158,6 +65223,12 @@ function InvoicesPage() {
       id: "status",
       header: "الحالة",
       cell: () => /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: "success", children: "معتمدة" })
+    },
+    {
+      id: "actions",
+      header: "",
+      enableHiding: false,
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: "outline", size: "sm", onClick: () => navigate(`/invoices/${row.original.id}`), children: "عرض" })
     }
   ];
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-1 flex-col", children: [
@@ -65196,6 +65267,279 @@ function useInvoiceReview(id) {
     queryFn: () => invoicesApi.getReview(id)
   });
 }
+var CHECKBOX_NAME = "Checkbox";
+var [createCheckboxContext] = createContextScope(CHECKBOX_NAME);
+var [CheckboxProviderImpl, useCheckboxContext] = createCheckboxContext(CHECKBOX_NAME);
+function CheckboxProvider(props) {
+  const {
+    __scopeCheckbox,
+    checked: checkedProp,
+    children,
+    defaultChecked,
+    disabled,
+    form,
+    name,
+    onCheckedChange,
+    required: required2,
+    value = "on",
+    // @ts-expect-error
+    internal_do_not_use_render
+  } = props;
+  const [checked, setChecked] = useControllableState({
+    prop: checkedProp,
+    defaultProp: defaultChecked ?? false,
+    onChange: onCheckedChange,
+    caller: CHECKBOX_NAME
+  });
+  const [control, setControl] = reactExports.useState(null);
+  const [bubbleInput, setBubbleInput] = reactExports.useState(null);
+  const hasConsumerStoppedPropagationRef = reactExports.useRef(false);
+  const isFormControl = control ? !!form || !!control.closest("form") : (
+    // We set this to true by default so that events bubble to forms without JS (SSR)
+    true
+  );
+  const context = {
+    checked,
+    disabled,
+    setChecked,
+    control,
+    setControl,
+    name,
+    form,
+    value,
+    hasConsumerStoppedPropagationRef,
+    required: required2,
+    defaultChecked: isIndeterminate(defaultChecked) ? false : defaultChecked,
+    isFormControl,
+    bubbleInput,
+    setBubbleInput
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    CheckboxProviderImpl,
+    {
+      scope: __scopeCheckbox,
+      ...context,
+      children: isFunction(internal_do_not_use_render) ? internal_do_not_use_render(context) : children
+    }
+  );
+}
+var TRIGGER_NAME = "CheckboxTrigger";
+var CheckboxTrigger = reactExports.forwardRef(
+  ({ __scopeCheckbox, onKeyDown, onClick, ...checkboxProps }, forwardedRef) => {
+    const {
+      control,
+      value,
+      disabled,
+      checked,
+      required: required2,
+      setControl,
+      setChecked,
+      hasConsumerStoppedPropagationRef,
+      isFormControl,
+      bubbleInput
+    } = useCheckboxContext(TRIGGER_NAME, __scopeCheckbox);
+    const composedRefs = useComposedRefs(forwardedRef, setControl);
+    const initialCheckedStateRef = reactExports.useRef(checked);
+    reactExports.useEffect(() => {
+      const form = control?.form;
+      if (form) {
+        const reset = () => setChecked(initialCheckedStateRef.current);
+        form.addEventListener("reset", reset);
+        return () => form.removeEventListener("reset", reset);
+      }
+    }, [control, setChecked]);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Primitive.button,
+      {
+        type: "button",
+        role: "checkbox",
+        "aria-checked": isIndeterminate(checked) ? "mixed" : checked,
+        "aria-required": required2,
+        "data-state": getState(checked),
+        "data-disabled": disabled ? "" : void 0,
+        disabled,
+        value,
+        ...checkboxProps,
+        ref: composedRefs,
+        onKeyDown: composeEventHandlers$1(onKeyDown, (event) => {
+          if (event.key === "Enter") event.preventDefault();
+        }),
+        onClick: composeEventHandlers$1(onClick, (event) => {
+          setChecked((prevChecked) => isIndeterminate(prevChecked) ? true : !prevChecked);
+          if (bubbleInput && isFormControl) {
+            hasConsumerStoppedPropagationRef.current = event.isPropagationStopped();
+            if (!hasConsumerStoppedPropagationRef.current) event.stopPropagation();
+          }
+        })
+      }
+    );
+  }
+);
+CheckboxTrigger.displayName = TRIGGER_NAME;
+var Checkbox$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const {
+      __scopeCheckbox,
+      name,
+      checked,
+      defaultChecked,
+      required: required2,
+      disabled,
+      value,
+      onCheckedChange,
+      form,
+      ...checkboxProps
+    } = props;
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      CheckboxProvider,
+      {
+        __scopeCheckbox,
+        checked,
+        defaultChecked,
+        disabled,
+        required: required2,
+        onCheckedChange,
+        name,
+        form,
+        value,
+        internal_do_not_use_render: ({ isFormControl }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            CheckboxTrigger,
+            {
+              ...checkboxProps,
+              ref: forwardedRef,
+              __scopeCheckbox
+            }
+          ),
+          isFormControl && /* @__PURE__ */ jsxRuntimeExports.jsx(
+            CheckboxBubbleInput,
+            {
+              __scopeCheckbox
+            }
+          )
+        ] })
+      }
+    );
+  }
+);
+Checkbox$1.displayName = CHECKBOX_NAME;
+var INDICATOR_NAME = "CheckboxIndicator";
+var CheckboxIndicator = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeCheckbox, forceMount, ...indicatorProps } = props;
+    const context = useCheckboxContext(INDICATOR_NAME, __scopeCheckbox);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Presence,
+      {
+        present: forceMount || isIndeterminate(context.checked) || context.checked === true,
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Primitive.span,
+          {
+            "data-state": getState(context.checked),
+            "data-disabled": context.disabled ? "" : void 0,
+            ...indicatorProps,
+            ref: forwardedRef,
+            style: { pointerEvents: "none", ...props.style }
+          }
+        )
+      }
+    );
+  }
+);
+CheckboxIndicator.displayName = INDICATOR_NAME;
+var BUBBLE_INPUT_NAME = "CheckboxBubbleInput";
+var CheckboxBubbleInput = reactExports.forwardRef(
+  ({ __scopeCheckbox, ...props }, forwardedRef) => {
+    const {
+      control,
+      hasConsumerStoppedPropagationRef,
+      checked,
+      defaultChecked,
+      required: required2,
+      disabled,
+      name,
+      value,
+      form,
+      bubbleInput,
+      setBubbleInput
+    } = useCheckboxContext(BUBBLE_INPUT_NAME, __scopeCheckbox);
+    const composedRefs = useComposedRefs(forwardedRef, setBubbleInput);
+    const prevChecked = usePrevious(checked);
+    const controlSize = useSize(control);
+    reactExports.useEffect(() => {
+      const input = bubbleInput;
+      if (!input) return;
+      const inputProto = window.HTMLInputElement.prototype;
+      const descriptor = Object.getOwnPropertyDescriptor(
+        inputProto,
+        "checked"
+      );
+      const setChecked = descriptor.set;
+      const bubbles = !hasConsumerStoppedPropagationRef.current;
+      if (prevChecked !== checked && setChecked) {
+        const event = new Event("click", { bubbles });
+        input.indeterminate = isIndeterminate(checked);
+        setChecked.call(input, isIndeterminate(checked) ? false : checked);
+        input.dispatchEvent(event);
+      }
+    }, [bubbleInput, prevChecked, checked, hasConsumerStoppedPropagationRef]);
+    const defaultCheckedRef = reactExports.useRef(isIndeterminate(checked) ? false : checked);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Primitive.input,
+      {
+        type: "checkbox",
+        "aria-hidden": true,
+        defaultChecked: defaultChecked ?? defaultCheckedRef.current,
+        required: required2,
+        disabled,
+        name,
+        value,
+        form,
+        ...props,
+        tabIndex: -1,
+        ref: composedRefs,
+        style: {
+          ...props.style,
+          ...controlSize,
+          position: "absolute",
+          pointerEvents: "none",
+          opacity: 0,
+          margin: 0,
+          // We transform because the input is absolutely positioned but we have
+          // rendered it **after** the button. This pulls it back to sit on top
+          // of the button.
+          transform: "translateX(-100%)"
+        }
+      }
+    );
+  }
+);
+CheckboxBubbleInput.displayName = BUBBLE_INPUT_NAME;
+function isFunction(value) {
+  return typeof value === "function";
+}
+function isIndeterminate(checked) {
+  return checked === "indeterminate";
+}
+function getState(checked) {
+  return isIndeterminate(checked) ? "indeterminate" : checked ? "checked" : "unchecked";
+}
+const Checkbox = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+  Checkbox$1,
+  {
+    ref,
+    className: cn$1(
+      "peer size-4 shrink-0 rounded-sm border border-input shadow-xs",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+      "disabled:cursor-not-allowed disabled:opacity-50",
+      "data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary",
+      className
+    ),
+    ...props,
+    children: /* @__PURE__ */ jsxRuntimeExports.jsx(CheckboxIndicator, { className: "flex items-center justify-center text-current", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { className: "size-3.5" }) })
+  }
+));
+Checkbox.displayName = Checkbox$1.displayName;
 function ProductPicker({ value, onChange, placeholder = "ابحث عن منتج...", disabled, onQueryChange }) {
   const [query, setQuery] = reactExports.useState(value?.name ?? "");
   const [open, setOpen] = reactExports.useState(false);
@@ -65271,115 +65615,210 @@ const UNIT_OPTIONS = [
   { value: "liter", label: "لتر" },
   { value: "g", label: "غرام" }
 ];
-const STATUS_BADGE$2 = {
-  Matched: { label: "مطابق", variant: "success" },
-  UserSelected: { label: "مختار يدوياً", variant: "success" },
-  Pending: { label: "بحاجة مطابقة", variant: "warning" },
-  NewProduct: { label: "منتج جديد محتمل", variant: "warning" }
-};
-const isResolved = (item) => item.match_status === "Matched" || item.match_status === "UserSelected";
-function InvoiceLineItem({ item, decision, onDecide }) {
-  const [mode, setMode] = reactExports.useState("idle");
-  const [newUnit, setNewUnit] = reactExports.useState("piece");
-  const resolved = isResolved(item);
-  const badge = STATUS_BADGE$2[item.match_status] ?? { label: item.match_status, variant: "secondary" };
-  const decisionLabel = decision ? decision.action === "create_new" ? `سيُنشأ كمنتج جديد (${UNIT_OPTIONS.find((u2) => u2.value === decision.unit)?.label ?? decision.unit})` : null : null;
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "rounded-lg border border-border p-4", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap items-start justify-between gap-3", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "font-medium text-foreground", children: item.ocr_product_name }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-1 text-xs text-muted-foreground", children: [
-          "الكمية ",
-          Number(item.quantity).toLocaleString("ar-DZ"),
-          " · سعر الوحدة ",
-          formatCurrency(item.unit_price),
-          " · الإجمالي",
-          " ",
-          formatCurrency(item.total_price)
-        ] })
+function InvoiceItemRow({ invoiceId, item, readOnly, canDelete, selected, onToggleSelect, onSplit }) {
+  const [name, setName] = reactExports.useState(item.ocr_product_name);
+  const [unit2, setUnit] = reactExports.useState(item.unit ?? "");
+  const [quantity, setQuantity] = reactExports.useState(item.quantity);
+  const [unitPrice, setUnitPrice] = reactExports.useState(item.unit_price);
+  const [matchMode, setMatchMode] = reactExports.useState("idle");
+  const [newProductUnit, setNewProductUnit] = reactExports.useState(item.unit || "piece");
+  const updateItem = useUpdateInvoiceItem(invoiceId);
+  const deleteItem = useDeleteInvoiceItem(invoiceId);
+  const isMatched = item.product_id != null;
+  const total = Number(quantity || 0) * Number(unitPrice || 0);
+  function saveFields() {
+    if (name.trim() === item.ocr_product_name && unit2 === (item.unit ?? "") && quantity === item.quantity && unitPrice === item.unit_price) {
+      return;
+    }
+    updateItem.mutate({ itemId: item.id, data: { productName: name, unit: unit2 || void 0, quantity, unitPrice } });
+  }
+  if (readOnly) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-border last:border-0", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-3 py-2.5 align-middle", children: item.ocr_product_name }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-3 py-2.5 align-middle text-muted-foreground", children: item.unit ?? "—" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-3 py-2.5 align-middle tabular-nums", children: Number(item.quantity).toLocaleString("ar-DZ") }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-3 py-2.5 align-middle tabular-nums", children: formatCurrency(item.unit_price) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-3 py-2.5 align-middle tabular-nums font-semibold", children: formatCurrency(item.total_price) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-3 py-2.5 align-middle", children: isMatched ? /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1.5 text-sm text-success", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { className: "size-4 shrink-0" }),
+        item.matched_product_name
+      ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm text-muted-foreground", children: "—" }) })
+    ] });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-border last:border-0 align-top", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-8 px-2 py-2.5", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Checkbox, { checked: selected, onCheckedChange: (v) => onToggleSelect(!!v) }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "min-w-40 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { value: name, onChange: (e) => setName(e.target.value), onBlur: saveFields, className: "h-8 text-xs" }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-24 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { value: unit2, onChange: (e) => setUnit(e.target.value), onBlur: saveFields, placeholder: "الوحدة", className: "h-8 text-xs" }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-24 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Input,
+      {
+        type: "number",
+        step: "0.01",
+        min: "0",
+        value: quantity,
+        onChange: (e) => setQuantity(e.target.valueAsNumber),
+        onBlur: saveFields,
+        className: "h-8 text-xs"
+      }
+    ) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-28 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Input,
+      {
+        type: "number",
+        step: "0.01",
+        min: "0",
+        value: unitPrice,
+        onChange: (e) => setUnitPrice(e.target.valueAsNumber),
+        onBlur: saveFields,
+        className: "h-8 text-xs"
+      }
+    ) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-28 px-1.5 py-2 tabular-nums text-sm font-semibold", children: formatCurrency(total) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("td", { className: "min-w-56 px-1.5 py-2", children: [
+      matchMode === "idle" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap items-center gap-1.5", children: [
+        isMatched ? /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex items-center gap-1 text-xs text-success", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { className: "size-3.5 shrink-0" }),
+          item.matched_product_name
+        ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: "غير مطابق" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", size: "sm", variant: "ghost", className: "h-7 px-2 text-xs", onClick: () => setMatchMode("search"), children: isMatched ? "تغيير" : "اختيار منتج" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", size: "sm", variant: "ghost", className: "h-7 px-2 text-xs", onClick: () => setMatchMode("new"), children: /* @__PURE__ */ jsxRuntimeExports.jsx(PackagePlus, { className: "size-3.5" }) })
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: badge.variant, children: badge.label })
-    ] }),
-    resolved ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-3 flex items-center gap-2 text-sm text-success", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { className: "size-4" }),
-      item.matched_product_name ?? "تم المطابقة"
-    ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-3 space-y-2", children: [
-      decision && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-sm text-primary", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { className: "size-4" }),
-        decisionLabel ?? "تم اختيار منتج — سيُحفظ عند الاعتماد"
-      ] }),
-      item.suggested_product_name && mode === "idle" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 rounded-md bg-accent/50 px-3 py-2 text-sm", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Sparkles, { className: "size-4 shrink-0 text-primary" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "flex-1", children: [
-          "الاقتراح: ",
-          /* @__PURE__ */ jsxRuntimeExports.jsx("strong", { children: item.suggested_product_name }),
-          item.match_confidence != null && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-muted-foreground", children: [
-            " (",
-            Math.round(item.match_confidence * 100),
-            "%)"
-          ] })
+      matchMode === "search" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-56", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        ProductPicker,
+        {
+          value: null,
+          onChange: (product) => {
+            if (product) {
+              updateItem.mutate({ itemId: item.id, data: { productId: product.id } });
+              setMatchMode("idle");
+            }
+          }
+        }
+      ) }),
+      matchMode === "new" && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(Select, { value: newProductUnit, onValueChange: setNewProductUnit, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(SelectTrigger, { className: "h-8 w-24 text-xs", children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, {}) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: UNIT_OPTIONS.map((u2) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: u2.value, children: u2.label }, u2.value)) })
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsx(
           Button,
           {
             type: "button",
             size: "sm",
-            variant: decision?.productId === item.suggested_product_id ? "default" : "outline",
-            onClick: () => onDecide({ itemId: item.id, action: "select_existing", productId: item.suggested_product_id }),
-            children: "تأكيد"
-          }
-        )
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap items-center gap-2", children: [
-        mode !== "search" ? /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", size: "sm", variant: "ghost", onClick: () => setMode("search"), children: "اختيار منتج آخر" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "w-64", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          ProductPicker,
-          {
-            value: null,
-            onChange: (product) => {
-              if (product) {
-                onDecide({ itemId: item.id, action: "select_existing", productId: product.id });
-                setMode("idle");
-              }
-            }
-          }
-        ) }),
-        mode !== "new" ? /* @__PURE__ */ jsxRuntimeExports.jsxs(
-          Button,
-          {
-            type: "button",
-            size: "sm",
-            variant: "ghost",
+            className: "h-8 px-2 text-xs",
             onClick: () => {
-              setMode("new");
-              onDecide({ itemId: item.id, action: "create_new", unit: newUnit });
+              updateItem.mutate({ itemId: item.id, data: { createNewProduct: { unit: newProductUnit } } });
+              setMatchMode("idle");
             },
-            children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(PackagePlus, { className: "size-3.5" }),
-              "منتج جديد"
-            ]
+            children: "حفظ"
           }
-        ) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: cn$1("flex items-center gap-2"), children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsxs(
-            Select,
-            {
-              value: newUnit,
-              onValueChange: (unit2) => {
-                setNewUnit(unit2);
-                onDecide({ itemId: item.id, action: "create_new", unit: unit2 });
-              },
-              children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(SelectTrigger, { className: "h-8 w-32 text-xs", children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, {}) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: UNIT_OPTIONS.map((u2) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: u2.value, children: u2.label }, u2.value)) })
-              ]
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", size: "sm", variant: "ghost", onClick: () => {
-            setMode("idle");
-            onDecide(null);
-          }, children: "إلغاء" })
-        ] })
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", size: "sm", variant: "ghost", className: "h-8 px-2 text-xs", onClick: () => setMatchMode("idle"), children: "إلغاء" })
       ] })
-    ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-20 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", size: "icon", variant: "ghost", className: "size-7", title: "تقسيم الصنف", onClick: onSplit, children: /* @__PURE__ */ jsxRuntimeExports.jsx(Scissors, { className: "size-3.5" }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Button,
+        {
+          type: "button",
+          size: "icon",
+          variant: "ghost",
+          className: "size-7",
+          title: "حذف الصنف",
+          disabled: !canDelete || deleteItem.isPending,
+          onClick: () => deleteItem.mutate(item.id),
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx(Trash2, { className: "size-3.5 text-destructive" })
+        }
+      )
+    ] }) })
+  ] });
+}
+function InvoiceItemsTable({ invoiceId, items, readOnly }) {
+  const [selected, setSelected] = reactExports.useState(/* @__PURE__ */ new Set());
+  const addItem = useAddInvoiceItem(invoiceId);
+  const updateItem = useUpdateInvoiceItem(invoiceId);
+  const deleteItem = useDeleteInvoiceItem(invoiceId);
+  function toggleSelect(itemId, checked) {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(itemId);
+      else next.delete(itemId);
+      return next;
+    });
+  }
+  function handleSplit(item) {
+    const half = Math.round(Number(item.quantity) / 2 * 100) / 100;
+    const remainder = Number(item.quantity) - half;
+    if (half <= 0 || remainder <= 0) {
+      toast.error("الكمية صغيرة جداً للتقسيم");
+      return;
+    }
+    updateItem.mutate({ itemId: item.id, data: { quantity: half } });
+    addItem.mutate({
+      productName: item.ocr_product_name,
+      unit: item.unit ?? void 0,
+      quantity: remainder,
+      unitPrice: item.unit_price,
+      productId: item.product_id ?? void 0
+    });
+  }
+  function handleMerge() {
+    const ids = Array.from(selected);
+    if (ids.length !== 2) return;
+    const first = items.find((i2) => i2.id === ids[0]);
+    const second2 = items.find((i2) => i2.id === ids[1]);
+    if (!first || !second2) return;
+    updateItem.mutate(
+      { itemId: first.id, data: { quantity: Number(first.quantity) + Number(second2.quantity) } },
+      { onSuccess: () => deleteItem.mutate(second2.id) }
+    );
+    setSelected(/* @__PURE__ */ new Set());
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-3", children: [
+    !readOnly && selected.size === 2 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between rounded-md border border-primary/30 bg-primary/5 px-3 py-2 text-sm", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: "تم تحديد صنفين — سيتم دمجهما في صنف واحد بجمع الكميات" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", size: "sm", onClick: handleMerge, children: "دمج المحدد" })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "overflow-auto rounded-lg border border-border", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("table", { className: "w-full text-sm", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("thead", { className: "bg-muted/40", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-border", children: [
+        !readOnly && /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "w-8 px-2 py-2" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium", children: "الصنف" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium", children: "الوحدة" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium", children: "الكمية" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium", children: "سعر الوحدة" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium", children: "الإجمالي" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium", children: "المطابقة" }),
+        !readOnly && /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium" })
+      ] }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("tbody", { children: items.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+        InvoiceItemRow,
+        {
+          invoiceId,
+          item,
+          readOnly,
+          canDelete: items.length > 1,
+          selected: selected.has(item.id),
+          onToggleSelect: (checked) => toggleSelect(item.id, checked),
+          onSplit: () => handleSplit(item)
+        },
+        item.id
+      )) })
+    ] }) }),
+    !readOnly && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      Button,
+      {
+        type: "button",
+        variant: "outline",
+        size: "sm",
+        disabled: addItem.isPending,
+        onClick: () => addItem.mutate({ productName: "صنف جديد", quantity: 1, unitPrice: 0 }),
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { className: "size-4" }),
+          "إضافة صنف"
+        ]
+      }
+    )
   ] });
 }
 function InvoiceReviewPage() {
@@ -65389,40 +65828,175 @@ function InvoiceReviewPage() {
   const invoiceId = Number(id);
   const { data, isLoading, error, refetch } = useInvoiceReview(invoiceId);
   const approveInvoice = useApproveInvoice(invoiceId);
-  const [decisions, setDecisions] = reactExports.useState({});
-  const unresolvedItems = reactExports.useMemo(
-    () => (data?.items ?? []).filter((i2) => i2.match_status !== "Matched" && i2.match_status !== "UserSelected"),
-    [data?.items]
-  );
-  const allResolved = unresolvedItems.every((i2) => decisions[i2.id] != null);
-  function handleDecide(itemId, decision) {
-    setDecisions((prev) => {
-      const next = { ...prev };
-      if (decision) next[itemId] = decision;
-      else delete next[itemId];
-      return next;
-    });
-  }
-  function handleApprove() {
-    approveInvoice.mutate(Object.values(decisions), {
-      onSuccess: () => navigate("/invoices")
-    });
-  }
+  const updateNotes = useUpdateInvoiceNotes(invoiceId);
+  const [notesDraft, setNotesDraft] = reactExports.useState(null);
   if (isLoading) return /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingState, { rows: 6 });
   if (error || !data) {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(ErrorState, { message: error?.message ?? "الفاتورة غير موجودة", onRetry: () => refetch() });
   }
   const { invoice, items } = data;
+  const isPending = invoice.status === "Pending Review";
   let validationErrors = [];
   try {
     validationErrors = invoice.validation_errors ? JSON.parse(invoice.validation_errors).map((e) => e.message ?? String(e)) : [];
   } catch {
     validationErrors = [];
   }
+  function handleApprove() {
+    approveInvoice.mutate(void 0, { onSuccess: () => navigate("/invoices") });
+  }
+  function handleSaveNotes() {
+    if (notesDraft == null) return;
+    updateNotes.mutate(notesDraft, { onSuccess: () => setNotesDraft(null) });
+  }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-1 flex-col pb-20", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { variant: "ghost", size: "sm", className: "mb-2 w-fit", onClick: () => navigate("/invoices"), children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowRight, { className: "size-4" }),
       t2("invoices.title")
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { className: "mb-6 print:hidden", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { className: "grid grid-cols-2 gap-4 p-5 sm:grid-cols-5", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "رقم الفاتورة" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 font-semibold", children: [
+          "#",
+          invoice.invoice_number,
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: isPending ? "warning" : "success", children: isPending ? "قيد المراجعة" : "معتمدة" })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "المورد" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Link, { to: `/suppliers/${invoice.supplier_id}`, className: "font-semibold text-primary hover:underline", children: invoice.supplier_name })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "التاريخ" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "font-semibold", children: formatDate(invoice.invoice_date) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "مبلغ الفاتورة" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "tabular-nums font-semibold", children: formatCurrency(invoice.invoice_amount) })
+      ] }),
+      !isPending && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex items-start justify-end", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { type: "button", variant: "outline", size: "sm", onClick: () => window.print(), children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Printer, { className: "size-3.5" }),
+        "طباعة"
+      ] }) })
+    ] }) }),
+    validationErrors.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-6 rounded-lg border border-warning/30 bg-warning/10 p-4 print:hidden", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-1 flex items-center gap-2 text-sm font-medium text-warning", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TriangleAlert, { className: "size-4" }),
+        "ملاحظات على البيانات المستخرجة"
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { className: "ms-6 list-disc text-sm text-muted-foreground", children: validationErrors.map((msg, i2) => /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: msg }, i2)) })
+    ] }),
+    isPending && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mb-4 text-sm text-muted-foreground", children: "الفاتورة قيد المراجعة — عدّل أي حقل، طابق أو أنشئ منتجات، ثم اعتمد الفاتورة. لا شيء من هذا يؤثر على المخزون أو الديون حتى الاعتماد." }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(InvoiceItemsTable, { invoiceId, items, readOnly: !isPending }),
+    !isPending && /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { className: "mt-6 print:hidden", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { className: "space-y-2 p-5", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-sm font-medium", children: "ملاحظات" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Textarea,
+        {
+          rows: 2,
+          placeholder: "اختياري",
+          value: notesDraft ?? invoice.notes ?? "",
+          onChange: (e) => setNotesDraft(e.target.value)
+        }
+      ),
+      notesDraft != null && notesDraft !== (invoice.notes ?? "") && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex justify-end", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", size: "sm", onClick: handleSaveNotes, disabled: updateNotes.isPending, children: updateNotes.isPending ? t2("common.loading") : t2("common.save") }) })
+    ] }) }),
+    isPending && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 backdrop-blur-sm print:hidden", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-sm text-muted-foreground", children: [
+        items.length,
+        " صنف — راجع كل صنف قبل الاعتماد"
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { onClick: handleApprove, disabled: approveInvoice.isPending, children: approveInvoice.isPending ? t2("common.loading") : t2("invoices.approve") })
+    ] }) })
+  ] });
+}
+const MATCH_BADGE = {
+  Matched: { label: "مطابق تلقائياً", variant: "success" },
+  UserSelected: { label: "مختار يدوياً", variant: "success" },
+  NewProduct: { label: "منتج جديد", variant: "success" }
+};
+function InvoiceViewPage() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const invoiceId = Number(id);
+  const { data, isLoading, error, refetch } = useInvoiceReview(invoiceId);
+  reactExports.useEffect(() => {
+    if (data && data.invoice.status !== "Approved") {
+      navigate(`/invoices/${invoiceId}/review`, { replace: true });
+    }
+  }, [data, invoiceId, navigate]);
+  if (isLoading) return /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingState, { rows: 6 });
+  if (error || !data) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(ErrorState, { message: error?.message ?? "الفاتورة غير موجودة", onRetry: () => refetch() });
+  }
+  if (data.invoice.status !== "Approved") {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingState, { rows: 6 });
+  }
+  const { invoice, items } = data;
+  const subtotal = items.reduce((sum2, item) => sum2 + Number(item.total_price), 0);
+  const matchedExisting = items.filter((i2) => i2.match_status === "Matched" || i2.match_status === "UserSelected").length;
+  const newProducts = items.filter((i2) => i2.match_status === "NewProduct").length;
+  const matchedItems = matchedExisting + newProducts;
+  const confidences = items.map((i2) => i2.match_confidence).filter((c) => c != null);
+  const avgConfidence = confidences.length ? confidences.reduce((s2, c) => s2 + c, 0) / confidences.length : null;
+  const columns2 = [
+    {
+      accessorKey: "line_number",
+      header: "#",
+      meta: { exportLabel: "#" },
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: row.original.line_number })
+    },
+    {
+      accessorKey: "ocr_product_name",
+      header: ({ column }) => /* @__PURE__ */ jsxRuntimeExports.jsx(DataTableColumnHeader, { column, title: "اسم الصنف" }),
+      meta: { exportLabel: "اسم الصنف" },
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium text-foreground", children: row.original.ocr_product_name })
+    },
+    {
+      accessorKey: "matched_product_name",
+      header: ({ column }) => /* @__PURE__ */ jsxRuntimeExports.jsx(DataTableColumnHeader, { column, title: "المنتج المطابق" }),
+      meta: { exportLabel: "المنتج المطابق" },
+      cell: ({ row }) => row.original.matched_product_name ?? "—"
+    },
+    {
+      accessorKey: "unit",
+      header: "الوحدة",
+      meta: { exportLabel: "الوحدة" },
+      cell: ({ row }) => row.original.unit ?? "—"
+    },
+    {
+      accessorKey: "quantity",
+      header: ({ column }) => /* @__PURE__ */ jsxRuntimeExports.jsx(DataTableColumnHeader, { column, title: "الكمية" }),
+      meta: { exportLabel: "الكمية" },
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums", children: Number(row.original.quantity).toLocaleString("ar-DZ") })
+    },
+    {
+      accessorKey: "unit_price",
+      header: ({ column }) => /* @__PURE__ */ jsxRuntimeExports.jsx(DataTableColumnHeader, { column, title: "سعر الوحدة" }),
+      meta: { exportLabel: "سعر الوحدة" },
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums", children: formatCurrency(row.original.unit_price) })
+    },
+    {
+      accessorKey: "total_price",
+      header: ({ column }) => /* @__PURE__ */ jsxRuntimeExports.jsx(DataTableColumnHeader, { column, title: "إجمالي السطر" }),
+      meta: { exportLabel: "إجمالي السطر" },
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums font-semibold", children: formatCurrency(row.original.total_price) })
+    },
+    {
+      accessorKey: "match_status",
+      header: "حالة المطابقة",
+      meta: { exportLabel: "حالة المطابقة" },
+      cell: ({ row }) => {
+        const badge = MATCH_BADGE[row.original.match_status] ?? { label: row.original.match_status, variant: "secondary" };
+        return /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: badge.variant, children: badge.label });
+      }
+    }
+  ];
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-1 flex-col", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { variant: "ghost", size: "sm", className: "mb-2 w-fit print:hidden", onClick: () => navigate("/invoices"), children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowRight, { className: "size-4" }),
+      "الفواتير"
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { className: "mb-6", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { className: "grid grid-cols-2 gap-4 p-5 sm:grid-cols-4", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
@@ -65434,37 +66008,100 @@ function InvoiceReviewPage() {
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "المورد" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "font-semibold", children: invoice.supplier_name })
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Link, { to: `/suppliers/${invoice.supplier_id}`, className: "font-semibold text-primary hover:underline print:text-foreground print:no-underline", children: invoice.supplier_name })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "التاريخ" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "تاريخ الفاتورة" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "font-semibold", children: formatDate(invoice.invoice_date) })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "مبلغ الفاتورة" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "تاريخ الاعتماد" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "font-semibold", children: invoice.approved_at ? formatDate(invoice.approved_at) : "—" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "الحالة" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: "success", children: "معتمدة" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "المبلغ الإجمالي" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "tabular-nums font-semibold", children: formatCurrency(invoice.invoice_amount) })
+      ] }),
+      avgConfidence != null && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "دقة المطابقة (OCR)" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "tabular-nums font-semibold", children: [
+          Math.round(avgConfidence * 100),
+          "%"
+        ] })
       ] })
     ] }) }),
-    validationErrors.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-6 rounded-lg border border-warning/30 bg-warning/10 p-4", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-1 flex items-center gap-2 text-sm font-medium text-warning", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(TriangleAlert, { className: "size-4" }),
-        "ملاحظات على البيانات المستخرجة"
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { className: "ms-6 list-disc text-sm text-muted-foreground", children: validationErrors.map((msg, i2) => /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: msg }, i2)) })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-3", children: items.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-      InvoiceLineItem,
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      DataTable,
       {
-        item,
-        decision: decisions[item.id] ?? null,
-        onDecide: (decision) => handleDecide(item.id, decision)
-      },
-      item.id
-    )) }),
-    invoice.status === "Pending Review" && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 backdrop-blur-sm", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm text-muted-foreground", children: unresolvedItems.length === 0 ? "كل الأصناف مطابقة" : `${Object.keys(decisions).length} من ${unresolvedItems.length} أصناف تم حسمها` }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { onClick: handleApprove, disabled: !allResolved || approveInvoice.isPending, children: approveInvoice.isPending ? t2("common.loading") : t2("invoices.approve") })
-    ] }) })
+        columns: columns2,
+        data: items,
+        pageSize: 50,
+        exportFileName: `invoice-${invoice.invoice_number}`,
+        emptyTitle: "لا توجد أصناف",
+        toolbar: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-sm text-muted-foreground", children: [
+          items.length,
+          " صنف"
+        ] })
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { className: "mt-6", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { className: "grid grid-cols-2 gap-4 p-5 sm:grid-cols-3 lg:grid-cols-6", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "المجموع الفرعي" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "tabular-nums font-semibold", children: formatCurrency(subtotal) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "المبلغ الإجمالي" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "tabular-nums font-semibold", children: formatCurrency(invoice.invoice_amount) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "عدد الأصناف" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "tabular-nums font-semibold", children: items.length })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "أصناف مطابقة" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "tabular-nums font-semibold", children: matchedItems })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "منتجات جديدة أُنشئت" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "tabular-nums font-semibold", children: newProducts })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "منتجات مطابقة لمنتج موجود" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "tabular-nums font-semibold", children: matchedExisting })
+      ] })
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { className: "mt-6 print:hidden", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { className: "grid grid-cols-2 gap-4 p-5 sm:grid-cols-3", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "اسم المورد" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "font-semibold", children: invoice.supplier_name })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "رقم الفاتورة" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "font-semibold", children: [
+          "#",
+          invoice.invoice_number
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "الرصيد الحالي للمورد" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "tabular-nums font-semibold", children: formatCurrency(invoice.current_balance) })
+      ] })
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-6 flex justify-end gap-2 print:hidden", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "ghost", onClick: () => navigate("/invoices"), children: "رجوع" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { type: "button", variant: "outline", onClick: () => window.print(), children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(FileDown, { className: "size-4" }),
+        "تصدير PDF"
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { type: "button", onClick: () => window.print(), children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Printer, { className: "size-4" }),
+        "طباعة"
+      ] })
+    ] })
   ] });
 }
 const purchaseOrdersApi = {
@@ -67217,6 +67854,7 @@ function AppRouter() {
     /* @__PURE__ */ jsxRuntimeExports.jsx(Route, { path: "suppliers/:id", element: /* @__PURE__ */ jsxRuntimeExports.jsx(SupplierDetailPage, {}) }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(Route, { path: "invoices", element: /* @__PURE__ */ jsxRuntimeExports.jsx(InvoicesPage, {}) }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(Route, { path: "invoices/:id/review", element: /* @__PURE__ */ jsxRuntimeExports.jsx(InvoiceReviewPage, {}) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Route, { path: "invoices/:id", element: /* @__PURE__ */ jsxRuntimeExports.jsx(InvoiceViewPage, {}) }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(Route, { path: "purchase-orders", element: /* @__PURE__ */ jsxRuntimeExports.jsx(PurchaseOrdersPage, {}) }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(Route, { path: "purchase-orders/:id", element: /* @__PURE__ */ jsxRuntimeExports.jsx(PurchaseOrderDetailPage, {}) }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(Route, { path: "payments", element: /* @__PURE__ */ jsxRuntimeExports.jsx(PaymentsPage, {}) }),

@@ -813,6 +813,10 @@
     min-height: calc(var(--spacing) * 24);
   }
 
+  .w-8 {
+    width: calc(var(--spacing) * 8);
+  }
+
   .w-16 {
     width: calc(var(--spacing) * 16);
   }
@@ -829,8 +833,8 @@
     width: calc(var(--spacing) * 28);
   }
 
-  .w-32 {
-    width: calc(var(--spacing) * 32);
+  .w-56 {
+    width: calc(var(--spacing) * 56);
   }
 
   .w-64 {
@@ -883,6 +887,10 @@
 
   .min-w-40 {
     min-width: calc(var(--spacing) * 40);
+  }
+
+  .min-w-56 {
+    min-width: calc(var(--spacing) * 56);
   }
 
   .flex-1 {
@@ -1289,6 +1297,16 @@
     border-color: var(--input);
   }
 
+  .border-primary\/30 {
+    border-color: var(--primary);
+  }
+
+  @supports (color: color-mix(in lab, red, red)) {
+    .border-primary\/30 {
+      border-color: color-mix(in oklab, var(--primary) 30%, transparent);
+    }
+  }
+
   .border-transparent {
     border-color: #0000;
   }
@@ -1303,17 +1321,7 @@
     }
   }
 
-  .bg-accent, .bg-accent\/50 {
-    background-color: var(--accent);
-  }
-
-  @supports (color: color-mix(in lab, red, red)) {
-    .bg-accent\/50 {
-      background-color: color-mix(in oklab, var(--accent) 50%, transparent);
-    }
-  }
-
-  .bg-accent\/60 {
+  .bg-accent, .bg-accent\/60 {
     background-color: var(--accent);
   }
 
@@ -1385,7 +1393,17 @@
     background-color: var(--popover);
   }
 
-  .bg-primary, .bg-primary\/10 {
+  .bg-primary, .bg-primary\/5 {
+    background-color: var(--primary);
+  }
+
+  @supports (color: color-mix(in lab, red, red)) {
+    .bg-primary\/5 {
+      background-color: color-mix(in oklab, var(--primary) 5%, transparent);
+    }
+  }
+
+  .bg-primary\/10 {
     background-color: var(--primary);
   }
 
@@ -1571,6 +1589,10 @@
 
   .align-middle {
     vertical-align: middle;
+  }
+
+  .align-top {
+    vertical-align: top;
   }
 
   .font-mono {
@@ -2311,6 +2333,10 @@
       grid-template-columns: repeat(4, minmax(0, 1fr));
     }
 
+    .sm\:grid-cols-5 {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+
     .sm\:flex-row {
       flex-direction: row;
     }
@@ -2340,6 +2366,10 @@
     .lg\:grid-cols-5 {
       grid-template-columns: repeat(5, minmax(0, 1fr));
     }
+
+    .lg\:grid-cols-6 {
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+    }
   }
 
   @media print {
@@ -2366,6 +2396,14 @@
 
     .print\:p-0 {
       padding: 0;
+    }
+
+    .print\:text-foreground {
+      color: var(--foreground);
+    }
+
+    .print\:no-underline {
+      text-decoration-line: none;
     }
 
     .print\:shadow-none {

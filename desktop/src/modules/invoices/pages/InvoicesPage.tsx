@@ -91,6 +91,16 @@ export function InvoicesPage() {
       id: 'status',
       header: 'الحالة',
       cell: () => <Badge variant="success">معتمدة</Badge>
+    },
+    {
+      id: 'actions',
+      header: '',
+      enableHiding: false,
+      cell: ({ row }) => (
+        <Button variant="outline" size="sm" onClick={() => navigate(`/invoices/${row.original.id}`)}>
+          عرض
+        </Button>
+      )
     }
   ]
 
