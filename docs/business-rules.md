@@ -26,6 +26,78 @@ Never add a new snapshot column without a corresponding ADR in `decisions.md`
 - Debt aging (`GET /api/suppliers/aging`) buckets by invoice age, not
   payment age.
 
+### Invoice lifecycle: Pending Review → Approved (`invoiceProcessor.js`)
+A purchase invoice has exactly two content-relevant states, and the
+transition between them is one-way:
+
+- **Pending Review** — every OCR import lands here, *always*, regardless of
+  match confidence or validation result. There is no auto-approve fast
+  path. Nothing here is a business record yet: no stock movement, no
+  supplier debt, no accounting entry. Every field is directly editable and
+  persists immediately on its own request (`PATCH /api/invoices/:id/items/:itemId`,
+  `POST .../items`, `DELETE .../items/:itemId`) — there is no "local
+  decisions, submit as a batch" step anymore. Editing is always inert: it
+  only ever touches `purchase_invoice_items`, never stock/debt/accounting.
+- **Approved** — the result of `POST /api/invoices/:id/approve` (no body).
+  Requires **every** item to already carry a real `product_id`; rejects
+  with a message naming every still-unmatched item otherwise — there is no
+  partial approval. On success: `status='Approved'`, then
+  `executeBusinessLogic()` posts stock/debt/cost/accounting in one shot.
+  **This is the only place those effects are ever posted.**
+
+**The calculated total (sum of line items) is the single source of truth
+for `invoice_amount`** — never the OCR-extracted header figure.
+`ocr_header_total` stores that raw OCR figure separately, frozen once at
+import, purely for reference/validation/display; it is never read by any
+business-logic code path. `invoice_amount` is instead kept permanently in
+sync with `SUM(purchase_invoice_items.total_price)` — recalculated via
+`db.stmts.recalculateInvoiceTotal` at the end of every `updateInvoiceItem`,
+`addInvoiceItem`, and `deleteInvoiceItem` call (and therefore through
+merge/split too, since those compose the same three primitives). This means
+by the time `approveInvoice()` runs, `invoice_amount` already reflects
+exactly what's in the items — no special recompute needed at approval time,
+and it's what `executeBusinessLogic()` uses for supplier debt and
+accounting. Stock movements, weighted-average cost, and product-analytics
+purchase history were already item-level (never read the header total), so
+this rule was already implicitly true for those — the header figure was
+only ever wrong for debt/accounting before this rule was enforced. The
+review UI shows OCR Header Total / Calculated Total / Difference together,
+with a warning banner (Pending Review only) when they differ by more than a
+cent.
+
+**Every OCR-supplied and API-supplied numeric field must go through
+`parseNumber()`** (`src/utils/parseNumber.js`) before any arithmetic or
+storage — never trust that a "numeric" field from OCR JSON is actually a
+JS number. This is not a style preference; it's the fix for a real
+incident where a formatted string (`"99,220.00"`) silently corrupted a
+supplier's balance via string concatenation instead of addition — see
+ADR-017 for the full trace.
+
+Once Approved, the invoice is **permanently immutable** — product name,
+quantity, unit, unit price, product match, line items, and totals can never
+change again. Every item-editing endpoint checks
+`invoiceProcessor._requirePendingInvoice()` first and rejects outright if
+`status !== 'Pending Review'`. The **only** exception is `notes`
+(`PATCH /api/invoices/:id/notes`), explicitly carved out because it's
+metadata, not a financial fact. An Approved invoice behaves like a printed
+legal document: view, print, and view its already-posted stock/supplier
+effects — never edit.
+
+**Deliberately not implemented (Phase 1 scope):** an "Invoice Correction"
+workflow for fixing a mistake discovered *after* approval. That would need
+adjustment/reversal transactions that preserve accounting history rather
+than mutating a posted record in place — a materially different, larger
+feature. Do not build a workaround for this (e.g., letting the review page
+silently patch an approved item) without designing that adjustment-entry
+mechanism properly first.
+
+**Merge/split are frontend compositions, not backend primitives** — there's
+no dedicated "merge" or "split" endpoint. Merge = `updateInvoiceItem` (sum
+quantities into one row) + `deleteInvoiceItem` (remove the other). Split =
+`updateInvoiceItem` (shrink the original row's quantity) + `addInvoiceItem`
+(a new row for the remainder, carrying over the same product/unit/price).
+Both are safe specifically *because* nothing has posted yet pre-approval.
+
 ### Product matching (`productMatcher.js`)
 - OCR-extracted line items are matched to canonical products via
   `product_aliases` (normalized-name lookup) first, then fuzzy match, then
@@ -61,6 +133,14 @@ Never add a new snapshot column without a corresponding ADR in `decisions.md`
   `VALID_STATUSES = ['Draft','Sent','Received','Cancelled']`.
   `TERMINAL_STATUSES = ['Received','Cancelled']` — once a PO reaches either,
   `updateStatus` rejects further transitions.
+- **Editing is Draft-only**: header fields (supplier, order date, expected
+  date, notes) and line items (product, quantity, expected price; add/
+  delete) can only be changed while `status === 'Draft'`, enforced by
+  `_requireDraft()` at the top of every editing method — 400 otherwise.
+  Unlike invoice editing there's no cascade to keep in sync (see the intent-
+  only rule above), so editing is just correcting the record itself, no
+  stock/debt/accounting side effects at any point. Deleting the last
+  remaining item is rejected, same as invoice items.
 - **UX default, not a data rule**: when adding a product line to a new PO,
   the unit-price field is pre-filled from that product's
   `last_purchase_price` (falling back to `average_cost`) purely as a
@@ -122,6 +202,9 @@ in the shipped code:
 | Rule | Enforced? | Where |
 |---|---|---|
 | Purchase invoice `UNIQUE(invoice_number, supplier_id)` | Yes — DB constraint | `schema.sql` |
+| Purchase invoice: every item must have `product_id` before approval | Yes | `invoiceProcessor.approveInvoice` |
+| Purchase invoice: items immutable once Approved | Yes | `invoiceProcessor._requirePendingInvoice` |
+| Purchase invoice: can't delete the last remaining item | Yes | `invoiceProcessor.deleteInvoiceItem` |
 | Sales invoice must have ≥1 item | Yes | `customerService.createInvoice` |
 | Payment amount `> 0` | Yes | `customerService.recordPayment`, `debtService` |
 | PO status transitions restricted once terminal | Yes | `purchaseOrderService.updateStatus` |

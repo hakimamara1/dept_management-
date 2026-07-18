@@ -160,6 +160,7 @@ export interface InvoiceReviewHeader {
   currency: string
   previous_balance: number | null
   invoice_amount: number
+  ocr_header_total: number | null
   discount: number
   tax: number
   new_balance: number | null
@@ -254,6 +255,26 @@ export interface CreatePurchaseOrderInput {
   expectedDate?: string
   notes?: string
   items: { productId: number; quantity: number; expectedUnitPrice?: number }[]
+}
+
+// Editing is only ever accepted by the backend while status === 'Draft'.
+export interface UpdatePurchaseOrderInput {
+  supplierId?: number
+  orderDate?: string
+  expectedDate?: string
+  notes?: string
+}
+
+export interface UpdatePurchaseOrderItemInput {
+  productId?: number
+  quantity?: number
+  expectedUnitPrice?: number
+}
+
+export interface AddPurchaseOrderItemInput {
+  productId: number
+  quantity: number
+  expectedUnitPrice?: number
 }
 
 // ── Accounting / Reports ──────────────────────────────────

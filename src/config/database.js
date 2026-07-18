@@ -28,14 +28,58 @@ class DatabaseManager {
         // BigInt would break arithmetic like (balance + invoiceAmount).
 
         this.initSchema();
+        this.runMigrations();
+        this.initIndexes();
         this.initStatements();
     }
 
+    /**
+     * Tables only. Indexes are deferred to initIndexes(), run after
+     * runMigrations() — an index on a column a migration is about to add
+     * would otherwise fail on an existing database, since CREATE TABLE IF
+     * NOT EXISTS is a no-op for a table that's already there.
+     */
     initSchema() {
         const schemaPath = path.join(__dirname, '../models/schema.sql');
         if (fs.existsSync(schemaPath)) {
             const schema = fs.readFileSync(schemaPath, 'utf8');
-            this.db.exec(schema);
+            const indexMarker = '-- Indexes for performance';
+            const splitAt = schema.indexOf(indexMarker);
+            if (splitAt === -1) {
+                this.db.exec(schema);
+            } else {
+                this.db.exec(schema.slice(0, splitAt));
+                this._indexSql = schema.slice(splitAt);
+            }
+        }
+    }
+
+    initIndexes() {
+        if (this._indexSql) {
+            this.db.exec(this._indexSql);
+        }
+    }
+
+    /**
+     * CREATE TABLE IF NOT EXISTS in schema.sql only helps brand-new
+     * databases — it never adds a column to a table that already exists on
+     * disk. Any column added to an existing table needs an explicit
+     * ALTER TABLE here, guarded by a PRAGMA table_info check since SQLite
+     * has no "ADD COLUMN IF NOT EXISTS". Keep this list append-only, in the
+     * order columns were introduced.
+     */
+    runMigrations() {
+        this._addColumnIfMissing('purchase_invoice_items', 'unit', 'TEXT');
+        this._addColumnIfMissing('purchase_invoices', 'approved_at', 'DATETIME');
+        this._addColumnIfMissing('purchase_invoices', 'ocr_header_total', 'DECIMAL(15,2)');
+        this._addColumnIfMissing('products', 'default_sale_price', 'DECIMAL(10,2)');
+    }
+
+    _addColumnIfMissing(table, column, definition) {
+        const existingColumns = this.db.prepare(`PRAGMA table_info(${table})`).all();
+        const alreadyExists = existingColumns.some((col) => col.name === column);
+        if (!alreadyExists) {
+            this.db.exec(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
         }
     }
 
@@ -59,7 +103,10 @@ class DatabaseManager {
 
             // Products
             products: {
-                getPriceHistory: this.db.prepare(QUERIES.products.getPriceHistory)
+                getPriceHistory: this.db.prepare(QUERIES.products.getPriceHistory),
+                insert: this.db.prepare(QUERIES.products.insert),
+                updateSalePrice: this.db.prepare(QUERIES.products.updateSalePrice),
+                update: this.db.prepare(QUERIES.products.update)
             },
 
             // Invoices
@@ -74,7 +121,11 @@ class DatabaseManager {
                 getItemsByOrder: this.db.prepare(QUERIES.purchaseOrders.getItemsByOrder),
                 insert: this.db.prepare(QUERIES.purchaseOrders.insert),
                 insertItem: this.db.prepare(QUERIES.purchaseOrders.insertItem),
-                updateStatus: this.db.prepare(QUERIES.purchaseOrders.updateStatus)
+                updateStatus: this.db.prepare(QUERIES.purchaseOrders.updateStatus),
+                update: this.db.prepare(QUERIES.purchaseOrders.update),
+                updateItem: this.db.prepare(QUERIES.purchaseOrders.updateItem),
+                deleteItem: this.db.prepare(QUERIES.purchaseOrders.deleteItem),
+                countItems: this.db.prepare(QUERIES.purchaseOrders.countItems)
             },
 
             // Wholesale Customers
@@ -174,21 +225,47 @@ class DatabaseManager {
                  WHERE pi.invoice_number = ? AND s.name = ?`
             ),
             insertInvoice: this.db.prepare(
-                `INSERT INTO purchase_invoices 
+                `INSERT INTO purchase_invoices
                  (invoice_number, invoice_date, invoice_time, supplier_id, currency,
-                  previous_balance, invoice_amount, discount, tax, new_balance,
+                  previous_balance, invoice_amount, ocr_header_total, discount, tax, new_balance,
                   payment_method, notes, status, validation_errors)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
             ),
             insertInvoiceItem: this.db.prepare(
                 `INSERT INTO purchase_invoice_items
                  (invoice_id, product_id, line_number, ocr_product_name, normalized_ocr_name,
-                  package, quantity, unit_price, discount, tax, total_price,
+                  package, unit, quantity, unit_price, discount, tax, total_price,
                   match_status, match_confidence, suggested_product_id, notes)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
             ),
+            updateInvoiceItem: this.db.prepare(
+                `UPDATE purchase_invoice_items
+                 SET ocr_product_name = ?, unit = ?, quantity = ?, unit_price = ?, total_price = ?,
+                     product_id = ?, match_status = ?
+                 WHERE id = ?`
+            ),
+            deleteInvoiceItem: this.db.prepare('DELETE FROM purchase_invoice_items WHERE id = ?'),
+            countInvoiceItems: this.db.prepare('SELECT COUNT(*) as count FROM purchase_invoice_items WHERE invoice_id = ?'),
+            getMaxLineNumber: this.db.prepare('SELECT MAX(line_number) as maxLine FROM purchase_invoice_items WHERE invoice_id = ?'),
+            countUnmatchedItems: this.db.prepare(
+                `SELECT COUNT(*) as count FROM purchase_invoice_items WHERE invoice_id = ? AND product_id IS NULL`
+            ),
+            // Keeps invoice_amount permanently in sync with the items — the
+            // calculated total is the single source of truth (business-rules.md).
+            // Called at the end of every item add/edit/delete.
+            recalculateInvoiceTotal: this.db.prepare(
+                `UPDATE purchase_invoices
+                 SET invoice_amount = (SELECT COALESCE(SUM(total_price), 0) FROM purchase_invoice_items WHERE invoice_id = ?)
+                 WHERE id = ?`
+            ),
+            updateInvoiceNotes: this.db.prepare('UPDATE purchase_invoices SET notes = ? WHERE id = ?'),
             updateInvoiceStatus: this.db.prepare(
                 'UPDATE purchase_invoices SET status = ? WHERE id = ?'
+            ),
+            // Used only by approveInvoice — stamps approved_at at the exact
+            // moment of approval, for the read-only view page's header.
+            approveInvoiceStatus: this.db.prepare(
+                `UPDATE purchase_invoices SET status = 'Approved', approved_at = CURRENT_TIMESTAMP WHERE id = ?`
             ),
             insertStockMovement: this.db.prepare(
                 `INSERT INTO stock_movements 

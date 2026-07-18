@@ -281,3 +281,190 @@ implementation choice gets a new ADR here before or while the code is
 written — not as a follow-up task.
 
 **Status**: Accepted, in effect for all future work in this project.
+
+---
+
+### ADR-014: Two-state invoice workflow — always Pending Review first, full-match-gated Approve, permanent lock after
+
+**Decision**: Removed the auto-approve fast path entirely. Every OCR-
+imported invoice now lands at `Pending Review`, with no exception, no
+matter how confident the matching was. While Pending Review, every item
+field (name, unit, quantity, price, product match) is directly editable via
+new endpoints (`PATCH/POST/DELETE .../items[/:itemId]`) that persist
+immediately but produce zero business effect — no stock, no debt, no
+accounting. `POST /api/invoices/:id/approve` no longer accepts a
+`decisions` body; it instead requires every item to already carry a real
+`product_id`, rejecting otherwise, then runs `executeBusinessLogic()`
+(unchanged) and permanently locks the invoice. Once `Approved`, every
+item-editing endpoint rejects outright — only `notes` may still change.
+
+**Reason**: Direct user specification, framed explicitly as "professional
+ERP design": the business owner must review and correct every invoice
+before it becomes a real business record, and an approved invoice must
+behave like a printed legal document — immutable except for a documented,
+narrow set of view/print/notes actions. This supersedes an earlier,
+narrower attempt at this session to let specific still-unmatched items on
+an *already-approved* invoice be fixed after the fact (`resolveInvoiceItem`)
+— the user explicitly rejected that shape and reset the branch to the last
+commit, then handed down this spec instead.
+
+**Consequences**:
+- The old "local decisions, batch-submit at approve time" UI model is gone.
+  Matching now happens the moment an item is edited, not deferred to a
+  submit step — simpler mental model, fewer moving parts in the frontend.
+- Correcting a mistake discovered *after* approval is explicitly out of
+  scope for Phase 1 — deferred to a future "Invoice Correction" workflow
+  that would need adjustment/reversal entries, not a direct edit. Do not
+  build a workaround for this without designing that properly (see
+  `roadmap.md`).
+- Added `purchase_invoice_items.unit` (new migration — the project's first
+  since ADR from the reverted branch, re-added here) since "Unit" is an
+  explicitly required editable field and previously only existed on
+  `products.unit`, not per invoice-line.
+- Merge/split ship as pure frontend compositions of
+  update/add/delete-item — no dedicated backend endpoint for either,
+  since nothing has posted pre-approval and composing them is safe.
+
+**Status**: Accepted, implemented.
+
+---
+
+### ADR-015: Dedicated read-only view page for Approved invoices, separate from the editable review page
+
+**Decision**: Added `InvoiceViewPage.tsx` at `/invoices/:id`, distinct from
+the editable `/invoices/:id/review` (ADR-014). Both read the same
+`GET /:id/review` endpoint — no new backend query — but the view page
+renders a purely informational layout (header with a new `approved_at`
+timestamp, a sortable/searchable/paginated `DataTable` of items with zero
+action columns, a summary card, a supplier-info card, and print/export/back
+buttons) and contains no code path that can call any mutating endpoint.
+Visiting `/invoices/:id` for an invoice that isn't actually `Approved`
+redirects to `/review` instead of rendering a half-correct read-only view
+of a still-draft invoice.
+
+**Reason**: Direct user spec — an approved invoice needed its own dedicated
+"printed legal document" screen, explicitly enumerating required fields
+(including approval date and an optional aggregate OCR confidence, neither
+of which existed before) and explicitly forbidding every editing control
+from appearing anywhere on it, even visually. Reusing the editable review
+page's component tree for this — as the interim `InvoiceItemsTable
+readOnly` mode did — couldn't satisfy the richer header/summary/supplier
+sections the spec asked for without bloating that component's branching.
+
+**Consequences**: `purchase_invoices.approved_at` added (new migration) —
+`NULL` until `approveInvoice()` stamps it once via the new
+`approveInvoiceStatus` prepared statement, replacing the plain
+`updateInvoiceStatus` call at that single call site. "Export PDF" reuses
+`window.print()` (same as the "Print" button) rather than a dedicated PDF
+library — no such dependency exists in the project yet, and the browser's
+native print-to-PDF destination already covers this without adding one.
+
+**Status**: Accepted, implemented.
+
+---
+
+### ADR-016: Calculated total (sum of line items) is the sole source of truth for `invoice_amount` — never the OCR header figure
+
+**Decision**: Added `purchase_invoices.ocr_header_total` (new migration) to
+store the raw OCR-extracted header total, frozen once at import, reference-
+only. `invoice_amount` — the column every business-logic path already
+read — is instead kept permanently equal to
+`SUM(purchase_invoice_items.total_price)` via a new
+`recalculateInvoiceTotal` statement called at the end of every
+`updateInvoiceItem`/`addInvoiceItem`/`deleteInvoiceItem`, and at insert time
+during OCR import (computed from the items being inserted, not copied from
+`ocrJson.invoice_amount`). The review UI displays OCR Header Total /
+Calculated Total / Difference together, with a warning banner (Pending
+Review only) when they differ by more than a cent.
+
+**Reason**: Direct user spec — OCR header-total extraction is inherently
+less reliable than summing the (human-reviewed, correctable) line items, so
+it must never drive real financial effects. Stock movements, weighted-
+average cost, and product-analytics purchase history were already
+item-level and therefore already compliant; the header figure was only
+ever wrong for supplier debt and accounting, both of which read
+`invoice.invoice_amount` directly in `executeBusinessLogic()`.
+
+**Consequences**: Because `invoice_amount` is now always in sync by the
+time `approveInvoice()` runs, no special recompute was needed at approval
+time — the existing `executeBusinessLogic()` call is unchanged and
+automatically correct. Every future item-mutating endpoint must remember to
+call `recalculateInvoiceTotal` too, or `invoice_amount` will silently drift
+from the items again — this is the one sharp edge this design has.
+
+**Status**: Accepted, implemented.
+
+---
+
+### ADR-017: Sanitize every OCR/user-supplied numeric field through `parseNumber()` before any arithmetic or storage
+
+**Decision**: Added `src/utils/parseNumber.js` — coerces a value to a real
+JS number, stripping thousands-separator commas from strings
+(`"99,220.00"` → `99220`), falling back to a caller-supplied default
+(`0` unless overridden) for anything unparseable. Applied it to every OCR
+header/item numeric field in `processOcrResult` (`invoice_amount`,
+`previous_balance`, `discount`, `tax`, `new_balance`, and each item's
+`quantity`/`unit_price`/`discount`/`tax`/`total_price`), the item-editing
+methods (`updateInvoiceItem`, `addInvoiceItem`), and every entry point into
+`debtService` (`getCurrentBalance`, `addInvoiceDebt`, `recordPayment`,
+`adjustBalance`).
+
+**Reason**: A real production incident, not a hypothetical. An OCR
+extraction returned `invoice_amount` as the formatted string `"99,220.00"`
+instead of a plain number. Nothing anywhere coerced it to a number before
+using it in arithmetic, and in JavaScript `number + string` is string
+*concatenation*, not addition. That silently corrupted a real supplier's
+`current_balance` snapshot across two approvals in a row —
+`397395.1 + "99,220.00"` → the stored string `"397395.199,220.00"`, then
+`Number(that) + "99,220.00"` → `NaN + "99,220.00"` → the stored string
+`"NaN99,220.00"`. The next approval for that supplier then failed with
+`NOT NULL constraint failed: supplier_transactions.balance_after`, because
+SQLite silently converts a bound `NaN` REAL value to `NULL` on write, which
+the `NOT NULL` constraint then rejects — a confusing downstream symptom of
+an upstream type bug.
+
+**Consequences**: `getCurrentBalance()` now returns a safe `0` fallback
+instead of propagating `NaN`/corrupted-string reads forward — corruption
+from any source can no longer cascade into future balance updates, though
+it also means a genuinely corrupted stored value gets silently treated as
+zero rather than erroring loudly; the supplier's balance still needs a
+one-time manual repair (see the corrupted-row fix logged in `changelog.md`)
+since `parseNumber` can't recover the original correct number from an
+already-corrupted string. **Any future code path that accepts a numeric
+value from OCR JSON or an API request body must route it through
+`parseNumber()` before arithmetic or storage** — this is now the standing
+rule, not optional.
+
+**Status**: Accepted, implemented.
+
+### ADR-018: Purchase Order editing is Draft-only, mirroring the invoice Pending-Review pattern
+
+**Decision**: Added `PATCH /:id`, `PATCH /:id/items/:itemId`, `POST /:id/items`,
+`DELETE /:id/items/:itemId` to `purchaseOrderService.js`/`routes/purchaseOrders.js`.
+Every editing method opens with `_requireDraft(id)`, which throws unless
+`status === 'Draft'`; the frontend (`PurchaseOrderDetailPage.tsx`) renders
+an inline-editable header (`SupplierPicker`, date inputs, notes) and an
+editable items table (`PurchaseOrderItemsTable`/`PurchaseOrderItemRow`,
+mirroring `InvoiceItemsTable`/`InvoiceItemRow`) only while Draft; any other
+status keeps the original plain read-only card + table.
+
+**Reason**: A PO is intent-only — it never touches stock, debt, or
+accounting at any status (see the existing "Purchase Orders" business
+rule) — so unlike invoice editing there's no ledger cascade to keep
+consistent when a field changes. That makes Draft-only editing strictly
+simpler than the invoice Pending-Review model: no OCR/match-status
+concept, no calculated-total-vs-OCR-header distinction, items reference a
+real `product_id` from the moment they're created (via `ProductPicker`),
+so there's nothing equivalent to "resolve an unmatched item." Restricting
+edits to Draft (rather than allowing them through Sent) keeps the
+lifecycle meaning intact — once a PO has been Sent, changing its contents
+behind the supplier's back would misrepresent what was actually
+communicated to them.
+
+**Consequences**: Deleting the last item on a Draft PO is rejected (same
+guard as invoice items) since a PO must always represent at least one
+line. Once a PO leaves Draft, its content is frozen exactly like an
+Approved invoice — the only escape hatch is `Cancelled` and creating a new
+PO.
+
+**Status**: Accepted, implemented.

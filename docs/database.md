@@ -34,8 +34,8 @@ foreign key crosses between them.
 | `suppliers` | Supplier identity | `current_balance` — **maintained snapshot**, updated by `debtService` on every transaction |
 | `products` | Canonical product catalog | `current_stock` — **stale, do not read**; always derive stock as `SUM(stock_movements.quantity)` instead (see below) |
 | `product_aliases` | Maps every OCR spelling ever seen to a canonical `product_id` | `normalized_alias` is **globally UNIQUE** — known limitation, see `roadmap.md` |
-| `purchase_invoices` | Invoice header from OCR | `UNIQUE(invoice_number, supplier_id)`; `status` ∈ `Pending Review, Approved, Rejected` |
-| `purchase_invoice_items` | Invoice lines | `match_status` ∈ `Pending, Matched, NewProduct, UserSelected` |
+| `purchase_invoices` | Invoice header from OCR | `UNIQUE(invoice_number, supplier_id)`; `status` ∈ `Pending Review, Approved, Rejected`; `approved_at` is `NULL` until `approveInvoice()` sets it once, at the exact moment of approval — powers the read-only view page's "تاريخ الاعتماد" field. `invoice_amount` is **always** `SUM(purchase_invoice_items.total_price)`, kept live by `recalculateInvoiceTotal` on every item add/edit/delete — never read `invoice_amount` as if it were the raw OCR figure. `ocr_header_total` holds that raw OCR figure instead, frozen at import, reference-only — see `business-rules.md` |
+| `purchase_invoice_items` | Invoice lines | `match_status` ∈ `Pending, Matched, NewProduct, UserSelected`; `unit` is a per-line, freely-editable unit of measure (independent of whatever the matched product's own canonical unit is), added specifically so it can be corrected pre-approval — see `business-rules.md`'s invoice-lifecycle section. Every column here is directly editable while the parent invoice is `Pending Review`, and permanently frozen once `Approved` |
 | `stock_movements` | **Append-only** inventory ledger | `movement_type` ∈ `purchase, sale, adjustment, return`; positive quantity = in, negative = out |
 | `supplier_transactions` | **Append-only** debt ledger | `transaction_type` ∈ `invoice, payment, adjustment`; each row snapshots `balance_after` |
 | `accounting_transactions` | Double-entry journal | `account_code` ∈ `inventory, accounts_payable, purchases, cash, bank, sales, cogs, discount_received, tax_payable` |
@@ -139,6 +139,35 @@ give same-day entries (a common case: an invoice and a payment on the same
 date) the *same* cumulative value instead of a proper step-by-step ledger.
 `ROWS` guarantees one row at a time regardless of ties in the `ORDER BY`.
 Nothing about this balance is stored — it's regenerated on every read.
+
+## Schema migrations (adding a column to an existing table)
+
+`schema.sql` runs with `CREATE TABLE IF NOT EXISTS` on every startup —
+idempotent for **new** tables, a no-op for a table that already exists on
+disk. Adding a column to an already-shipped table (e.g.
+`purchase_invoice_items.unit`) needs an explicit migration, since SQLite has
+no `ADD COLUMN IF NOT EXISTS`. `config/database.js` runs schema init in
+three ordered steps:
+
+```js
+this.initSchema();     // CREATE TABLE statements only (indexes deferred)
+this.runMigrations();  // ALTER TABLE ADD COLUMN, guarded by PRAGMA table_info
+this.initIndexes();    // CREATE INDEX statements, run last
+```
+
+The split matters: an index on a column a migration is about to add would
+fail if it ran before the migration, since `CREATE TABLE IF NOT EXISTS` is a
+no-op on an existing table and the column wouldn't exist yet.
+`initSchema()` execs everything up to the literal
+`-- Indexes for performance` marker comment; the migration runs; then the
+deferred index tail execs last.
+
+**Any future column added to an existing table needs both halves**: add it
+to the `CREATE TABLE` block in `schema.sql` (fresh installs) *and* an
+`_addColumnIfMissing(table, column, definition)` call in `runMigrations()`
+(live databases) — one without the other means dev/prod and fresh installs
+silently diverge. Keep the migration list append-only, in the order columns
+were introduced.
 
 ## Indexes
 

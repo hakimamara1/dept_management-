@@ -54,9 +54,10 @@ becomes the invoice's `supplier_id`.
 ## Phase 3 — Insert invoice header
 
 `db.stmts.insertInvoice.run(...)` writes the `purchase_invoices` row with
-`status = validation.status` and `validation_errors` as a JSON string. This
-happens **before** product matching, so the invoice id exists for item rows
-to reference — its `status` gets overwritten below once matching is known.
+`status = 'Pending Review'` (always — see Phase 5) and `validation_errors`
+as a JSON string, so `validation.errors` still surface in the review UI even
+though they no longer block anything. This happens **before** product
+matching, so the invoice id exists for item rows to reference.
 
 ## Phase 4 — Match products (`productMatcher.js`)
 
@@ -70,28 +71,28 @@ For each item in `ocrJson.items`:
 4. Anything not `'Matched'` is pushed onto `pendingItems` and flips
    `allMatched = false` for the whole invoice.
 
-## Phase 5 — Auto-approve or hold for review
+## Phase 5 — Always lands at Pending Review
 
-```js
-finalStatus = (validation.isValid && allMatched) ? 'Approved' : 'Pending Review'
-```
+**No auto-approve.** Every OCR import lands at `status = 'Pending Review'`,
+regardless of validation result or match confidence — there is no fast path
+that skips human review, even for a perfectly-matched invoice. This is a
+deliberate ERP-workflow rule (see `business-rules.md`): the business owner
+must see and be able to correct every invoice before it becomes a real
+business record. Nothing downstream (stock/debt/accounting) runs at this
+point — the invoice and its items are a pure draft.
 
-If `'Approved'`, `executeBusinessLogic(invoiceId)` runs **immediately**,
-inside the same transaction as everything above — an invoice is never left
-half-processed. If `'Pending Review'`, nothing downstream happens yet; the
-invoice and its items sit with `status='Pending Review'`/`match_status='Pending'`
-until a human acts (Phase 7).
-
-`processOcrResult` returns `{ invoiceId, status, supplier, pendingItems, validationErrors, validationWarnings }`.
-`pendingItems` is only populated when `status === 'Pending Review'`.
+`processOcrResult` returns `{ invoiceId, status: 'Pending Review', supplier, pendingItems, validationErrors, validationWarnings }`.
+`pendingItems` lists every item that didn't auto-match with high confidence,
+as a hint for the review UI — it's informational only, not a gate.
 
 ## Phase 6 — `executeBusinessLogic(invoiceId)` (the cascade)
 
-Called from either the auto-approve path above or from human approval
-(Phase 7). Re-fetches the invoice + items fresh from the DB (not passed
-in-memory) so it behaves identically regardless of caller. Four steps, each
-delegated to a dedicated service — **no inline SQL for business effects**,
-this method is purely an orchestrator:
+Called from exactly one place: the end of `approveInvoice()` (Phase 7). This
+is now the **only** code path that produces stock/debt/accounting effects —
+there is no auto-approve caller anymore. Re-fetches the invoice + items
+fresh from the DB (not passed in-memory). Four steps, each delegated to a
+dedicated service — **no inline SQL for business effects**, this method is
+purely an orchestrator:
 
 1. **Stock** (`stockService.receivePurchase(productId, invoiceId, quantity, unitPrice, reference)`)
    — one call per line item that has a `product_id` (items still `Pending`
@@ -111,30 +112,60 @@ this method is purely an orchestrator:
    — posts the matched debit/credit rows to `accounting_transactions`
    (inventory debit / accounts-payable credit, net of discount/tax).
 
-## Phase 7 — Human review and approval
+## Phase 7 — Pending Review editing, then Approve
 
-Frontend: `InvoiceReviewPage` fetches `GET /api/invoices/:id/review` (header +
-items with match candidates) for any invoice sitting at `Pending Review`.
-The human resolves each pending item and submits decisions to
-`POST /api/invoices/:id/approve` with body `{ decisions: [...] }`, each
-decision one of:
+This is the core of the ERP workflow (full rules in `business-rules.md`).
+`InvoiceReviewPage` fetches `GET /api/invoices/:id/review` (header + items)
+for any invoice. While `status === 'Pending Review'`, every item field is
+directly editable and **persists immediately** — there is no longer a
+"local decisions, batch-submit at approve time" model. Each edit is inert:
+it updates `purchase_invoice_items` only, nothing downstream ever runs
+until the explicit Approve click.
 
-- `{ action: 'select_existing', itemId, productId }` — confirms this OCR
-  name means an existing product. Calls
-  `productMatcher.confirmMatch(item.ocr_product_name, decision.productId)`
-  (writes **only** a `product_aliases` row — see the bug writeup in
-  `business-rules.md` for why it must never touch `purchase_invoice_items`
-  directly), then `db.stmts.updateItemProduct.run(productId, 'UserSelected', itemId)`
-  updates that specific item row, scoped by its own `itemId`.
-- `{ action: 'create_new', itemId, unit }` — `productMatcher.createProductFromOcr(ocrName, {unit})`
-  inserts a brand-new `products` row, then the item is linked to it with
-  `match_status = 'NewProduct'`.
+Editing endpoints (`invoiceProcessor.js`), all guarded by
+`_requirePendingInvoice()` — every one throws immediately if the invoice
+isn't `Pending Review`:
 
-After all decisions are applied, `approveInvoice` sets
-`purchase_invoices.status = 'Approved'` and calls the **same**
-`executeBusinessLogic(invoiceId)` used by auto-approval — there is exactly
-one code path that produces stock/debt/accounting effects, regardless of
-whether approval was automatic or human-reviewed.
+- `PATCH /api/invoices/:id/items/:itemId` → `updateInvoiceItem()` — correct
+  `productName`/`quantity`/`unit`/`unitPrice` (any subset), and/or resolve
+  the product match via `productId` (existing product — calls
+  `productMatcher.confirmMatch()` to write an alias, then sets
+  `match_status='UserSelected'`) or `createNewProduct: {unit}` (calls
+  `productMatcher.createProductFromOcr()`, sets `match_status='NewProduct'`).
+  Recomputes `total_price`. Omitting the product fields entirely leaves the
+  existing match untouched — this is how pure text/number corrections work.
+- `POST /api/invoices/:id/items` → `addInvoiceItem()` — inserts a new line
+  (`line_number` = current max + 1) for a product OCR missed entirely.
+- `DELETE /api/invoices/:id/items/:itemId` → `deleteInvoiceItem()` — removes
+  an incorrect line; rejected if it's the last remaining item (an invoice
+  always needs ≥1 line to be approvable).
+
+Frontend composes **merge** (sum two rows' quantities into one via
+`updateInvoiceItem`, then `deleteInvoiceItem` the other) and **split**
+(shrink one row's quantity via `updateInvoiceItem`, `addInvoiceItem` a
+second row with the remainder, carrying over the same product/unit/price)
+entirely from these three primitives — no dedicated backend endpoints for
+either, by design (`InvoiceItemsTable.tsx`).
+
+**Approve** (`POST /api/invoices/:id/approve`, no body) → `approveInvoice(invoiceId)`:
+1. Requires `status === 'Pending Review'` (can't re-approve, can't approve
+   a rejected invoice).
+2. Requires ≥1 item and **every** item to already carry a real `product_id`
+   — rejects with a message naming every still-unmatched item otherwise.
+   There is no partial-approve; an invoice with any leftover unmatched item
+   cannot become a business record.
+3. Sets `status = 'Approved'`, calls `executeBusinessLogic(invoiceId)`
+   (Phase 6) — this is the **only** place stock/debt/accounting ever post.
+
+Once `Approved`, the invoice is permanently locked. None of the editing
+endpoints above are reachable against it — `_requirePendingInvoice()`
+rejects all of them. The only field that can still change is `notes`, via
+the separate `PATCH /api/invoices/:id/notes` (works regardless of status,
+but is only meaningful post-approval since notes are also editable while
+still Pending Review through the normal item-adjacent form). See
+`business-rules.md` for the full "why" behind this immutability rule and
+the deliberately-deferred future "Invoice Correction" (adjustment-entry)
+workflow.
 
 ## Full flow diagram
 
@@ -148,23 +179,29 @@ validate + duplicate-check ──(dup)──▶ throw, rollback
 match/create supplier
   │
   ▼
-insert purchase_invoices (status: provisional)
+insert purchase_invoices (status='Pending Review', always)
   │
   ▼
-for each item: normalize name → matchProduct → insert purchase_invoice_items
+for each item: normalize name → matchProduct (best-effort) → insert purchase_invoice_items
   │
   ▼
-allMatched && valid? ──yes──▶ status='Approved' ──▶ executeBusinessLogic()
-  │no                                                    │
-  ▼                                                       ▼
-status='Pending Review'                          stock + debt + cost + accounting
-  │                                                (all inside the same transaction)
-  ▼
-human reviews via GET /:id/review
+GET /:id/review  (human opens the invoice)
   │
   ▼
-POST /:id/approve { decisions }
+  ┌─────────────────────────────────────────────┐
+  │ PATCH  /:id/items/:itemId  (correct/match)   │  ← repeatable, freely,
+  │ POST   /:id/items          (add missing line)│    persists immediately,
+  │ DELETE /:id/items/:itemId  (remove bad line) │    zero business effect
+  └─────────────────────────────────────────────┘
   │
   ▼
-resolve each pending item (alias / new product) ──▶ status='Approved' ──▶ executeBusinessLogic()
+POST /:id/approve
+  │
+  ├─ any item still missing product_id? ──▶ 400, rejected, stays Pending Review
+  │
+  ▼ (all matched)
+status='Approved' ──▶ executeBusinessLogic()  (stock + debt + cost + accounting)
+  │
+  ▼
+LOCKED — item edits rejected from here on; only notes may still change
 ```

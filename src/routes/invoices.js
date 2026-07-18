@@ -15,14 +15,64 @@ router.post('/ocr', (req, res) => {
     }
 });
 
-// POST /api/invoices/:id/approve
+// POST /api/invoices/:id/approve — the one posting step. Requires every
+// item to already carry a real product_id; no decisions body anymore,
+// matching now happens beforehand via the item-editing routes below.
 router.post('/:id/approve', (req, res) => {
     try {
-        const { decisions } = req.body;
-        const result = invoiceProcessor.approveInvoice(parseInt(req.params.id), decisions);
+        const result = invoiceProcessor.approveInvoice(parseInt(req.params.id));
         res.json(result);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// PATCH /api/invoices/:id/items/:itemId — correct name/quantity/unit/price
+// and/or resolve the product match. Pending Review only.
+router.patch('/:id/items/:itemId', (req, res) => {
+    try {
+        const invoiceId = parseInt(req.params.id);
+        const itemId = parseInt(req.params.itemId);
+        const item = invoiceProcessor.updateInvoiceItem(invoiceId, itemId, req.body);
+        res.json(item);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// POST /api/invoices/:id/items — add a missing line. Pending Review only.
+router.post('/:id/items', (req, res) => {
+    try {
+        const invoiceId = parseInt(req.params.id);
+        const item = invoiceProcessor.addInvoiceItem(invoiceId, req.body);
+        res.json(item);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// DELETE /api/invoices/:id/items/:itemId — remove an incorrect line.
+// Pending Review only; rejects deleting the last remaining item.
+router.delete('/:id/items/:itemId', (req, res) => {
+    try {
+        const invoiceId = parseInt(req.params.id);
+        const itemId = parseInt(req.params.itemId);
+        const result = invoiceProcessor.deleteInvoiceItem(invoiceId, itemId);
+        res.json(result);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// PATCH /api/invoices/:id/notes — the one field still editable after
+// approval (see business-rules.md).
+router.patch('/:id/notes', (req, res) => {
+    try {
+        const invoiceId = parseInt(req.params.id);
+        const result = invoiceProcessor.updateInvoiceNotes(invoiceId, req.body.notes);
+        res.json(result);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
     }
 });
 

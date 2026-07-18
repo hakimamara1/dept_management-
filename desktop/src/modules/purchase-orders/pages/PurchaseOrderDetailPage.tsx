@@ -1,16 +1,19 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import type { ColumnDef } from '@tanstack/react-table'
 import { ArrowRight } from 'lucide-react'
 import { Button } from '@shared/components/ui/button'
 import { Badge } from '@shared/components/ui/badge'
 import { Card, CardContent } from '@shared/components/ui/card'
-import { DataTable } from '@shared/components/data-table/DataTable'
+import { Input } from '@shared/components/ui/input'
+import { Textarea } from '@shared/components/ui/textarea'
+import { SupplierPicker, type PickedSupplier } from '@shared/components/SupplierPicker'
 import { LoadingState } from '@shared/components/LoadingState'
 import { ErrorState } from '@shared/components/ErrorState'
 import { formatCurrency, formatDate } from '@shared/lib/format'
-import type { PurchaseOrderItem, PurchaseOrderStatus } from '@shared/types/api'
+import type { PurchaseOrderStatus } from '@shared/types/api'
 import { usePurchaseOrder } from '../hooks/usePurchaseOrders'
-import { useUpdatePurchaseOrderStatus } from '../hooks/usePurchaseOrderMutations'
+import { useUpdatePurchaseOrder, useUpdatePurchaseOrderStatus } from '../hooks/usePurchaseOrderMutations'
+import { PurchaseOrderItemsTable } from '../components/PurchaseOrderItemsTable'
 
 const STATUS_BADGE: Record<PurchaseOrderStatus, { label: string; variant: 'secondary' | 'warning' | 'success' | 'destructive' }> = {
   Draft: { label: 'مسودة', variant: 'secondary' },
@@ -32,35 +35,6 @@ const NEXT_ACTIONS: Record<PurchaseOrderStatus, { status: PurchaseOrderStatus; l
   Cancelled: []
 }
 
-const itemColumns: ColumnDef<PurchaseOrderItem, any>[] = [
-  { accessorKey: 'product_name', header: 'المنتج', meta: { exportLabel: 'المنتج' } },
-  {
-    accessorKey: 'quantity',
-    header: 'الكمية',
-    meta: { exportLabel: 'الكمية' },
-    cell: ({ row }) => (
-      <span className="tabular-nums">
-        {Number(row.original.quantity).toLocaleString('ar-DZ')} {row.original.unit ?? ''}
-      </span>
-    )
-  },
-  {
-    accessorKey: 'expected_unit_price',
-    header: 'السعر المتوقع',
-    meta: { exportLabel: 'السعر المتوقع' },
-    cell: ({ row }) => <span className="tabular-nums">{formatCurrency(row.original.expected_unit_price)}</span>
-  },
-  {
-    id: 'lineTotal',
-    header: 'الإجمالي المتوقع',
-    cell: ({ row }) => (
-      <span className="tabular-nums font-semibold">
-        {formatCurrency(Number(row.original.quantity) * Number(row.original.expected_unit_price ?? 0))}
-      </span>
-    )
-  }
-]
-
 export function PurchaseOrderDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
@@ -68,6 +42,11 @@ export function PurchaseOrderDetailPage() {
 
   const { data, isLoading, error, refetch } = usePurchaseOrder(orderId)
   const updateStatus = useUpdatePurchaseOrderStatus(orderId)
+  const updateOrder = useUpdatePurchaseOrder(orderId)
+
+  const [orderDate, setOrderDate] = useState('')
+  const [expectedDate, setExpectedDate] = useState('')
+  const [notes, setNotes] = useState('')
 
   if (isLoading) return <LoadingState rows={6} />
   if (error || !data) {
@@ -76,6 +55,22 @@ export function PurchaseOrderDetailPage() {
 
   const badge = STATUS_BADGE[data.status]
   const actions = NEXT_ACTIONS[data.status]
+  const isDraft = data.status === 'Draft'
+
+  const currentOrderDate = orderDate || data.order_date.slice(0, 10)
+  const currentExpectedDate = expectedDate || (data.expected_date ? data.expected_date.slice(0, 10) : '')
+  const currentNotes = notes || data.notes || ''
+
+  function saveHeaderField(field: 'orderDate' | 'expectedDate' | 'notes', value: string) {
+    if (field === 'orderDate' && value === data!.order_date.slice(0, 10)) return
+    if (field === 'expectedDate' && value === (data!.expected_date ? data!.expected_date.slice(0, 10) : '')) return
+    if (field === 'notes' && value === (data!.notes || '')) return
+    updateOrder.mutate({ [field]: value || undefined })
+  }
+
+  function handleSupplierChange(supplier: PickedSupplier | null) {
+    if (supplier) updateOrder.mutate({ supplierId: supplier.id })
+  }
 
   return (
     <div className="flex flex-1 flex-col">
@@ -90,7 +85,16 @@ export function PurchaseOrderDetailPage() {
             <h1 className="text-xl font-semibold text-foreground">PO-{data.id}</h1>
             <Badge variant={badge.variant}>{badge.label}</Badge>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground">{data.supplier_name}</p>
+          {isDraft ? (
+            <div className="mt-1 w-64">
+              <SupplierPicker
+                value={{ id: data.supplier_id, name: data.supplier_name }}
+                onChange={handleSupplierChange}
+              />
+            </div>
+          ) : (
+            <p className="mt-1 text-sm text-muted-foreground">{data.supplier_name}</p>
+          )}
         </div>
         {actions.length > 0 && (
           <div className="flex gap-2">
@@ -111,32 +115,78 @@ export function PurchaseOrderDetailPage() {
 
       <Card className="mb-6">
         <CardContent className="grid grid-cols-2 gap-4 p-5 sm:grid-cols-4">
-          <div>
-            <div className="text-xs text-muted-foreground">تاريخ الطلب</div>
-            <div className="font-semibold">{formatDate(data.order_date)}</div>
-          </div>
-          <div>
-            <div className="text-xs text-muted-foreground">الاستلام المتوقع</div>
-            <div className="font-semibold">{formatDate(data.expected_date)}</div>
-          </div>
-          <div>
-            <div className="text-xs text-muted-foreground">عدد الأصناف</div>
-            <div className="font-semibold">{data.item_count}</div>
-          </div>
-          <div>
-            <div className="text-xs text-muted-foreground">القيمة المتوقعة</div>
-            <div className="tabular-nums font-semibold">{formatCurrency(data.expected_total)}</div>
-          </div>
-          {data.notes && (
-            <div className="col-span-2 sm:col-span-4">
-              <div className="text-xs text-muted-foreground">ملاحظات</div>
-              <div>{data.notes}</div>
-            </div>
+          {isDraft ? (
+            <>
+              <div>
+                <div className="mb-1 text-xs text-muted-foreground">تاريخ الطلب</div>
+                <Input
+                  type="date"
+                  value={currentOrderDate}
+                  onChange={(e) => setOrderDate(e.target.value)}
+                  onBlur={(e) => saveHeaderField('orderDate', e.target.value)}
+                  className="h-8 text-xs"
+                />
+              </div>
+              <div>
+                <div className="mb-1 text-xs text-muted-foreground">الاستلام المتوقع</div>
+                <Input
+                  type="date"
+                  value={currentExpectedDate}
+                  onChange={(e) => setExpectedDate(e.target.value)}
+                  onBlur={(e) => saveHeaderField('expectedDate', e.target.value)}
+                  className="h-8 text-xs"
+                />
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">عدد الأصناف</div>
+                <div className="font-semibold">{data.item_count}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">القيمة المتوقعة</div>
+                <div className="tabular-nums font-semibold">{formatCurrency(data.expected_total)}</div>
+              </div>
+              <div className="col-span-2 sm:col-span-4">
+                <div className="mb-1 text-xs text-muted-foreground">ملاحظات</div>
+                <Textarea
+                  rows={2}
+                  placeholder="اختياري"
+                  value={currentNotes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  onBlur={(e) => saveHeaderField('notes', e.target.value)}
+                  className="text-xs"
+                />
+              </div>
+            </>
+          ) : (
+            <>
+              <div>
+                <div className="text-xs text-muted-foreground">تاريخ الطلب</div>
+                <div className="font-semibold">{formatDate(data.order_date)}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">الاستلام المتوقع</div>
+                <div className="font-semibold">{formatDate(data.expected_date)}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">عدد الأصناف</div>
+                <div className="font-semibold">{data.item_count}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">القيمة المتوقعة</div>
+                <div className="tabular-nums font-semibold">{formatCurrency(data.expected_total)}</div>
+              </div>
+              {data.notes && (
+                <div className="col-span-2 sm:col-span-4">
+                  <div className="text-xs text-muted-foreground">ملاحظات</div>
+                  <div>{data.notes}</div>
+                </div>
+              )}
+            </>
           )}
         </CardContent>
       </Card>
 
-      <DataTable columns={itemColumns} data={data.items} exportFileName={`po-${data.id}-items`} />
+      <PurchaseOrderItemsTable orderId={data.id} items={data.items} readOnly={!isDraft} />
     </div>
   )
 }

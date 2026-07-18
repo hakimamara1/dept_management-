@@ -65836,6 +65836,9 @@ function InvoiceReviewPage() {
   }
   const { invoice, items } = data;
   const isPending = invoice.status === "Pending Review";
+  const hasOcrTotal = invoice.ocr_header_total != null;
+  const difference = hasOcrTotal ? invoice.invoice_amount - invoice.ocr_header_total : 0;
+  const hasDifference = hasOcrTotal && Math.abs(difference) > 0.01;
   let validationErrors = [];
   try {
     validationErrors = invoice.validation_errors ? JSON.parse(invoice.validation_errors).map((e) => e.message ?? String(e)) : [];
@@ -65880,6 +65883,24 @@ function InvoiceReviewPage() {
         "طباعة"
       ] }) })
     ] }) }),
+    hasOcrTotal && /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { className: "mb-6 print:hidden", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { className: "grid grid-cols-3 gap-4 p-5", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "إجمالي رأس الفاتورة (OCR)" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "tabular-nums font-semibold", children: formatCurrency(invoice.ocr_header_total) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "الإجمالي المحسوب (من الأصناف)" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "tabular-nums font-semibold text-primary", children: formatCurrency(invoice.invoice_amount) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "الفرق" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: `tabular-nums font-semibold ${hasDifference ? "text-destructive" : ""}`, children: formatCurrency(difference) })
+      ] })
+    ] }) }),
+    isPending && hasDifference && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-6 flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm font-medium text-warning print:hidden", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(TriangleAlert, { className: "size-4 shrink-0" }),
+      "إجمالي الأصناف المحسوب يختلف عن إجمالي رأس الفاتورة المستخرج بالـ OCR — الإجمالي المحسوب هو ما سيُعتمد فعلياً. راجع الأصناف قبل الاعتماد."
+    ] }),
     validationErrors.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-6 rounded-lg border border-warning/30 bg-warning/10 p-4 print:hidden", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-1 flex items-center gap-2 text-sm font-medium text-warning", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(TriangleAlert, { className: "size-4" }),
@@ -66054,8 +66075,18 @@ function InvoiceViewPage() {
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "tabular-nums font-semibold", children: formatCurrency(subtotal) })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "المبلغ الإجمالي" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "المبلغ الإجمالي (المحسوب)" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "tabular-nums font-semibold", children: formatCurrency(invoice.invoice_amount) })
+      ] }),
+      invoice.ocr_header_total != null && /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "إجمالي رأس الفاتورة (OCR)" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "tabular-nums font-semibold", children: formatCurrency(invoice.ocr_header_total) })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "الفرق عن OCR" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "tabular-nums font-semibold", children: formatCurrency(invoice.invoice_amount - invoice.ocr_header_total) })
+        ] })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "عدد الأصناف" }),
@@ -66108,7 +66139,12 @@ const purchaseOrdersApi = {
   getAll: () => apiClient.get("/api/purchase-orders"),
   getById: (id) => apiClient.get(`/api/purchase-orders/${id}`),
   create: (data) => apiClient.post("/api/purchase-orders", data),
-  updateStatus: (id, status) => apiClient.patch(`/api/purchase-orders/${id}/status`, { status })
+  updateStatus: (id, status) => apiClient.patch(`/api/purchase-orders/${id}/status`, { status }),
+  // Draft-only — the backend rejects all of these once the PO isn't Draft.
+  update: (id, data) => apiClient.patch(`/api/purchase-orders/${id}`, data),
+  updateItem: (id, itemId, data) => apiClient.patch(`/api/purchase-orders/${id}/items/${itemId}`, data),
+  addItem: (id, data) => apiClient.post(`/api/purchase-orders/${id}/items`, data),
+  deleteItem: (id, itemId) => apiClient.delete(`/api/purchase-orders/${id}/items/${itemId}`)
 };
 function usePurchaseOrders() {
   return useQuery({
@@ -66206,6 +66242,58 @@ function useUpdatePurchaseOrderStatus(id) {
     },
     onError: (error) => {
       toast.error("فشل تحديث الحالة", { description: error.message });
+    }
+  });
+}
+function useUpdatePurchaseOrder(id) {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => purchaseOrdersApi.update(id, data),
+    onSuccess: () => {
+      queryClient2.invalidateQueries({ queryKey: queryKeys.purchaseOrders.detail(id) });
+      queryClient2.invalidateQueries({ queryKey: queryKeys.purchaseOrders.list });
+    },
+    onError: (error) => {
+      toast.error("فشل تعديل أمر الشراء", { description: error.message });
+    }
+  });
+}
+function useUpdatePurchaseOrderItem(id) {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: ({ itemId, data }) => purchaseOrdersApi.updateItem(id, itemId, data),
+    onSuccess: () => {
+      queryClient2.invalidateQueries({ queryKey: queryKeys.purchaseOrders.detail(id) });
+      queryClient2.invalidateQueries({ queryKey: queryKeys.purchaseOrders.list });
+    },
+    onError: (error) => {
+      toast.error("فشل تعديل الصنف", { description: error.message });
+    }
+  });
+}
+function useAddPurchaseOrderItem(id) {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => purchaseOrdersApi.addItem(id, data),
+    onSuccess: () => {
+      queryClient2.invalidateQueries({ queryKey: queryKeys.purchaseOrders.detail(id) });
+      queryClient2.invalidateQueries({ queryKey: queryKeys.purchaseOrders.list });
+    },
+    onError: (error) => {
+      toast.error("فشل إضافة الصنف", { description: error.message });
+    }
+  });
+}
+function useDeletePurchaseOrderItem(id) {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: (itemId) => purchaseOrdersApi.deleteItem(id, itemId),
+    onSuccess: () => {
+      queryClient2.invalidateQueries({ queryKey: queryKeys.purchaseOrders.detail(id) });
+      queryClient2.invalidateQueries({ queryKey: queryKeys.purchaseOrders.list });
+    },
+    onError: (error) => {
+      toast.error("فشل حذف الصنف", { description: error.message });
     }
   });
 }
@@ -66509,6 +66597,144 @@ function PurchaseOrdersPage() {
     )
   ] });
 }
+function PurchaseOrderItemRow({ orderId, item, readOnly, canDelete }) {
+  const [quantity, setQuantity] = reactExports.useState(item.quantity);
+  const [expectedUnitPrice, setExpectedUnitPrice] = reactExports.useState(item.expected_unit_price ?? void 0);
+  const updateItem = useUpdatePurchaseOrderItem(orderId);
+  const deleteItem = useDeletePurchaseOrderItem(orderId);
+  const total = Number(quantity || 0) * Number(expectedUnitPrice || 0);
+  function saveFields() {
+    if (quantity === item.quantity && (expectedUnitPrice ?? null) === item.expected_unit_price) return;
+    updateItem.mutate({ itemId: item.id, data: { quantity, expectedUnitPrice } });
+  }
+  function handleProductChange(product) {
+    if (product) {
+      updateItem.mutate({ itemId: item.id, data: { productId: product.id } });
+    }
+  }
+  if (readOnly) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-border last:border-0", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-3 py-2.5 align-middle", children: item.product_name }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("td", { className: "px-3 py-2.5 align-middle tabular-nums", children: [
+        Number(item.quantity).toLocaleString("ar-DZ"),
+        " ",
+        item.unit ?? ""
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-3 py-2.5 align-middle tabular-nums", children: formatCurrency(item.expected_unit_price) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-3 py-2.5 align-middle tabular-nums font-semibold", children: formatCurrency(Number(item.quantity) * Number(item.expected_unit_price ?? 0)) })
+    ] });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-border last:border-0 align-top", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "min-w-48 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ProductPicker, { value: { id: item.product_id, name: item.product_name, unit: item.unit }, onChange: handleProductChange }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-28 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Input,
+      {
+        type: "number",
+        step: "0.01",
+        min: "0",
+        value: quantity,
+        onChange: (e) => setQuantity(e.target.valueAsNumber),
+        onBlur: saveFields,
+        className: "h-8 text-xs"
+      }
+    ) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-28 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Input,
+      {
+        type: "number",
+        step: "0.01",
+        min: "0",
+        value: expectedUnitPrice ?? "",
+        onChange: (e) => setExpectedUnitPrice(e.target.value === "" ? void 0 : e.target.valueAsNumber),
+        onBlur: saveFields,
+        className: "h-8 text-xs"
+      }
+    ) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-28 px-1.5 py-2 tabular-nums text-sm font-semibold", children: formatCurrency(total) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-12 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Button,
+      {
+        type: "button",
+        size: "icon",
+        variant: "ghost",
+        className: "size-7",
+        title: "حذف الصنف",
+        disabled: !canDelete || deleteItem.isPending,
+        onClick: () => deleteItem.mutate(item.id),
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx(Trash2, { className: "size-3.5 text-destructive" })
+      }
+    ) })
+  ] });
+}
+function PurchaseOrderItemsTable({ orderId, items, readOnly }) {
+  const [newProduct, setNewProduct] = reactExports.useState(null);
+  const [newQuantity, setNewQuantity] = reactExports.useState(1);
+  const [newPrice, setNewPrice] = reactExports.useState(void 0);
+  const addItem = useAddPurchaseOrderItem(orderId);
+  function handleAdd() {
+    if (!newProduct || !newQuantity) return;
+    addItem.mutate(
+      { productId: newProduct.id, quantity: newQuantity, expectedUnitPrice: newPrice },
+      {
+        onSuccess: () => {
+          setNewProduct(null);
+          setNewQuantity(1);
+          setNewPrice(void 0);
+        }
+      }
+    );
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "overflow-auto rounded-lg border border-border", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("table", { className: "w-full text-sm", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("thead", { className: "bg-muted/40", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-border", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium", children: "المنتج" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium", children: "الكمية" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium", children: "السعر المتوقع" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium", children: "الإجمالي المتوقع" }),
+      !readOnly && /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium" })
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("tbody", { children: [
+      items.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsx(PurchaseOrderItemRow, { orderId, item, readOnly, canDelete: items.length > 1 }, item.id)),
+      !readOnly && /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "align-top", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "min-w-48 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ProductPicker, { value: newProduct, onChange: setNewProduct, placeholder: "إضافة صنف..." }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-28 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Input,
+          {
+            type: "number",
+            step: "0.01",
+            min: "0",
+            value: newQuantity ?? "",
+            onChange: (e) => setNewQuantity(e.target.value === "" ? void 0 : e.target.valueAsNumber),
+            className: "h-8 text-xs"
+          }
+        ) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-28 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Input,
+          {
+            type: "number",
+            step: "0.01",
+            min: "0",
+            value: newPrice ?? "",
+            onChange: (e) => setNewPrice(e.target.value === "" ? void 0 : e.target.valueAsNumber),
+            className: "h-8 text-xs"
+          }
+        ) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-28 px-1.5 py-2" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-12 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Button,
+          {
+            type: "button",
+            size: "icon",
+            variant: "ghost",
+            className: "size-7",
+            disabled: !newProduct || !newQuantity || addItem.isPending,
+            onClick: handleAdd,
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { className: "size-3.5" })
+          }
+        ) })
+      ] })
+    ] })
+  ] }) }) });
+}
 const STATUS_BADGE = {
   Draft: { label: "مسودة", variant: "secondary" },
   Sent: { label: "تم الإرسال", variant: "warning" },
@@ -66527,42 +66753,35 @@ const NEXT_ACTIONS = {
   Received: [],
   Cancelled: []
 };
-const itemColumns = [
-  { accessorKey: "product_name", header: "المنتج", meta: { exportLabel: "المنتج" } },
-  {
-    accessorKey: "quantity",
-    header: "الكمية",
-    meta: { exportLabel: "الكمية" },
-    cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "tabular-nums", children: [
-      Number(row.original.quantity).toLocaleString("ar-DZ"),
-      " ",
-      row.original.unit ?? ""
-    ] })
-  },
-  {
-    accessorKey: "expected_unit_price",
-    header: "السعر المتوقع",
-    meta: { exportLabel: "السعر المتوقع" },
-    cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums", children: formatCurrency(row.original.expected_unit_price) })
-  },
-  {
-    id: "lineTotal",
-    header: "الإجمالي المتوقع",
-    cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums font-semibold", children: formatCurrency(Number(row.original.quantity) * Number(row.original.expected_unit_price ?? 0)) })
-  }
-];
 function PurchaseOrderDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const orderId = Number(id);
   const { data, isLoading, error, refetch } = usePurchaseOrder(orderId);
   const updateStatus = useUpdatePurchaseOrderStatus(orderId);
+  const updateOrder = useUpdatePurchaseOrder(orderId);
+  const [orderDate, setOrderDate] = reactExports.useState("");
+  const [expectedDate, setExpectedDate] = reactExports.useState("");
+  const [notes, setNotes] = reactExports.useState("");
   if (isLoading) return /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingState, { rows: 6 });
   if (error || !data) {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(ErrorState, { message: error?.message ?? "أمر الشراء غير موجود", onRetry: () => refetch() });
   }
   const badge = STATUS_BADGE[data.status];
   const actions = NEXT_ACTIONS[data.status];
+  const isDraft2 = data.status === "Draft";
+  const currentOrderDate = orderDate || data.order_date.slice(0, 10);
+  const currentExpectedDate = expectedDate || (data.expected_date ? data.expected_date.slice(0, 10) : "");
+  const currentNotes = notes || data.notes || "";
+  function saveHeaderField(field, value) {
+    if (field === "orderDate" && value === data.order_date.slice(0, 10)) return;
+    if (field === "expectedDate" && value === (data.expected_date ? data.expected_date.slice(0, 10) : "")) return;
+    if (field === "notes" && value === (data.notes || "")) return;
+    updateOrder.mutate({ [field]: value || void 0 });
+  }
+  function handleSupplierChange(supplier) {
+    if (supplier) updateOrder.mutate({ supplierId: supplier.id });
+  }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-1 flex-col", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { variant: "ghost", size: "sm", className: "mb-2 w-fit", onClick: () => navigate("/purchase-orders"), children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowRight, { className: "size-4" }),
@@ -66577,7 +66796,13 @@ function PurchaseOrderDetailPage() {
           ] }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: badge.variant, children: badge.label })
         ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-sm text-muted-foreground", children: data.supplier_name })
+        isDraft2 ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-1 w-64", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          SupplierPicker,
+          {
+            value: { id: data.supplier_id, name: data.supplier_name },
+            onChange: handleSupplierChange
+          }
+        ) }) : /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-sm text-muted-foreground", children: data.supplier_name })
       ] }),
       actions.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-2", children: actions.map((action) => /* @__PURE__ */ jsxRuntimeExports.jsx(
         Button,
@@ -66591,7 +66816,56 @@ function PurchaseOrderDetailPage() {
         action.status
       )) })
     ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { className: "mb-6", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { className: "grid grid-cols-2 gap-4 p-5 sm:grid-cols-4", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { className: "mb-6", children: /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { className: "grid grid-cols-2 gap-4 p-5 sm:grid-cols-4", children: isDraft2 ? /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mb-1 text-xs text-muted-foreground", children: "تاريخ الطلب" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Input,
+          {
+            type: "date",
+            value: currentOrderDate,
+            onChange: (e) => setOrderDate(e.target.value),
+            onBlur: (e) => saveHeaderField("orderDate", e.target.value),
+            className: "h-8 text-xs"
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mb-1 text-xs text-muted-foreground", children: "الاستلام المتوقع" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Input,
+          {
+            type: "date",
+            value: currentExpectedDate,
+            onChange: (e) => setExpectedDate(e.target.value),
+            onBlur: (e) => saveHeaderField("expectedDate", e.target.value),
+            className: "h-8 text-xs"
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "عدد الأصناف" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "font-semibold", children: data.item_count })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "القيمة المتوقعة" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "tabular-nums font-semibold", children: formatCurrency(data.expected_total) })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "col-span-2 sm:col-span-4", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mb-1 text-xs text-muted-foreground", children: "ملاحظات" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Textarea,
+          {
+            rows: 2,
+            placeholder: "اختياري",
+            value: currentNotes,
+            onChange: (e) => setNotes(e.target.value),
+            onBlur: (e) => saveHeaderField("notes", e.target.value),
+            className: "text-xs"
+          }
+        )
+      ] })
+    ] }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "تاريخ الطلب" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "font-semibold", children: formatDate(data.order_date) })
@@ -66612,8 +66886,8 @@ function PurchaseOrderDetailPage() {
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "ملاحظات" }),
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: data.notes })
       ] })
-    ] }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(DataTable, { columns: itemColumns, data: data.items, exportFileName: `po-${data.id}-items` })
+    ] }) }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(PurchaseOrderItemsTable, { orderId: data.id, items: data.items, readOnly: !isDraft2 })
   ] });
 }
 const paymentsApi = {

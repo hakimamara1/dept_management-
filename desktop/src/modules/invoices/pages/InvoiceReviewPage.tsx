@@ -32,6 +32,13 @@ export function InvoiceReviewPage() {
   const { invoice, items } = data
   const isPending = invoice.status === 'Pending Review'
 
+  // The calculated total (sum of line items) is always invoice.invoice_amount
+  // — the backend keeps it live on every item edit. ocr_header_total is the
+  // raw OCR figure, reference-only, frozen at import. See business-rules.md.
+  const hasOcrTotal = invoice.ocr_header_total != null
+  const difference = hasOcrTotal ? invoice.invoice_amount - (invoice.ocr_header_total as number) : 0
+  const hasDifference = hasOcrTotal && Math.abs(difference) > 0.01
+
   let validationErrors: string[] = []
   try {
     validationErrors = invoice.validation_errors ? JSON.parse(invoice.validation_errors).map((e: any) => e.message ?? String(e)) : []
@@ -88,6 +95,35 @@ export function InvoiceReviewPage() {
           )}
         </CardContent>
       </Card>
+
+      {hasOcrTotal && (
+        <Card className="mb-6 print:hidden">
+          <CardContent className="grid grid-cols-3 gap-4 p-5">
+            <div>
+              <div className="text-xs text-muted-foreground">إجمالي رأس الفاتورة (OCR)</div>
+              <div className="tabular-nums font-semibold">{formatCurrency(invoice.ocr_header_total)}</div>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">الإجمالي المحسوب (من الأصناف)</div>
+              <div className="tabular-nums font-semibold text-primary">{formatCurrency(invoice.invoice_amount)}</div>
+            </div>
+            <div>
+              <div className="text-xs text-muted-foreground">الفرق</div>
+              <div className={`tabular-nums font-semibold ${hasDifference ? 'text-destructive' : ''}`}>
+                {formatCurrency(difference)}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {isPending && hasDifference && (
+        <div className="mb-6 flex items-center gap-2 rounded-lg border border-warning/30 bg-warning/10 p-4 text-sm font-medium text-warning print:hidden">
+          <AlertTriangle className="size-4 shrink-0" />
+          إجمالي الأصناف المحسوب يختلف عن إجمالي رأس الفاتورة المستخرج بالـ OCR — الإجمالي المحسوب هو ما سيُعتمد فعلياً.
+          راجع الأصناف قبل الاعتماد.
+        </div>
+      )}
 
       {validationErrors.length > 0 && (
         <div className="mb-6 rounded-lg border border-warning/30 bg-warning/10 p-4 print:hidden">

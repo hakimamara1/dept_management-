@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS products (
     current_stock DECIMAL(10,2) DEFAULT 0, -- derived from SUM(stock_movements)
     last_purchase_price DECIMAL(10,2),
     average_cost DECIMAL(10,2),            -- weighted average cost
+    default_sale_price DECIMAL(10,2),      -- suggested selling price, separate from purchase cost above
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -49,7 +50,8 @@ CREATE TABLE IF NOT EXISTS purchase_invoices (
     supplier_id INTEGER,
     currency TEXT DEFAULT 'دج',
     previous_balance DECIMAL(15,2),
-    invoice_amount DECIMAL(15,2) NOT NULL,
+    invoice_amount DECIMAL(15,2) NOT NULL,  -- ALWAYS = SUM(purchase_invoice_items.total_price), kept live — see business-rules.md
+    ocr_header_total DECIMAL(15,2),        -- raw OCR-extracted header total, reference/validation only — never used in business logic
     discount DECIMAL(15,2) DEFAULT 0,
     tax DECIMAL(15,2) DEFAULT 0,
     new_balance DECIMAL(15,2),
@@ -57,6 +59,7 @@ CREATE TABLE IF NOT EXISTS purchase_invoices (
     notes TEXT,
     status TEXT DEFAULT 'Pending Review',  -- 'Pending Review', 'Approved', 'Rejected'
     validation_errors JSON,                  -- SQLite: TEXT storing JSON array
+    approved_at DATETIME,                  -- set once, at the moment of approval — see invoiceProcessor.approveInvoice
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (supplier_id) REFERENCES suppliers(id),
     UNIQUE(invoice_number, supplier_id)    -- prevent duplicates per supplier
@@ -70,6 +73,7 @@ CREATE TABLE IF NOT EXISTS purchase_invoice_items (
     ocr_product_name TEXT NOT NULL,        -- raw OCR name
     normalized_ocr_name TEXT,              -- normalized for matching
     package TEXT,
+    unit TEXT,                             -- per-line unit of measure, editable pre-approval
     quantity DECIMAL(10,2) NOT NULL,
     unit_price DECIMAL(10,2) NOT NULL,
     discount DECIMAL(10,2) DEFAULT 0,

@@ -1,7 +1,19 @@
 // services/invoiceProcessor.js
 /**
  * Invoice Processor — Orchestrates the entire invoice pipeline.
- * 
+ *
+ * Two-state ERP workflow (see docs/business-rules.md):
+ *   Pending Review — fully editable draft. Nothing here is a business
+ *     record yet: no stock movement, no supplier debt, no accounting.
+ *     Every OCR import lands here, regardless of match confidence — there
+ *     is no auto-approve fast path. Items are corrected/matched directly
+ *     via updateItem/addItem/deleteItem, saved immediately, but inert.
+ *   Approved — the explicit "Approve Invoice" action. Requires every item
+ *     to already carry a real product_id (fully matched). Posts stock,
+ *     supplier debt, product cost, and accounting in one shot
+ *     (executeBusinessLogic), then the invoice is permanently locked:
+ *     no further item edits, ever. Only `notes` may still change.
+ *
  * Phase 2: Validation
  * Phase 3: Supplier Matching
  * Phase 4: Product Matching
@@ -13,6 +25,8 @@ const db = require('../config/database');
 const productMatcher = require('./productMatcher');
 const supplierMatcher = require('./supplierMatcher');
 const validationService = require('./validationService');
+const { normalizeArabic } = require('../utils/arabicNormalizer');
+const { parseNumber } = require('../utils/parseNumber');
 
 // ═══════════════════════════════════════════════════════════════
 // NEW: Import the three services we just built
@@ -25,7 +39,9 @@ class InvoiceProcessor {
 
     // ═══════════════════════════════════════════════════════════════
     // STEP 1: Process OCR Result (Gemini JSON → Database)
-    // This method stays mostly the same — only the imports changed
+    // Always lands at 'Pending Review', regardless of match confidence —
+    // no auto-approve. The business owner reviews and corrects every
+    // invoice before it becomes a real business record (see class docblock).
     // ═══════════════════════════════════════════════════════════════
     processOcrResult(ocrJson) {
         const transaction = db.transaction(() => {
@@ -44,31 +60,59 @@ class InvoiceProcessor {
             const supplierResult = supplierMatcher.findOrCreateSupplier(ocrJson.supplier || {});
             const supplierId = supplierResult.supplier.id;
 
-            // Insert Invoice
+            // Sanitize every OCR-supplied numeric field up front. OCR
+            // extraction sometimes returns a formatted string ("99,220.00")
+            // instead of a plain number — used unconverted, `number + that
+            // string` is JS string concatenation, not addition, and
+            // silently corrupts any running total it touches (this is a
+            // real incident that happened — see ADR-017). Nothing below
+            // this point ever reads ocrJson's raw numeric fields again.
+            const sanitizedItems = (ocrJson.items || []).map((item) => {
+                const quantity = parseNumber(item.quantity);
+                const unitPrice = parseNumber(item.unit_price);
+                const totalPrice = item.total_price != null ? parseNumber(item.total_price) : quantity * unitPrice;
+                return {
+                    ...item,
+                    quantity,
+                    unit_price: unitPrice,
+                    discount: parseNumber(item.discount),
+                    tax: parseNumber(item.tax),
+                    total_price: totalPrice
+                };
+            });
+
+            // The calculated total (sum of line items) is the single source
+            // of truth for invoice_amount — never the OCR header figure,
+            // which is stored separately in ocr_header_total purely for
+            // reference/validation (see business-rules.md).
+            const calculatedTotal = sanitizedItems.reduce((sum, item) => sum + item.total_price, 0);
+
+            // Insert Invoice — always 'Pending Review' at creation time
             const invoiceResult = db.stmts.insertInvoice.run(
                 ocrJson.invoice_number,
                 this.parseDate(ocrJson.invoice_date),
                 ocrJson.invoice_time || null,
                 supplierId,
                 ocrJson.currency || 'دج',
-                ocrJson.previous_balance || 0,
-                ocrJson.invoice_amount || 0,
-                ocrJson.discount || 0,
-                ocrJson.tax || 0,
-                ocrJson.new_balance || 0,
+                parseNumber(ocrJson.previous_balance),
+                calculatedTotal,
+                parseNumber(ocrJson.invoice_amount, null),
+                parseNumber(ocrJson.discount),
+                parseNumber(ocrJson.tax),
+                parseNumber(ocrJson.new_balance),
                 ocrJson.payment_method || null,
                 ocrJson.notes || null,
-                validation.status,
+                'Pending Review',
                 JSON.stringify(validation.errors)
             );
 
             const invoiceId = invoiceResult.lastInsertRowid;
             const pendingItems = [];
-            let allMatched = true;
 
-            // ── Phase 4: Match Products ──
-            for (const item of ocrJson.items || []) {
-                const normalizedName = require('../utils/arabicNormalizer').normalizeArabic(item.product_name);
+            // ── Phase 4: Match Products (best-effort suggestion only —
+            // nothing here is final, the user corrects it in the review UI) ──
+            for (const item of sanitizedItems) {
+                const normalizedName = normalizeArabic(item.product_name);
                 const matchResult = productMatcher.matchProduct(item.product_name);
 
                 const itemResult = db.stmts.insertInvoiceItem.run(
@@ -78,11 +122,12 @@ class InvoiceProcessor {
                     item.product_name,
                     normalizedName,
                     item.package || null,
+                    item.unit || null,
                     item.quantity,
                     item.unit_price,
-                    item.discount || 0,
-                    item.tax || 0,
-                    item.total_price || (item.quantity * item.unit_price),
+                    item.discount,
+                    item.tax,
+                    item.total_price,
                     matchResult.status === 'Matched' ? 'Matched' : 'Pending',
                     matchResult.confidence,
                     matchResult.suggestedId,
@@ -90,7 +135,6 @@ class InvoiceProcessor {
                 );
 
                 if (matchResult.status !== 'Matched') {
-                    allMatched = false;
                     pendingItems.push({
                         itemId: itemResult.lastInsertRowid,
                         ocrName: item.product_name,
@@ -99,20 +143,11 @@ class InvoiceProcessor {
                 }
             }
 
-            const finalStatus = (validation.isValid && allMatched) ? 'Approved' : 'Pending Review';
-            db.stmts.updateInvoiceStatus.run(finalStatus, invoiceId);
-
-            // ── Phase 5-6: Execute Business Logic ──
-            // If fully approved, trigger all downstream effects
-            if (finalStatus === 'Approved') {
-                this.executeBusinessLogic(invoiceId);
-            }
-
             return {
                 invoiceId,
-                status: finalStatus,
+                status: 'Pending Review',
                 supplier: supplierResult,
-                pendingItems: finalStatus === 'Pending Review' ? pendingItems : [],
+                pendingItems,
                 validationErrors: validation.errors,
                 validationWarnings: validation.warnings
             };
@@ -220,37 +255,160 @@ class InvoiceProcessor {
     }
 
     // ═══════════════════════════════════════════════════════════════
-    // STEP 3: Human Approval — Also uses services now
+    // PENDING-REVIEW ITEM EDITING — the only place matching/correction
+    // happens now. Every method here throws if the invoice isn't still
+    // 'Pending Review'; once Approved, none of this is reachable, by
+    // design (see class docblock and business-rules.md).
     // ═══════════════════════════════════════════════════════════════
-    approveInvoice(invoiceId, userDecisions) {
+    _requirePendingInvoice(invoiceId) {
+        const invoice = db.prepare('SELECT * FROM purchase_invoices WHERE id = ?').get(invoiceId);
+        if (!invoice) {
+            throw new Error('الفاتورة غير موجودة');
+        }
+        if (invoice.status !== 'Pending Review') {
+            throw new Error('لا يمكن التعديل — الفاتورة ليست في حالة المراجعة');
+        }
+        return invoice;
+    }
+
+    // Resolves an item's product link from a decision payload shared by
+    // updateInvoiceItem and addInvoiceItem — either an existing productId
+    // or a brand-new product created on the spot (with its own unit).
+    _resolveItemProduct(ocrName, { productId, createNewProduct }) {
+        if (productId) {
+            productMatcher.confirmMatch(ocrName, productId);
+            return { productId, matchStatus: 'UserSelected' };
+        }
+        if (createNewProduct) {
+            const newProductId = productMatcher.createProductFromOcr(ocrName, { unit: createNewProduct.unit || 'piece' });
+            return { productId: newProductId, matchStatus: 'NewProduct' };
+        }
+        return null;
+    }
+
+    updateInvoiceItem(invoiceId, itemId, { productName, quantity, unit, unitPrice, productId, createNewProduct }) {
         const transaction = db.transaction(() => {
-
-            // Process each user decision for unmatched products
-            for (const decision of userDecisions) {
-                const item = db.prepare('SELECT * FROM purchase_invoice_items WHERE id = ?').get(decision.itemId);
-
-                if (decision.action === 'select_existing') {
-                    // User says: "OCR 'عسل التمر' = Product #25"
-                    productMatcher.confirmMatch(item.ocr_product_name, decision.productId);
-                    db.stmts.updateItemProduct.run(decision.productId, 'UserSelected', decision.itemId);
-
-                } else if (decision.action === 'create_new') {
-                    // User says: "This is a completely new product"
-                    const newProductId = productMatcher.createProductFromOcr(
-                        item.ocr_product_name,
-                        { unit: decision.unit || 'piece' }
-                    );
-                    db.stmts.updateItemProduct.run(newProductId, 'NewProduct', decision.itemId);
-                }
+            this._requirePendingInvoice(invoiceId);
+            const item = db.prepare('SELECT * FROM purchase_invoice_items WHERE id = ? AND invoice_id = ?').get(itemId, invoiceId);
+            if (!item) {
+                throw new Error('الصنف غير موجود في هذه الفاتورة');
             }
 
-            // Mark invoice as approved
-            db.stmts.updateInvoiceStatus.run('Approved', invoiceId);
+            const newName = productName && productName.toString().trim() ? productName.toString().trim() : item.ocr_product_name;
+            const newQty = quantity != null ? parseNumber(quantity) : parseNumber(item.quantity);
+            const newUnit = unit !== undefined ? (unit || null) : item.unit;
+            const newPrice = unitPrice != null ? parseNumber(unitPrice) : parseNumber(item.unit_price);
+            if (!newQty || newQty <= 0) throw new Error('الكمية يجب أن تكون أكبر من الصفر');
+            if (newPrice < 0) throw new Error('السعر غير صالح');
+            const newTotal = newQty * newPrice;
 
-            // ═══════════════════════════════════════════════════════
-            // NEW: Trigger business logic via services
-            // This is the same method called during auto-approval
-            // ═══════════════════════════════════════════════════════
+            const resolution = this._resolveItemProduct(newName, { productId, createNewProduct });
+            const finalProductId = resolution ? resolution.productId : item.product_id;
+            const finalMatchStatus = resolution ? resolution.matchStatus : item.match_status;
+
+            db.stmts.updateInvoiceItem.run(
+                newName, newUnit, newQty, newPrice, newTotal,
+                finalProductId, finalMatchStatus, itemId
+            );
+            db.stmts.recalculateInvoiceTotal.run(invoiceId, invoiceId);
+
+            return db.stmts.getInvoiceItems.all(invoiceId).find((i) => i.id === itemId);
+        });
+
+        return transaction();
+    }
+
+    addInvoiceItem(invoiceId, { productName, quantity, unit, unitPrice, productId, createNewProduct }) {
+        const transaction = db.transaction(() => {
+            this._requirePendingInvoice(invoiceId);
+            if (!productName || !productName.toString().trim()) throw new Error('اسم الصنف مطلوب');
+            const qty = parseNumber(quantity);
+            const price = parseNumber(unitPrice);
+            if (!qty || qty <= 0) throw new Error('الكمية يجب أن تكون أكبر من الصفر');
+            if (price == null || price < 0 || Number.isNaN(price)) throw new Error('السعر غير صالح');
+
+            const name = productName.toString().trim();
+            const normalizedName = normalizeArabic(name);
+            const total = qty * price;
+            const resolution = this._resolveItemProduct(name, { productId, createNewProduct });
+
+            const maxLine = db.stmts.getMaxLineNumber.get(invoiceId).maxLine || 0;
+
+            const result = db.stmts.insertInvoiceItem.run(
+                invoiceId,
+                resolution ? resolution.productId : null,
+                maxLine + 1,
+                name,
+                normalizedName,
+                null,
+                unit || null,
+                qty,
+                price,
+                0,
+                0,
+                total,
+                resolution ? resolution.matchStatus : 'Pending',
+                null,
+                null,
+                null
+            );
+            db.stmts.recalculateInvoiceTotal.run(invoiceId, invoiceId);
+
+            return db.stmts.getInvoiceItems.all(invoiceId).find((i) => i.id === result.lastInsertRowid);
+        });
+
+        return transaction();
+    }
+
+    deleteInvoiceItem(invoiceId, itemId) {
+        const transaction = db.transaction(() => {
+            this._requirePendingInvoice(invoiceId);
+            const item = db.prepare('SELECT * FROM purchase_invoice_items WHERE id = ? AND invoice_id = ?').get(itemId, invoiceId);
+            if (!item) {
+                throw new Error('الصنف غير موجود في هذه الفاتورة');
+            }
+            const { count } = db.stmts.countInvoiceItems.get(invoiceId);
+            if (count <= 1) {
+                throw new Error('لا يمكن حذف آخر صنف في الفاتورة');
+            }
+            db.stmts.deleteInvoiceItem.run(itemId);
+            db.stmts.recalculateInvoiceTotal.run(invoiceId, invoiceId);
+            return { success: true };
+        });
+
+        return transaction();
+    }
+
+    updateInvoiceNotes(invoiceId, notes) {
+        const invoice = db.prepare('SELECT id FROM purchase_invoices WHERE id = ?').get(invoiceId);
+        if (!invoice) {
+            throw new Error('الفاتورة غير موجودة');
+        }
+        db.stmts.updateInvoiceNotes.run(notes || null, invoiceId);
+        return { success: true };
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // STEP 3: Approve Invoice — the one and only posting step. Requires
+    // every item to already carry a real product_id (fully matched via the
+    // editing methods above). Once this succeeds, the invoice is locked:
+    // stock/debt/accounting are posted and no item can be edited again.
+    // ═══════════════════════════════════════════════════════════════
+    approveInvoice(invoiceId) {
+        const transaction = db.transaction(() => {
+            const invoice = this._requirePendingInvoice(invoiceId);
+
+            const items = db.stmts.getInvoiceItems.all(invoiceId);
+            if (!items.length) {
+                throw new Error('لا يمكن اعتماد فاتورة بدون أصناف');
+            }
+            const unmatched = items.filter((i) => !i.product_id);
+            if (unmatched.length) {
+                const names = unmatched.map((i) => i.ocr_product_name).join('، ');
+                throw new Error(`لا يمكن اعتماد الفاتورة — أصناف غير مطابقة بعد: ${names}`);
+            }
+
+            db.stmts.approveInvoiceStatus.run(invoiceId);
             this.executeBusinessLogic(invoiceId);
 
             return { success: true, invoiceId };

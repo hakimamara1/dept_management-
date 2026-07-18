@@ -112,5 +112,74 @@ Established `docs/` as the standing source of truth (ADR-013): this file,
 plus `architecture.md`, `database.md`, `business-rules.md`, `api.md`,
 `import-flow.md`, `reporting.md`, `roadmap.md`, `decisions.md`,
 `project-summary.md` — all written and verified against the live codebase
-rather than reconstructed from memory. `README.md` updated to match
-(see next entry once done).
+rather than reconstructed from memory. `README.md` updated to match.
+
+## Phase 7 — Two-state invoice workflow (Pending Review / Approved)
+
+Redesigned the purchase-invoice review flow per an explicit ERP-workflow
+spec (ADR-014):
+
+- Removed the auto-approve fast path — every OCR import now always lands
+  at `Pending Review`, regardless of match confidence.
+- Added `purchase_invoice_items.unit` (migration) so unit-of-measure is a
+  correctable per-line field, not just inherited from the matched product.
+- New endpoints: `PATCH/POST/DELETE /api/invoices/:id/items[/:itemId]`
+  (correct name/quantity/unit/price, resolve to an existing or brand-new
+  product, add a missing line, delete a wrong one) — all rejected once the
+  invoice is no longer Pending Review; `PATCH /api/invoices/:id/notes` (the
+  one field still editable post-approval).
+- `approveInvoice` redesigned: no more `decisions` body — requires every
+  item to already carry a real `product_id`, rejects naming the unmatched
+  ones otherwise, then locks the invoice and posts stock/debt/accounting
+  exactly as before.
+- Frontend: replaced the old card-based, decision-batching review UI with
+  `InvoiceItemsTable` — a fully inline-editable table for Pending Review
+  (including frontend-composed merge and split, built from the same
+  update/add/delete primitives) and a plain read-only table once Approved,
+  plus a notes editor and a print button for the locked state.
+- Typecheck and build verified clean.
+
+## Phase 8 — Dedicated read-only view page for Approved invoices
+
+- Added `purchase_invoices.approved_at` (migration), stamped once by a new
+  `approveInvoiceStatus` statement at the moment `approveInvoice()` succeeds.
+- New `InvoiceViewPage.tsx` at `/invoices/:id` (ADR-015) — header (incl.
+  approval date, optional average OCR confidence), a sortable/searchable/
+  paginated read-only `DataTable` of items (product name, matched product,
+  unit, quantity, price, line total, match status — no action column at
+  all), a summary card (subtotal, total, item/matched/new-product/existing-
+  product-matched counts), a supplier-info card, and print/export-PDF/back
+  buttons. Redirects to `/review` if the invoice isn't actually Approved.
+- Added a "عرض" action to the Approved tab of the Invoices list, which had
+  no way to open an approved invoice at all before this.
+- Typecheck and build verified clean.
+
+## Phase 9 — Calculated total as the single source of truth (ADR-016)
+
+- Added `purchase_invoices.ocr_header_total` (migration) — the raw OCR
+  figure, frozen at import, reference-only.
+- `invoice_amount` now always equals `SUM(purchase_invoice_items.total_price)`,
+  recalculated on every item add/edit/delete via a new
+  `recalculateInvoiceTotal` statement, and computed from the items
+  themselves (not copied from the OCR header) at import time.
+- Review page (Pending Review) and view page (Approved) both display OCR
+  Header Total / Calculated Total / Difference; the review page additionally
+  shows a warning banner when they differ by more than a cent.
+- Typecheck and build verified clean.
+
+## Phase 10 — Draft-only editing for Purchase Orders (ADR-018)
+
+- Backend: `purchaseOrderService.js` gained `updateOrder`, `updateOrderItem`,
+  `addOrderItem`, `deleteOrderItem`, each gated by a new `_requireDraft(id)`
+  guard (400 once the PO isn't Draft). New routes: `PATCH /:id`,
+  `PATCH /:id/items/:itemId`, `POST /:id/items`,
+  `DELETE /:id/items/:itemId` (rejects deleting the last remaining item).
+- Frontend: `PurchaseOrderDetailPage.tsx` now renders an inline-editable
+  header (`SupplierPicker`, order/expected date inputs, notes textarea,
+  save-on-blur) and a new `PurchaseOrderItemsTable`/`PurchaseOrderItemRow`
+  pair (editable product/quantity/expected-price per line, add-row,
+  delete-row) while `status === 'Draft'`; every other status renders the
+  original plain read-only card + table, unchanged.
+- Verified via curl against a live Draft PO: header update, item update,
+  add item, delete item, and the delete-last-item guard all behave as
+  expected. Typecheck and build verified clean.

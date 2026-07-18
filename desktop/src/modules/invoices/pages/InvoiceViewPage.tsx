@@ -173,9 +173,23 @@ export function InvoiceViewPage() {
             <div className="tabular-nums font-semibold">{formatCurrency(subtotal)}</div>
           </div>
           <div>
-            <div className="text-xs text-muted-foreground">المبلغ الإجمالي</div>
+            <div className="text-xs text-muted-foreground">المبلغ الإجمالي (المحسوب)</div>
             <div className="tabular-nums font-semibold">{formatCurrency(invoice.invoice_amount)}</div>
           </div>
+          {invoice.ocr_header_total != null && (
+            <>
+              <div>
+                <div className="text-xs text-muted-foreground">إجمالي رأس الفاتورة (OCR)</div>
+                <div className="tabular-nums font-semibold">{formatCurrency(invoice.ocr_header_total)}</div>
+              </div>
+              <div>
+                <div className="text-xs text-muted-foreground">الفرق عن OCR</div>
+                <div className="tabular-nums font-semibold">
+                  {formatCurrency(invoice.invoice_amount - invoice.ocr_header_total)}
+                </div>
+              </div>
+            </>
+          )}
           <div>
             <div className="text-xs text-muted-foreground">عدد الأصناف</div>
             <div className="tabular-nums font-semibold">{items.length}</div>

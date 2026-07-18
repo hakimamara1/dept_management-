@@ -67,16 +67,34 @@ code, the code wins; fix this file.
 | GET | `/:id` | Header + items, 404 if not found |
 | POST | `/` | Body: `{ supplierId, orderDate, expectedDate, notes, items }`. `supplierId`+`orderDate` required |
 | PATCH | `/:id/status` | Body: `{ status }` — must be a valid transition (see `business-rules.md`) |
+| PATCH | `/:id` | Body: `{ supplierId?, orderDate?, expectedDate?, notes? }`. **Draft only** — 400 otherwise |
+| PATCH | `/:id/items/:itemId` | Body: `{ productId?, quantity?, expectedUnitPrice? }`. **Draft only** |
+| POST | `/:id/items` | Body: `{ productId, quantity, expectedUnitPrice? }`. Adds a line. **Draft only** |
+| DELETE | `/:id/items/:itemId` | Removes a line; rejected if it's the last one. **Draft only** |
 
 ## Invoices (purchasing, OCR pipeline) — `/api/invoices`
 
+Two-state workflow — see `business-rules.md` and `import-flow.md` for the
+full "why". Every OCR import lands at `Pending Review`; every item-editing
+route below is rejected once the invoice is `Approved`.
+
 | Method | Path | Notes |
 |---|---|---|
-| POST | `/ocr` | Body: raw OCR JSON payload. Runs the full `invoiceProcessor.processOcrResult()` pipeline — see `import-flow.md` |
-| POST | `/:id/approve` | Body: `{ decisions }` — human-confirmed product/supplier matches, triggers stock/debt/accounting cascade |
+| POST | `/ocr` | Body: raw OCR JSON payload. Always creates the invoice as `Pending Review` — no auto-approve. Runs `invoiceProcessor.processOcrResult()` — see `import-flow.md` |
+| GET | `/pending` | Invoices awaiting review |
 | GET | `/approved?limit=20&offset=0` | Paginated |
-| GET | `/pending` | Invoices awaiting human review |
-| GET | `/:id/review` | Invoice header + line items with match candidates, for the review UI |
+| GET | `/:id/review` | Invoice header (incl. `approved_at`, set only once, at approval) + line items (with match candidates). Backs both the Pending-Review edit UI and the Approved read-only view page — same endpoint, works for either status |
+| PATCH | `/:id/items/:itemId` | Body: `{ productName?, quantity?, unit?, unitPrice?, productId?, createNewProduct?: {unit} }`. Corrects fields and/or resolves the product match. **Pending Review only** |
+| POST | `/:id/items` | Body: `{ productName, quantity, unit?, unitPrice, productId?, createNewProduct?: {unit} }`. Adds a missing line. **Pending Review only** |
+| DELETE | `/:id/items/:itemId` | Removes an incorrect line; rejected if it's the last one. **Pending Review only** |
+| POST | `/:id/approve` | No body. Requires every item to already have `product_id` set — 400 naming the unmatched items otherwise. Locks the invoice and posts stock/debt/cost/accounting |
+| PATCH | `/:id/notes` | Body: `{ notes }`. The one field still editable after approval |
+
+Frontend routes over this same `GET /:id/review` data: `desktop`'s
+`/invoices/:id/review` is the editable Pending-Review screen;
+`/invoices/:id` is the dedicated read-only view page for an Approved
+invoice (`InvoiceViewPage.tsx`) — it redirects to `/review` if the invoice
+somehow isn't actually Approved yet.
 
 ## Payments (cross-supplier view) — `/api/payments`
 

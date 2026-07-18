@@ -20,6 +20,7 @@
 | Notifications | ⏳ | Nav item exists, routes to `ComingSoonPage`. No backend concept — needs its own scoping pass (what triggers a notification? low stock? overdue debt? new pending invoice?) before any code |
 | AI Assistant | ⏳ | Same — placeholder only |
 | Settings | ⏳ | Same — no user/app-level settings exist yet (no auth, no currency/locale config beyond the hardcoded `ar` default) |
+| Invoice Correction (post-approval) | ⏳ | Deliberately deferred (ADR-014) — correcting an already-Approved invoice needs adjustment/reversal transactions that preserve accounting history, not a direct edit. Approved invoices are fully locked for now; don't build a workaround without designing the adjustment-entry mechanism first |
 
 ## Known gaps / follow-ups
 
