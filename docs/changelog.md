@@ -202,3 +202,73 @@ spec (ADR-014):
   الأسعار" (price history) — it only ever opened a read-only history sheet
   and never let anyone set a price.
 - Typecheck and build verified clean.
+
+## Phase 12 — Manual invoice entry for handwritten supplier invoices + photo attachments (ADR-020)
+
+- Added `purchase_invoices.source` (`'ocr'`/`'manual'`, migration) and a new
+  `invoice_attachments` table (`file_path`, `original_name`, `uploaded_at`).
+- Backend: `invoiceProcessor.createManualInvoice()` — mirrors
+  `processOcrResult()` but simpler (no OCR validation, supplier already
+  known via `SupplierPicker`, every item resolved at entry time via the
+  existing `_resolveItemProduct()`), computing `previous_balance`/
+  `new_balance` live from `debtService.getCurrentBalance()` instead of
+  trusting typed input. New routes: `POST /api/invoices/manual`,
+  `POST /api/invoices/:id/attachments` (multer, up to 10 photos/10MB each),
+  and `GET /:id/review` now also returns `attachments`. Uploaded photos are
+  served statically at `GET /uploads/<file_path>` (added to `.gitignore` —
+  private business documents, not committed).
+- Frontend: new `ManualInvoiceSheet.tsx` (supplier/date/items form + an
+  optional multi-photo file input) triggered next to the existing
+  `SubmitInvoiceDialog` on the Invoices page. `InvoiceReviewPage.tsx` now
+  shows a "أُدخلت يدوياً" badge for manual invoices, a photo gallery, and an
+  always-available "إضافة صورة" button on Pending Review invoices.
+- Also fixed a latent bug in `apiClient`'s `request()` while adding
+  `postForm`: it always set a JSON `Content-Type` header whenever a body
+  was present, which would have broken multipart uploads (no browser-set
+  boundary) — now skipped specifically for `FormData` bodies.
+- **Note**: this feature was previously believed to exist per task-tracking
+  history, but was found completely absent from the codebase during
+  investigation — same "wiped by an earlier git reset, task tracker stayed
+  stale" pattern seen twice already this session (products
+  `default_sale_price`, Purchase Order edit routes). This phase is a
+  from-scratch rebuild, not a fix.
+- Typecheck and build verified clean.
+
+## Phase 13 — AI photo extraction replaces the paste-OCR-JSON dialog (ADR-021)
+
+- Added `replicate` npm dependency, wired the previously-unused `dotenv`
+  dependency (`require('dotenv').config()` at the top of `app.js`), added a
+  gitignored `.env` with a `REPLICATE_API_TOKEN=` placeholder.
+- New `src/services/aiExtractionService.js` — holds the extraction prompt
+  (rules + JSON schema + extraction/validation rules) and
+  `extractInvoiceData(imageBuffer, mimeType)`, which calls
+  `replicate.run("google/gemini-3.1-pro", ...)` with the image as a
+  `data:` URI, strips a possible markdown fence, and parses the result.
+- New `POST /api/invoices/extract` (multer, single file, field `invoice`) —
+  extracts the data, hands it to the **unmodified**
+  `invoiceProcessor.processOcrResult()`, and saves the uploaded photo as an
+  `invoice_attachments` row on the created invoice.
+- Frontend: `SubmitInvoiceDialog.tsx` (paste-OCR-JSON) deleted, replaced by
+  `ExtractInvoiceDialog.tsx` (single-image upload, loading state while the
+  AI works). `useSubmitInvoice`/`submitInvoiceSchema` removed, replaced by
+  `useExtractInvoice`/`invoicesApi.extract()`. `POST /api/invoices/ocr`
+  itself is untouched and still callable directly — only its frontend UI is
+  gone.
+- Typecheck and build verified clean. Live curl verification against the
+  real model is pending — needs `REPLICATE_API_TOKEN` set in `.env` first.
+
+## Phase 13 — Remove invoice attachments + add-supplier form
+
+- Backend: `DELETE /api/invoices/:id/attachments/:attachmentId` (removes
+  the file from disk and the `invoice_attachments` row; no status
+  restriction, since attachments are reference-only). `POST /api/suppliers`
+  (adds a supplier directly at zero balance, rejecting a case-insensitive
+  duplicate name) — reuses the existing `db.stmts.insertSupplier` prepared
+  statement that `supplierMatcher.findOrCreateSupplier` already used.
+- Frontend: each attachment thumbnail on `InvoiceReviewPage.tsx` now has a
+  hover-revealed delete button. New `CreateSupplierDialog.tsx` wired into
+  `SuppliersPage.tsx`'s page header, mirroring `CreateProductDialog.tsx`'s
+  shape.
+- Verified via curl: delete removes both the file and the DB row; supplier
+  creation, duplicate-name rejection, and missing-name rejection all behave
+  as expected. Typecheck and build verified clean.

@@ -178,6 +178,16 @@ export interface InvoiceReviewHeader {
   validation_errors: string | null
   notes: string | null
   approved_at: string | null
+  // 'ocr' (pasted OCR JSON) or 'manual' (typed in from a handwritten invoice)
+  source: 'ocr' | 'manual'
+}
+
+export interface InvoiceAttachment {
+  id: number
+  invoice_id: number
+  file_path: string
+  original_name: string | null
+  uploaded_at: string
 }
 
 export interface InvoiceReviewItem {
@@ -200,6 +210,7 @@ export interface InvoiceReviewItem {
 export interface InvoiceReviewResponse {
   invoice: InvoiceReviewHeader
   items: InvoiceReviewItem[]
+  attachments: InvoiceAttachment[]
 }
 
 // Only meaningful while the invoice is still Pending Review — the backend
@@ -226,6 +237,31 @@ export interface AddInvoiceItemInput {
   unitPrice: number
   productId?: number
   createNewProduct?: NewProductInput
+}
+
+// For a supplier's handwritten invoice — no OCR JSON to paste, typed in
+// directly. Every item requires either an existing productId (picked via
+// ProductPicker) or createNewProduct — no OCR ambiguity to resolve later.
+export interface CreateManualInvoiceItemInput {
+  productName: string
+  quantity: number
+  unit?: string
+  unitPrice: number
+  productId?: number
+  createNewProduct?: NewProductInput
+}
+
+export interface CreateManualInvoiceInput {
+  supplierId: number
+  invoiceNumber: string
+  invoiceDate: string
+  invoiceTime?: string
+  currency?: string
+  discount?: number
+  tax?: number
+  paymentMethod?: string
+  notes?: string
+  items: CreateManualInvoiceItemInput[]
 }
 
 // ── Purchase Orders ───────────────────────────────────────

@@ -1,4 +1,9 @@
 // app.js
+const path = require('path');
+// Explicit path — this process is spawned by Electron's main process with
+// no guarantee its cwd is the repo root, so dotenv's cwd-relative default
+// lookup can silently miss the .env file.
+require('dotenv').config({ path: path.join(__dirname, '../.env') });
 const express = require('express');
 const cors = require('cors');
 
@@ -10,6 +15,11 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Uploaded invoice-attachment photos — private business documents, not
+// committed (see .gitignore). Reference/backup only, never read by
+// business logic.
+app.use('/uploads', express.static(path.join(__dirname, 'data/uploads')));
 
 // Routes
 app.use('/api/invoices', require('./routes/invoices'));

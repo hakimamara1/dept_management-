@@ -1,20 +1,65 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { queryKeys } from '@shared/lib/query-client'
-import type { AddInvoiceItemInput, UpdateInvoiceItemInput } from '@shared/types/api'
+import type { AddInvoiceItemInput, CreateManualInvoiceInput, UpdateInvoiceItemInput } from '@shared/types/api'
 import { invoicesApi } from '../services/invoices.api'
 
-export function useSubmitInvoice() {
+export function useExtractInvoice() {
   const queryClient = useQueryClient()
 
   return useMutation({
-    mutationFn: (ocrJson: unknown) => invoicesApi.submit(ocrJson),
+    mutationFn: (file: File) => invoicesApi.extract(file),
     onSuccess: (result) => {
-      toast.success(`تم استلام الفاتورة (رقم ${result.invoiceId}) — راجعها قبل الاعتماد`)
+      toast.success(`تم استخراج الفاتورة (رقم ${result.invoiceId}) — راجعها قبل الاعتماد`)
       queryClient.invalidateQueries({ queryKey: queryKeys.invoices.pending })
     },
     onError: (error: Error) => {
-      toast.error('فشل رفع الفاتورة', { description: error.message })
+      toast.error('فشل استخراج الفاتورة', { description: error.message })
+    }
+  })
+}
+
+export function useCreateManualInvoice() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: CreateManualInvoiceInput) => invoicesApi.createManual(data),
+    onSuccess: (result) => {
+      toast.success(`تم إنشاء الفاتورة (رقم ${result.invoiceId}) — راجعها قبل الاعتماد`)
+      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.pending })
+    },
+    onError: (error: Error) => {
+      toast.error('فشل إنشاء الفاتورة', { description: error.message })
+    }
+  })
+}
+
+export function useAddInvoiceAttachments(invoiceId: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (files: File[]) => invoicesApi.addAttachments(invoiceId, files),
+    onSuccess: () => {
+      toast.success('تم إرفاق الصورة')
+      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.review(invoiceId) })
+    },
+    onError: (error: Error) => {
+      toast.error('فشل إرفاق الصورة', { description: error.message })
+    }
+  })
+}
+
+export function useDeleteInvoiceAttachment(invoiceId: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (attachmentId: number) => invoicesApi.deleteAttachment(invoiceId, attachmentId),
+    onSuccess: () => {
+      toast.success('تم حذف الصورة')
+      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.review(invoiceId) })
+    },
+    onError: (error: Error) => {
+      toast.error('فشل حذف الصورة', { description: error.message })
     }
   })
 }

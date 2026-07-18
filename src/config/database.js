@@ -73,6 +73,7 @@ class DatabaseManager {
         this._addColumnIfMissing('purchase_invoices', 'approved_at', 'DATETIME');
         this._addColumnIfMissing('purchase_invoices', 'ocr_header_total', 'DECIMAL(15,2)');
         this._addColumnIfMissing('products', 'default_sale_price', 'DECIMAL(10,2)');
+        this._addColumnIfMissing('purchase_invoices', 'source', "TEXT DEFAULT 'ocr'");
     }
 
     _addColumnIfMissing(table, column, definition) {
@@ -228,8 +229,8 @@ class DatabaseManager {
                 `INSERT INTO purchase_invoices
                  (invoice_number, invoice_date, invoice_time, supplier_id, currency,
                   previous_balance, invoice_amount, ocr_header_total, discount, tax, new_balance,
-                  payment_method, notes, status, validation_errors)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                  payment_method, notes, status, validation_errors, source)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
             ),
             insertInvoiceItem: this.db.prepare(
                 `INSERT INTO purchase_invoice_items
@@ -267,6 +268,15 @@ class DatabaseManager {
             approveInvoiceStatus: this.db.prepare(
                 `UPDATE purchase_invoices SET status = 'Approved', approved_at = CURRENT_TIMESTAMP WHERE id = ?`
             ),
+            insertInvoiceAttachment: this.db.prepare(
+                `INSERT INTO invoice_attachments (invoice_id, file_path, original_name)
+                 VALUES (?, ?, ?)`
+            ),
+            getInvoiceAttachments: this.db.prepare(
+                `SELECT * FROM invoice_attachments WHERE invoice_id = ? ORDER BY uploaded_at ASC`
+            ),
+            getInvoiceAttachmentById: this.db.prepare('SELECT * FROM invoice_attachments WHERE id = ?'),
+            deleteInvoiceAttachment: this.db.prepare('DELETE FROM invoice_attachments WHERE id = ?'),
             insertStockMovement: this.db.prepare(
                 `INSERT INTO stock_movements 
                  (product_id, invoice_id, movement_type, quantity, unit_cost, reference)

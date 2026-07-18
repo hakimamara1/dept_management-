@@ -103,7 +103,8 @@ class InvoiceProcessor {
                 ocrJson.payment_method || null,
                 ocrJson.notes || null,
                 'Pending Review',
-                JSON.stringify(validation.errors)
+                JSON.stringify(validation.errors),
+                'ocr'
             );
 
             const invoiceId = invoiceResult.lastInsertRowid;
@@ -151,6 +152,101 @@ class InvoiceProcessor {
                 validationErrors: validation.errors,
                 validationWarnings: validation.warnings
             };
+        });
+
+        return transaction();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // Manual entry — for a supplier's handwritten invoice, where there's no
+    // OCR JSON to paste. Simpler than processOcrResult: the supplier is
+    // already picked (supplierId known, no supplierMatcher), and every item
+    // already carries a deliberate product decision from the picker (no
+    // OCR-suggested matching phase, no 'Pending' items possible). Lands at
+    // 'Pending Review' just like an OCR import, so it goes through the same
+    // edit/approve pipeline from there.
+    // ═══════════════════════════════════════════════════════════════
+    createManualInvoice({ supplierId, invoiceNumber, invoiceDate, invoiceTime, currency, discount, tax, paymentMethod, notes, items }) {
+        if (!supplierId) throw new Error('المورد مطلوب');
+        if (!invoiceNumber || !invoiceNumber.toString().trim()) throw new Error('رقم الفاتورة مطلوب');
+        if (!invoiceDate) throw new Error('تاريخ الفاتورة مطلوب');
+        if (!items || !items.length) throw new Error('يجب أن تحتوي الفاتورة على صنف واحد على الأقل');
+
+        const transaction = db.transaction(() => {
+            const sanitizedItems = items.map((item) => {
+                const quantity = parseNumber(item.quantity);
+                const unitPrice = parseNumber(item.unitPrice);
+                if (!quantity || quantity <= 0) throw new Error('الكمية يجب أن تكون أكبر من الصفر لكل صنف');
+                if (unitPrice < 0) throw new Error('السعر غير صالح');
+                return { ...item, quantity, unitPrice, totalPrice: quantity * unitPrice };
+            });
+
+            const calculatedTotal = sanitizedItems.reduce((sum, item) => sum + item.totalPrice, 0);
+            const previousBalance = debtService.getCurrentBalance(supplierId);
+            const newBalance = previousBalance + calculatedTotal;
+
+            let invoiceResult;
+            try {
+                invoiceResult = db.stmts.insertInvoice.run(
+                    invoiceNumber.toString().trim(),
+                    invoiceDate,
+                    invoiceTime || null,
+                    supplierId,
+                    currency || 'دج',
+                    previousBalance,
+                    calculatedTotal,
+                    null, // ocr_header_total — nothing to compare against for a manual entry
+                    parseNumber(discount),
+                    parseNumber(tax),
+                    newBalance,
+                    paymentMethod || null,
+                    notes || null,
+                    'Pending Review',
+                    '[]',
+                    'manual'
+                );
+            } catch (err) {
+                if (err.code === 'SQLITE_CONSTRAINT_UNIQUE' || /UNIQUE constraint failed/.test(err.message)) {
+                    throw new Error('رقم الفاتورة موجود مسبقاً لهذا المورد');
+                }
+                throw err;
+            }
+
+            const invoiceId = invoiceResult.lastInsertRowid;
+
+            sanitizedItems.forEach((item, index) => {
+                if (!item.productId && !item.createNewProduct) {
+                    throw new Error('اختر منتجاً لكل صنف أو أنشئ منتجاً جديداً');
+                }
+                const name = (item.productName || '').toString().trim();
+                if (!name) throw new Error('اسم الصنف مطلوب');
+
+                const resolution = this._resolveItemProduct(name, {
+                    productId: item.productId,
+                    createNewProduct: item.createNewProduct
+                });
+
+                db.stmts.insertInvoiceItem.run(
+                    invoiceId,
+                    resolution.productId,
+                    index + 1,
+                    name,
+                    normalizeArabic(name),
+                    null,
+                    item.unit || null,
+                    item.quantity,
+                    item.unitPrice,
+                    0,
+                    0,
+                    item.totalPrice,
+                    resolution.matchStatus,
+                    null,
+                    null,
+                    null
+                );
+            });
+
+            return { invoiceId, status: 'Pending Review' };
         });
 
         return transaction();

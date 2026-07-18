@@ -10,7 +10,8 @@ import { formatCurrency, formatDate } from '@shared/lib/format'
 import { useI18n } from '@shared/lib/i18n'
 import type { ApprovedInvoice, PendingInvoice } from '@shared/types/api'
 import { useApprovedInvoices, usePendingInvoices } from '../hooks/useInvoices'
-import { SubmitInvoiceDialog } from '../components/SubmitInvoiceDialog'
+import { ExtractInvoiceDialog } from '../components/ExtractInvoiceDialog'
+import { ManualInvoiceSheet } from '../components/ManualInvoiceSheet'
 
 type SubTab = 'pending' | 'approved'
 
@@ -106,7 +107,16 @@ export function InvoicesPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader title={t('invoices.title')} subtitle={t('invoices.subtitle')} actions={<SubmitInvoiceDialog />} />
+      <PageHeader
+        title={t('invoices.title')}
+        subtitle={t('invoices.subtitle')}
+        actions={
+          <div className="flex gap-2">
+            <ManualInvoiceSheet />
+            <ExtractInvoiceDialog />
+          </div>
+        }
+      />
 
       <div className="mb-4 flex gap-2">
         <Button variant={tab === 'pending' ? 'default' : 'ghost'} size="sm" onClick={() => setTab('pending')}>

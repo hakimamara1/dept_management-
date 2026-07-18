@@ -35,3 +35,23 @@ export const adjustBalanceDefaults: AdjustBalanceFormValues = {
   amount: 0,
   reason: ''
 }
+
+export const createSupplierSchema = z.object({
+  name: z.string().trim().min(1, 'اسم المورد مطلوب').max(200, 'الاسم طويل جداً'),
+  phone: z.string().trim().max(30).optional().or(z.literal('')),
+  email: z.string().trim().email('بريد إلكتروني غير صالح').optional().or(z.literal('')),
+  address: z.string().trim().max(300).optional().or(z.literal('')),
+  taxNumber: z.string().trim().max(50).optional().or(z.literal('')),
+  commercialRegister: z.string().trim().max(50).optional().or(z.literal(''))
+})
+
+export type CreateSupplierFormValues = z.infer<typeof createSupplierSchema>
+
+export const createSupplierDefaults: CreateSupplierFormValues = {
+  name: '',
+  phone: '',
+  email: '',
+  address: '',
+  taxNumber: '',
+  commercialRegister: ''
+}

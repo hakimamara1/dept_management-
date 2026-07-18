@@ -2,7 +2,22 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { queryKeys } from '@shared/lib/query-client'
 import { suppliersApi } from '../services/suppliers.api'
-import type { AdjustBalanceFormValues, RecordPaymentFormValues } from '../schemas/supplier.schema'
+import type { AdjustBalanceFormValues, CreateSupplierFormValues, RecordPaymentFormValues } from '../schemas/supplier.schema'
+
+export function useCreateSupplier() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: CreateSupplierFormValues) => suppliersApi.create(data),
+    onSuccess: () => {
+      toast.success('تمت إضافة المورد بنجاح')
+      queryClient.invalidateQueries({ queryKey: ['suppliers', 'list'] })
+    },
+    onError: (error: Error) => {
+      toast.error('فشل إضافة المورد', { description: error.message })
+    }
+  })
+}
 
 export function useRecordPayment(supplierId: number) {
   const queryClient = useQueryClient()

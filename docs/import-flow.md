@@ -3,11 +3,57 @@
 This is the purchasing-side flow that turns a raw OCR/AI extraction of a
 supplier invoice into stock movements, supplier debt, and accounting
 entries. Entirely orchestrated by `src/services/invoiceProcessor.js`
-(`InvoiceProcessor` class, exported as a singleton). Entry point:
-`POST /api/invoices/ocr` → `processOcrResult(ocrJson)`.
+(`InvoiceProcessor` class, exported as a singleton). Two entry points feed
+the same `processOcrResult(ocrJson)`:
+
+- `POST /api/invoices/extract` — the frontend-facing path. Upload a photo
+  of the invoice; `aiExtractionService.js` calls a vision model on
+  Replicate to produce the OCR JSON, which is then handed to
+  `processOcrResult()` unmodified. See "Phase 0" below.
+- `POST /api/invoices/ocr` — accepts already-extracted OCR JSON directly.
+  No frontend UI calls this anymore (the old paste-JSON dialog was replaced
+  by the photo-upload flow), but the route stays — useful for feeding in
+  JSON from a different external tool, or for debugging.
+
+Either way, `processOcrResult(ocrJson)` itself doesn't know or care which
+entry point produced its input — everything from here on is identical.
 
 The whole method runs inside one `db.transaction()` — if anything throws
 partway through (duplicate check, insert failure), nothing is committed.
+
+## Phase 0 — AI extraction from a photo (`aiExtractionService.js`)
+
+`POST /api/invoices/extract` (multer, single file, field name `invoice`,
+10MB limit, reusing the same upload config as the attachment routes):
+
+1. Reads the uploaded image into a `data:<mimeType>;base64,<...>` URI — a
+   data URI, not a public file URL, because Replicate's servers can't reach
+   this app's local dev server (`127.0.0.1`).
+2. `aiExtractionService.extractInvoiceData(buffer, mimeType)` calls
+   `replicate.run("google/gemini-3.1-pro", { input: { prompt: EXTRACTION_PROMPT, image_input: [dataUri] } })`.
+   `EXTRACTION_PROMPT` is a fixed, detailed instruction set (see the
+   constant in that file) whose **output JSON schema was deliberately
+   designed to match `processOcrResult()`'s expected input field-for-field**
+   — `invoice_number`, `invoice_date`, `invoice_time`, `supplier.name`,
+   `previous_balance`, `invoice_amount`, `discount`, `tax`, `new_balance`,
+   `payment_method`, `notes`, `items[].{line_number,product_name,package,unit,
+   quantity,unit_price,discount,tax,total_price}`. No adapter/mapping layer
+   exists or is needed between the two.
+3. The model's raw text response is stripped of an optional ` ```json `
+   fence (defensive — instructed not to, but not 100% guaranteed) and
+   `JSON.parse`'d. A parse failure throws a clear Arabic error pointing at
+   the manual-entry sheet (`ManualInvoiceSheet.tsx`) as the fallback.
+4. The parsed JSON is handed to `processOcrResult()` — from here on,
+   identical to Phases 1–7 below.
+5. On success, the route also saves the originally-uploaded photo as an
+   `invoice_attachments` row (same mechanism as
+   `POST /api/invoices/:id/attachments`) — so the source image stays
+   attached to the invoice for later cross-checking, viewable on the
+   review page's photo gallery.
+
+`REPLICATE_API_TOKEN` (in `.env`, gitignored) is required for this route to
+work at all — `aiExtractionService.getClient()` throws immediately if it's
+unset.
 
 ## Input shape
 
@@ -170,7 +216,13 @@ workflow.
 ## Full flow diagram
 
 ```
-POST /api/invoices/ocr
+POST /api/invoices/extract  (photo upload — the frontend path)
+  │
+  ▼
+aiExtractionService: image → data URI → replicate.run(gemini-3.1-pro) → JSON
+  │
+  ▼                                    POST /api/invoices/ocr
+processOcrResult(ocrJson) ◀────────────────────┘  (direct JSON — no UI, still callable)
   │
   ▼
 validate + duplicate-check ──(dup)──▶ throw, rollback

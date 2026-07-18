@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useRef, useState } from 'react'
 import { useNavigate, useParams, Link } from 'react-router-dom'
-import { AlertTriangle, ArrowRight, Printer } from 'lucide-react'
+import { AlertTriangle, ArrowRight, Camera, Printer, X } from 'lucide-react'
 import { Button } from '@shared/components/ui/button'
 import { Card, CardContent } from '@shared/components/ui/card'
 import { Textarea } from '@shared/components/ui/textarea'
@@ -8,9 +8,15 @@ import { Badge } from '@shared/components/ui/badge'
 import { LoadingState } from '@shared/components/LoadingState'
 import { ErrorState } from '@shared/components/ErrorState'
 import { formatCurrency, formatDate } from '@shared/lib/format'
+import { API_BASE_URL } from '@shared/lib/api-client'
 import { useI18n } from '@shared/lib/i18n'
 import { useInvoiceReview } from '../hooks/useInvoiceReview'
-import { useApproveInvoice, useUpdateInvoiceNotes } from '../hooks/useInvoiceMutations'
+import {
+  useAddInvoiceAttachments,
+  useApproveInvoice,
+  useDeleteInvoiceAttachment,
+  useUpdateInvoiceNotes
+} from '../hooks/useInvoiceMutations'
 import { InvoiceItemsTable } from '../components/InvoiceItemsTable'
 
 export function InvoiceReviewPage() {
@@ -22,14 +28,17 @@ export function InvoiceReviewPage() {
   const { data, isLoading, error, refetch } = useInvoiceReview(invoiceId)
   const approveInvoice = useApproveInvoice(invoiceId)
   const updateNotes = useUpdateInvoiceNotes(invoiceId)
+  const addAttachments = useAddInvoiceAttachments(invoiceId)
+  const deleteAttachment = useDeleteInvoiceAttachment(invoiceId)
   const [notesDraft, setNotesDraft] = useState<string | null>(null)
+  const photoInputRef = useRef<HTMLInputElement>(null)
 
   if (isLoading) return <LoadingState rows={6} />
   if (error || !data) {
     return <ErrorState message={error?.message ?? 'الفاتورة غير موجودة'} onRetry={() => refetch()} />
   }
 
-  const { invoice, items } = data
+  const { invoice, items, attachments } = data
   const isPending = invoice.status === 'Pending Review'
 
   // The calculated total (sum of line items) is always invoice.invoice_amount
@@ -55,6 +64,12 @@ export function InvoiceReviewPage() {
     updateNotes.mutate(notesDraft, { onSuccess: () => setNotesDraft(null) })
   }
 
+  function handlePhotosSelected(e: React.ChangeEvent<HTMLInputElement>) {
+    const files = Array.from(e.target.files ?? [])
+    if (files.length > 0) addAttachments.mutate(files)
+    e.target.value = ''
+  }
+
   return (
     <div className="flex flex-1 flex-col pb-20">
       <Button variant="ghost" size="sm" className="mb-2 w-fit" onClick={() => navigate('/invoices')}>
@@ -69,6 +84,7 @@ export function InvoiceReviewPage() {
             <div className="flex items-center gap-2 font-semibold">
               #{invoice.invoice_number}
               <Badge variant={isPending ? 'warning' : 'success'}>{isPending ? 'قيد المراجعة' : 'معتمدة'}</Badge>
+              {invoice.source === 'manual' && <Badge variant="secondary">أُدخلت يدوياً</Badge>}
             </div>
           </div>
           <div>
@@ -95,6 +111,71 @@ export function InvoiceReviewPage() {
           )}
         </CardContent>
       </Card>
+
+      {(attachments.length > 0 || isPending) && (
+        <Card className="mb-6 print:hidden">
+          <CardContent className="p-5">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="text-sm font-medium">صور الفاتورة الورقية</div>
+              {isPending && (
+                <>
+                  <input
+                    ref={photoInputRef}
+                    type="file"
+                    accept="image/*"
+                    multiple
+                    className="hidden"
+                    onChange={handlePhotosSelected}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={addAttachments.isPending}
+                    onClick={() => photoInputRef.current?.click()}
+                  >
+                    <Camera className="size-3.5" />
+                    {addAttachments.isPending ? 'جاري الرفع...' : 'إضافة صورة'}
+                  </Button>
+                </>
+              )}
+            </div>
+            {attachments.length > 0 ? (
+              <div className="flex flex-wrap gap-3">
+                {attachments.map((att) => (
+                  <div key={att.id} className="group relative size-24">
+                    <a
+                      href={`${API_BASE_URL}/uploads/${att.file_path}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="block size-full overflow-hidden rounded-md border border-border"
+                    >
+                      <img
+                        src={`${API_BASE_URL}/uploads/${att.file_path}`}
+                        alt={att.original_name ?? 'صورة الفاتورة'}
+                        className="size-full object-cover"
+                      />
+                    </a>
+                    <Button
+                      type="button"
+                      size="icon"
+                      variant="destructive"
+                      className="absolute -top-2 -end-2 size-6 rounded-full opacity-0 group-hover:opacity-100"
+                      title="حذف الصورة"
+                      disabled={deleteAttachment.isPending}
+                      onClick={() => deleteAttachment.mutate(att.id)}
+                    >
+                      <X className="size-3.5" />
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-muted-foreground">لا صور مرفقة</p>
+            )}
+          </CardContent>
+        </Card>
+      )}
 
       {hasOcrTotal && (
         <Card className="mb-6 print:hidden">

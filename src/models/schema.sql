@@ -60,9 +60,22 @@ CREATE TABLE IF NOT EXISTS purchase_invoices (
     status TEXT DEFAULT 'Pending Review',  -- 'Pending Review', 'Approved', 'Rejected'
     validation_errors JSON,                  -- SQLite: TEXT storing JSON array
     approved_at DATETIME,                  -- set once, at the moment of approval — see invoiceProcessor.approveInvoice
+    source TEXT DEFAULT 'ocr',             -- 'ocr' (pasted OCR JSON) or 'manual' (typed in from a handwritten invoice)
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (supplier_id) REFERENCES suppliers(id),
     UNIQUE(invoice_number, supplier_id)    -- prevent duplicates per supplier
+);
+
+-- Photos of the physical invoice (mainly for manually-entered handwritten
+-- invoices, but usable on any invoice) — backup documentation only, never
+-- read by business logic.
+CREATE TABLE IF NOT EXISTS invoice_attachments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    invoice_id INTEGER NOT NULL,
+    file_path TEXT NOT NULL,               -- relative path under src/data/uploads/
+    original_name TEXT,
+    uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (invoice_id) REFERENCES purchase_invoices(id)
 );
 
 CREATE TABLE IF NOT EXISTS purchase_invoice_items (

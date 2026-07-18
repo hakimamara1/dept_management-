@@ -98,6 +98,30 @@ quantities into one row) + `deleteInvoiceItem` (remove the other). Split =
 (a new row for the remainder, carrying over the same product/unit/price).
 Both are safe specifically *because* nothing has posted yet pre-approval.
 
+**Manual entry** (`createManualInvoice()`, `POST /api/invoices/manual`) — for
+a supplier's handwritten invoice, where there's no OCR JSON to paste. Lands
+at `Pending Review` exactly like an OCR import and goes through the exact
+same editing/approval pipeline above; the only real differences:
+- The supplier is picked directly (`SupplierPicker`), so there's no
+  `supplierMatcher` fuzzy-matching step.
+- Every item requires a deliberate product decision at entry time — either
+  an existing `productId` or `createNewProduct` — so `match_status` is
+  always `UserSelected`/`NewProduct`, never `Pending`. There's no OCR
+  ambiguity to review afterward.
+- `previous_balance`/`new_balance` are computed **live** from
+  `debtService.getCurrentBalance()` at creation time, not trusted from OCR
+  input — there's no OCR figure to sanity-check here, so the actual current
+  balance is used directly rather than accepting a user-typed guess.
+- `ocr_header_total` is always `NULL` (nothing to compare the calculated
+  total against), and `source = 'manual'` on the row (vs `'ocr'` for the
+  OCR path) — purely informational, shown as a badge on the review page.
+
+**Photo attachments** (`invoice_attachments`, `POST /api/invoices/:id/attachments`)
+— optional backup documentation for the physical invoice (handwritten or
+otherwise), storable at any invoice status, never read by business logic.
+Purely reference material for a human to cross-check later, not part of the
+approval gate.
+
 ### Product catalog editing (`routes/products.js`)
 - Only catalog metadata is user-editable: `name`, `barcode`, `category`,
   `unit` (`PATCH /:id`) and the suggested selling price, `default_sale_price`

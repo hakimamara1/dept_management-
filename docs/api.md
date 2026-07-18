@@ -30,6 +30,7 @@ code, the code wins; fix this file.
 | GET | `/:id` | 404 if not found |
 | GET | `/:id/ledger` | Raw `supplier_transactions` rows |
 | GET | `/:id/statement?startDate=&endDate=` | Date-filterable statement |
+| POST | `/` | Body: `{ name, phone?, email?, address?, taxNumber?, commercialRegister? }`. Adds a supplier directly (zero balance) — rejects a case-insensitive duplicate name. Suppliers are otherwise only ever created indirectly, via `supplierMatcher.findOrCreateSupplier` during invoice import |
 | POST | `/:id/payments` | Body: `{ amount, paymentMethod, reference, notes, date }`. Transaction: writes `supplier_transactions` (via `debtService`) **and** posts a double-entry accounting transaction (via `AccountingService`) in the same `db.transaction()` |
 | POST | `/:id/adjust` | Body: `{ amount, reason }`. Manual balance adjustment, amount ≠ 0 |
 
@@ -82,15 +83,21 @@ route below is rejected once the invoice is `Approved`.
 
 | Method | Path | Notes |
 |---|---|---|
-| POST | `/ocr` | Body: raw OCR JSON payload. Always creates the invoice as `Pending Review` — no auto-approve. Runs `invoiceProcessor.processOcrResult()` — see `import-flow.md` |
+| POST | `/extract` | Multipart form, field name `invoice` (one image, 10MB limit). The frontend-facing import path — uploads a photo, `aiExtractionService.js` calls Replicate (`google/gemini-3.1-pro`) to extract the data, then feeds it into `processOcrResult()` unmodified. Also saves the photo as an attachment on the created invoice. Requires `REPLICATE_API_TOKEN` in `.env` — see `import-flow.md` |
+| POST | `/ocr` | Body: raw OCR JSON payload. Always creates the invoice as `Pending Review` — no auto-approve. Runs `invoiceProcessor.processOcrResult()` — see `import-flow.md`. No frontend UI calls this anymore (replaced by `/extract`), but it's still reachable directly |
+| POST | `/manual` | Body: `{ supplierId, invoiceNumber, invoiceDate, invoiceTime?, currency?, discount?, tax?, paymentMethod?, notes?, items: [{productName, quantity, unitPrice, unit?, productId?, createNewProduct?: {unit}}] }`. For a handwritten invoice — no OCR JSON, typed in directly. Lands at `Pending Review` like an OCR import. Runs `invoiceProcessor.createManualInvoice()` |
+| POST | `/:id/attachments` | Multipart form, field name `photos` (up to 10, 10MB each). Attaches photo(s) of the physical invoice — reference/backup only, works at any status |
+| DELETE | `/:id/attachments/:attachmentId` | Removes one attachment (file + DB row) — no status restriction, same reasoning as above |
 | GET | `/pending` | Invoices awaiting review |
 | GET | `/approved?limit=20&offset=0` | Paginated |
-| GET | `/:id/review` | Invoice header (incl. `approved_at`, set only once, at approval) + line items (with match candidates). Backs both the Pending-Review edit UI and the Approved read-only view page — same endpoint, works for either status |
+| GET | `/:id/review` | Invoice header (incl. `approved_at`, `source`) + line items (with match candidates) + `attachments`. Backs both the Pending-Review edit UI and the Approved read-only view page — same endpoint, works for either status |
 | PATCH | `/:id/items/:itemId` | Body: `{ productName?, quantity?, unit?, unitPrice?, productId?, createNewProduct?: {unit} }`. Corrects fields and/or resolves the product match. **Pending Review only** |
 | POST | `/:id/items` | Body: `{ productName, quantity, unit?, unitPrice, productId?, createNewProduct?: {unit} }`. Adds a missing line. **Pending Review only** |
 | DELETE | `/:id/items/:itemId` | Removes an incorrect line; rejected if it's the last one. **Pending Review only** |
 | POST | `/:id/approve` | No body. Requires every item to already have `product_id` set — 400 naming the unmatched items otherwise. Locks the invoice and posts stock/debt/cost/accounting |
 | PATCH | `/:id/notes` | Body: `{ notes }`. The one field still editable after approval |
+
+Uploaded attachment photos are served statically at `GET /uploads/<file_path>` (e.g. `/uploads/invoice-attachments/12-1737..._photo.jpg`), mounted in `app.js` — not under `/api`.
 
 Frontend routes over this same `GET /:id/review` data: `desktop`'s
 `/invoices/:id/review` is the editable Pending-Review screen;

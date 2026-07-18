@@ -502,3 +502,81 @@ and never let anyone set a purchase price, so the old label implied an
 edit capability that doesn't and shouldn't exist.
 
 **Status**: Accepted, implemented.
+
+### ADR-020: Manual invoice entry reuses the Pending-Review pipeline; previous/new balance computed live, not from user input
+
+**Decision**: `createManualInvoice()` inserts directly into the same
+`purchase_invoices`/`purchase_invoice_items` tables as `processOcrResult()`,
+landing at `status = 'Pending Review'` and going through the exact same
+`InvoiceItemsTable` edit UI and `POST /:id/approve` gate — it is not a
+separate parallel flow. The one deliberate behavioral difference:
+`previous_balance` is looked up live via `debtService.getCurrentBalance(supplierId)`
+at creation time (`new_balance = previous_balance + calculatedTotal`),
+rather than accepting these as typed input the way the OCR path currently
+trusts `ocrJson.previous_balance`/`new_balance`.
+
+**Reason**: A manual invoice and an OCR-imported one become the same kind
+of record the moment they're saved — same table, same lifecycle, same
+approval requirements (every item needs a real `product_id`). Building a
+separate creation-to-approval pipeline for "manual" invoices would mean
+maintaining two parallel implementations of the same business rules
+(two-state workflow, full-match gate, stock/debt/accounting posting) that
+must never drift apart — a maintenance liability with no offsetting
+benefit. The balance-computation difference exists because the *reason*
+for trusting a typed number differs: OCR-extracted `previous_balance` is
+sanity-checked implicitly by being cross-referenced against the supplier's
+actual ledger history during review; a manually-typed guess at a balance
+has no such cross-check and is strictly worse than just reading the real
+current balance directly, which is already available and authoritative.
+
+**Consequences**: A manual invoice's items skip the `'Pending'` match
+status entirely — every line either references a real product (picked via
+`ProductPicker`, `match_status = 'UserSelected'`) or creates one on the
+spot (`'NewProduct'`) at entry time, so there's no OCR-style ambiguity to
+resolve afterward on the review page; the review UI still works unmodified
+either way, since it already handles both statuses. `ocr_header_total`
+stays `NULL` on manual invoices (nothing to compare the calculated total
+against), so the review page's OCR-vs-calculated comparison card simply
+doesn't render for them.
+
+**Status**: Accepted, implemented.
+
+### ADR-021: AI photo extraction (Replicate/Gemini 3.1 Pro) replaces the paste-OCR-JSON dialog, with zero changes to processOcrResult
+
+**Decision**: Added `POST /api/invoices/extract` — uploads a photo, calls
+`replicate.run("google/gemini-3.1-pro", { input: { prompt, image_input } })`
+via a new `aiExtractionService.js`, and hands the parsed JSON to the
+**existing, unmodified** `invoiceProcessor.processOcrResult()`. The image is
+sent as a `data:` URI (base64-encoded), not a public URL — Replicate's
+servers can't reach this app's local dev server. `POST /api/invoices/ocr`
+(the old JSON-paste endpoint) stays in place but loses its frontend UI
+(`SubmitInvoiceDialog.tsx` deleted, replaced by `ExtractInvoiceDialog.tsx`).
+
+**Reason**: The extraction prompt's requested output schema was
+deliberately written (by you) to match `processOcrResult()`'s input
+contract field-for-field — `invoice_number`, `invoice_date`, `supplier.name`,
+`previous_balance`/`invoice_amount`/`discount`/`tax`/`new_balance`, and each
+item's `line_number`/`product_name`/`package`/`unit`/`quantity`/`unit_price`/
+`discount`/`tax`/`total_price`. Building a second, parallel ingestion path
+for AI-extracted invoices would duplicate the validation/supplier-matching/
+product-matching/Pending-Review logic that already exists — a maintenance
+liability for zero benefit, since the shapes already line up. Extra fields
+the prompt requests that the pipeline doesn't use (`customer`, per-item
+`barcode`/`category`) are simply ignored, same as any unrecognized JSON
+field always was.
+
+**Consequences**: `REPLICATE_API_TOKEN` (`.env`, gitignored) is now a hard
+requirement for the primary invoice-import path — `aiExtractionService.getClient()`
+throws immediately if it's unset, with a clear message. Model output isn't
+100% guaranteed to be clean JSON despite strict prompt instructions, so
+`extractInvoiceData()` defensively strips a possible ` ```json ` fence
+before parsing, and throws a friendly Arabic error pointing at the
+already-built manual-entry sheet (`ManualInvoiceSheet.tsx`) as the fallback
+if extraction or parsing fails — there is no second "paste raw JSON"
+escape hatch in the UI, manual entry covers that gap. The uploaded photo is
+also saved as an `invoice_attachments` row on the newly-created invoice
+(reusing the same mechanism `POST /:id/attachments` uses), so the source
+image stays available on the review page for cross-checking the AI's
+extraction against the original.
+
+**Status**: Accepted, implemented.
