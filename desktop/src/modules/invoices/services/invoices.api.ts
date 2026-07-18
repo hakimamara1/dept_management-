@@ -46,5 +46,8 @@ export const invoicesApi = {
   deleteItem: (invoiceId: number, itemId: number) =>
     apiClient.delete<{ success: boolean }>(`/api/invoices/${invoiceId}/items/${itemId}`),
   updateNotes: (invoiceId: number, notes: string) =>
-    apiClient.patch<{ success: boolean }>(`/api/invoices/${invoiceId}/notes`, { notes })
+    apiClient.patch<{ success: boolean }>(`/api/invoices/${invoiceId}/notes`, { notes }),
+
+  // Whole-invoice delete — for one created by mistake. Pending Review only.
+  deleteInvoice: (invoiceId: number) => apiClient.delete<{ success: boolean }>(`/api/invoices/${invoiceId}`)
 }

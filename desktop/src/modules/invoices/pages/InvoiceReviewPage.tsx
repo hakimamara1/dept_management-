@@ -14,6 +14,7 @@ import { useInvoiceReview } from '../hooks/useInvoiceReview'
 import {
   useAddInvoiceAttachments,
   useApproveInvoice,
+  useDeleteInvoice,
   useDeleteInvoiceAttachment,
   useUpdateInvoiceNotes
 } from '../hooks/useInvoiceMutations'
@@ -30,6 +31,7 @@ export function InvoiceReviewPage() {
   const updateNotes = useUpdateInvoiceNotes(invoiceId)
   const addAttachments = useAddInvoiceAttachments(invoiceId)
   const deleteAttachment = useDeleteInvoiceAttachment(invoiceId)
+  const deleteInvoice = useDeleteInvoice()
   const [notesDraft, setNotesDraft] = useState<string | null>(null)
   const photoInputRef = useRef<HTMLInputElement>(null)
 
@@ -62,6 +64,11 @@ export function InvoiceReviewPage() {
   function handleSaveNotes() {
     if (notesDraft == null) return
     updateNotes.mutate(notesDraft, { onSuccess: () => setNotesDraft(null) })
+  }
+
+  function handleDeleteInvoice() {
+    if (!window.confirm('حذف الفاتورة نهائياً بكل أصنافها وصورها؟ لا يمكن التراجع عن هذا.')) return
+    deleteInvoice.mutate(invoiceId, { onSuccess: () => navigate('/invoices') })
   }
 
   function handlePhotosSelected(e: React.ChangeEvent<HTMLInputElement>) {
@@ -254,9 +261,19 @@ export function InvoiceReviewPage() {
         <div className="fixed inset-x-0 bottom-0 z-30 border-t border-border bg-card/95 backdrop-blur-sm print:hidden">
           <div className="mx-auto flex max-w-5xl items-center justify-between gap-4 px-6 py-3">
             <span className="text-sm text-muted-foreground">{items.length} صنف — راجع كل صنف قبل الاعتماد</span>
-            <Button onClick={handleApprove} disabled={approveInvoice.isPending}>
-              {approveInvoice.isPending ? t('common.loading') : t('invoices.approve')}
-            </Button>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                className="text-destructive hover:text-destructive"
+                onClick={handleDeleteInvoice}
+                disabled={deleteInvoice.isPending}
+              >
+                حذف الفاتورة
+              </Button>
+              <Button onClick={handleApprove} disabled={approveInvoice.isPending}>
+                {approveInvoice.isPending ? t('common.loading') : t('invoices.approve')}
+              </Button>
+            </div>
           </div>
         </div>
       )}

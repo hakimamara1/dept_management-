@@ -4,6 +4,24 @@ import { queryKeys } from '@shared/lib/query-client'
 import type { AddInvoiceItemInput, CreateManualInvoiceInput, UpdateInvoiceItemInput } from '@shared/types/api'
 import { invoicesApi } from '../services/invoices.api'
 
+// Not scoped to one invoiceId at hook level (unlike most hooks in this
+// file) — used both from a single review page and from a list of rows
+// (InvoicesPage's Pending tab), so the id is passed at mutate() time.
+export function useDeleteInvoice() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (invoiceId: number) => invoicesApi.deleteInvoice(invoiceId),
+    onSuccess: () => {
+      toast.success('تم حذف الفاتورة')
+      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.pending })
+    },
+    onError: (error: Error) => {
+      toast.error('فشل حذف الفاتورة', { description: error.message })
+    }
+  })
+}
+
 export function useExtractInvoice() {
   const queryClient = useQueryClient()
 

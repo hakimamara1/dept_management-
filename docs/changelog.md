@@ -272,3 +272,30 @@ spec (ADR-014):
 - Verified via curl: delete removes both the file and the DB row; supplier
   creation, duplicate-name rejection, and missing-name rejection all behave
   as expected. Typecheck and build verified clean.
+
+## Phase 14 — Delete a whole invoice (Pending Review only)
+
+- Deleting a photo attachment (Phase 13) turned out not to be what was
+  needed — the actual ask was removing an entire mistakenly-created
+  invoice, not just its photo. Added `invoiceProcessor.deleteInvoice()`:
+  guarded by the existing `_requirePendingInvoice()` (an Approved invoice
+  has already posted stock/debt/accounting — reversing that is a different,
+  much riskier operation this does not attempt), deletes attachment files
+  from disk, then `invoice_attachments` → `purchase_invoice_items` →
+  `purchase_invoices` rows in that order inside one transaction (no
+  `ON DELETE CASCADE` in the schema, and Pending invoices never have rows
+  in `stock_movements`/`supplier_transactions`/`accounting_transactions` to
+  worry about, since those only get written at approval).
+- New `DELETE /api/invoices/:id`. Frontend: a "حذف الفاتورة" button (with a
+  native `confirm()`, unlike this app's usual no-confirm delete buttons —
+  warranted here since it destroys much more than one field) on both
+  `InvoiceReviewPage.tsx`'s sticky action bar and each row of
+  `InvoicesPage.tsx`'s Pending tab. New `useDeleteInvoice()` hook takes the
+  invoice id at `mutate()` time rather than at the hook call, since it's
+  used both from a single-invoice page and from a list of many rows.
+- Also used this to clean up two invoices from earlier testing that had
+  gone permanently blank after their supplier row was lost — a separate,
+  still-unexplained data issue flagged to the user, not fixed here.
+- Typecheck and build verified clean. Verified via curl: deletes a Pending
+  invoice fully (header, items, attachment file); rejects deleting an
+  Approved invoice.

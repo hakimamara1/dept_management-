@@ -65253,7 +65253,9 @@ const invoicesApi = {
   updateItem: (invoiceId, itemId, data) => apiClient.patch(`/api/invoices/${invoiceId}/items/${itemId}`, data),
   addItem: (invoiceId, data) => apiClient.post(`/api/invoices/${invoiceId}/items`, data),
   deleteItem: (invoiceId, itemId) => apiClient.delete(`/api/invoices/${invoiceId}/items/${itemId}`),
-  updateNotes: (invoiceId, notes) => apiClient.patch(`/api/invoices/${invoiceId}/notes`, { notes })
+  updateNotes: (invoiceId, notes) => apiClient.patch(`/api/invoices/${invoiceId}/notes`, { notes }),
+  // Whole-invoice delete — for one created by mistake. Pending Review only.
+  deleteInvoice: (invoiceId) => apiClient.delete(`/api/invoices/${invoiceId}`)
 };
 function usePendingInvoices() {
   return useQuery({
@@ -65265,6 +65267,19 @@ function useApprovedInvoices(limit = 100) {
   return useQuery({
     queryKey: queryKeys.invoices.approved(limit),
     queryFn: () => invoicesApi.getApproved(limit)
+  });
+}
+function useDeleteInvoice() {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: (invoiceId) => invoicesApi.deleteInvoice(invoiceId),
+    onSuccess: () => {
+      toast.success("تم حذف الفاتورة");
+      queryClient2.invalidateQueries({ queryKey: queryKeys.invoices.pending });
+    },
+    onError: (error) => {
+      toast.error("فشل حذف الفاتورة", { description: error.message });
+    }
   });
 }
 function useExtractInvoice() {
@@ -65900,6 +65915,11 @@ function InvoicesPage() {
   const [tab, setTab] = reactExports.useState("pending");
   const pending = usePendingInvoices();
   const approved = useApprovedInvoices();
+  const deleteInvoice = useDeleteInvoice();
+  function handleDeleteInvoice(id) {
+    if (!window.confirm("حذف الفاتورة نهائياً بكل أصنافها وصورها؟ لا يمكن التراجع عن هذا.")) return;
+    deleteInvoice.mutate(id);
+  }
   const pendingColumns = [
     {
       accessorKey: "invoice_number",
@@ -65941,7 +65961,20 @@ function InvoicesPage() {
       id: "actions",
       header: "",
       enableHiding: false,
-      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: "outline", size: "sm", onClick: () => navigate(`/invoices/${row.original.id}/review`), children: t2("invoices.review") })
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1.5", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: "outline", size: "sm", onClick: () => navigate(`/invoices/${row.original.id}/review`), children: t2("invoices.review") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Button,
+          {
+            variant: "ghost",
+            size: "icon",
+            title: "حذف الفاتورة",
+            disabled: deleteInvoice.isPending,
+            onClick: () => handleDeleteInvoice(row.original.id),
+            children: /* @__PURE__ */ jsxRuntimeExports.jsx(Trash2, { className: "size-4 text-destructive" })
+          }
+        )
+      ] })
     }
   ];
   const approvedColumns = [
@@ -66521,6 +66554,7 @@ function InvoiceReviewPage() {
   const updateNotes = useUpdateInvoiceNotes(invoiceId);
   const addAttachments = useAddInvoiceAttachments(invoiceId);
   const deleteAttachment = useDeleteInvoiceAttachment(invoiceId);
+  const deleteInvoice = useDeleteInvoice();
   const [notesDraft, setNotesDraft] = reactExports.useState(null);
   const photoInputRef = reactExports.useRef(null);
   if (isLoading) return /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingState, { rows: 6 });
@@ -66544,6 +66578,10 @@ function InvoiceReviewPage() {
   function handleSaveNotes() {
     if (notesDraft == null) return;
     updateNotes.mutate(notesDraft, { onSuccess: () => setNotesDraft(null) });
+  }
+  function handleDeleteInvoice() {
+    if (!window.confirm("حذف الفاتورة نهائياً بكل أصنافها وصورها؟ لا يمكن التراجع عن هذا.")) return;
+    deleteInvoice.mutate(invoiceId, { onSuccess: () => navigate("/invoices") });
   }
   function handlePhotosSelected(e) {
     const files = Array.from(e.target.files ?? []);
@@ -66691,7 +66729,19 @@ function InvoiceReviewPage() {
         items.length,
         " صنف — راجع كل صنف قبل الاعتماد"
       ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { onClick: handleApprove, disabled: approveInvoice.isPending, children: approveInvoice.isPending ? t2("common.loading") : t2("invoices.approve") })
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex gap-2", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Button,
+          {
+            variant: "outline",
+            className: "text-destructive hover:text-destructive",
+            onClick: handleDeleteInvoice,
+            disabled: deleteInvoice.isPending,
+            children: "حذف الفاتورة"
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { onClick: handleApprove, disabled: approveInvoice.isPending, children: approveInvoice.isPending ? t2("common.loading") : t2("invoices.approve") })
+      ] })
     ] }) })
   ] });
 }

@@ -174,6 +174,17 @@ router.post('/:id/items', (req, res) => {
 
 // DELETE /api/invoices/:id/items/:itemId — remove an incorrect line.
 // Pending Review only; rejects deleting the last remaining item.
+// DELETE /api/invoices/:id — deletes the whole invoice (header, items,
+// attachments). Pending Review only — see invoiceProcessor.deleteInvoice.
+router.delete('/:id', (req, res) => {
+    try {
+        const result = invoiceProcessor.deleteInvoice(parseInt(req.params.id));
+        res.json(result);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
 router.delete('/:id/items/:itemId', (req, res) => {
     try {
         const invoiceId = parseInt(req.params.id);

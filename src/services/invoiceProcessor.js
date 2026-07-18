@@ -21,6 +21,8 @@
  * Phase 7: Human Review & Approval
  */
 
+const fs = require('fs');
+const path = require('path');
 const db = require('../config/database');
 const productMatcher = require('./productMatcher');
 const supplierMatcher = require('./supplierMatcher');
@@ -469,6 +471,34 @@ class InvoiceProcessor {
             }
             db.stmts.deleteInvoiceItem.run(itemId);
             db.stmts.recalculateInvoiceTotal.run(invoiceId, invoiceId);
+            return { success: true };
+        });
+
+        return transaction();
+    }
+
+    // Deletes an entire invoice — for one created by mistake (wrong
+    // extraction, wrong supplier, duplicate, etc). Pending Review only:
+    // an Approved invoice has already posted stock/debt/accounting, so
+    // deleting it would mean reversing all of that — a different, much
+    // riskier operation this method deliberately does not attempt.
+    deleteInvoice(invoiceId) {
+        const transaction = db.transaction(() => {
+            this._requirePendingInvoice(invoiceId);
+
+            const attachments = db.stmts.getInvoiceAttachments.all(invoiceId);
+            for (const attachment of attachments) {
+                try {
+                    fs.unlinkSync(path.join(__dirname, '../data/uploads', attachment.file_path));
+                } catch {
+                    // DB row is the source of truth — a missing file shouldn't block deletion.
+                }
+            }
+
+            db.prepare('DELETE FROM invoice_attachments WHERE invoice_id = ?').run(invoiceId);
+            db.prepare('DELETE FROM purchase_invoice_items WHERE invoice_id = ?').run(invoiceId);
+            db.prepare('DELETE FROM purchase_invoices WHERE id = ?').run(invoiceId);
+
             return { success: true };
         });
 

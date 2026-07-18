@@ -2145,6 +2145,10 @@
       color: var(--accent-foreground);
     }
 
+    .hover\:text-destructive:hover {
+      color: var(--destructive);
+    }
+
     .hover\:text-foreground:hover {
       color: var(--foreground);
     }
