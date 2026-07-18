@@ -17,6 +17,16 @@ export interface Product {
   created_at: string
 }
 
+// Catalog fields only — cost values (last_purchase_price/average_cost) stay
+// system-computed from approved invoices, default_sale_price has its own
+// dedicated endpoint (PATCH /:id/price).
+export interface UpdateProductInput {
+  name?: string
+  barcode?: string | null
+  category?: string | null
+  unit?: string
+}
+
 export interface PriceHistoryPoint {
   date: string
   price: number

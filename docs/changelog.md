@@ -183,3 +183,22 @@ spec (ADR-014):
 - Verified via curl against a live Draft PO: header update, item update,
   add item, delete item, and the delete-last-item guard all behave as
   expected. Typecheck and build verified clean.
+
+## Phase 11 — Product catalog editing + fix the broken sale-price button (ADR-019)
+
+- Backend: fixed `POST /api/products` to use the centralized
+  `db.stmts.products.insert` (now `name, barcode, category, unit,
+  default_sale_price` — cost fields dropped from the insert signature
+  entirely, they start `NULL` and are only ever set by `updateCost`), which
+  also fixes `defaultSalePrice` being silently dropped on creation. Added
+  `PATCH /api/products/:id` (catalog fields only) and
+  `PATCH /api/products/:id/price` (sale price only) — the latter fixes a
+  404 reported earlier in the session, where the route had been built once
+  and then reverted while its schema/statements survived unused.
+- Frontend: new `EditProductDialog.tsx` (name/barcode/category/unit form,
+  no price field) opened from a pencil icon on the product name cell in
+  `ProductsTable.tsx`; new `useUpdateProduct` hook and `productsApi.update`.
+  Renamed the "سعر الشراء" (purchase price) action-column header to "سجل
+  الأسعار" (price history) — it only ever opened a read-only history sheet
+  and never let anyone set a price.
+- Typecheck and build verified clean.

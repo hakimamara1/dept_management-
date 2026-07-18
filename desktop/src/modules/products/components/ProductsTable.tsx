@@ -13,6 +13,7 @@ import type { Product } from '@shared/types/api'
 import { useProductSearch } from '../hooks/useProductSearch'
 import { PriceHistorySheet } from './PriceHistorySheet'
 import { EditSalePriceDialog } from './EditSalePriceDialog'
+import { EditProductDialog } from './EditProductDialog'
 
 const UNIT_LABELS: Record<string, string> = {
   piece: 'قطعة',
@@ -27,6 +28,7 @@ export function ProductsTable() {
   const [query, setQuery] = useState('')
   const [priceHistoryProduct, setPriceHistoryProduct] = useState<Product | null>(null)
   const [editPriceProduct, setEditPriceProduct] = useState<Product | null>(null)
+  const [editProduct, setEditProduct] = useState<Product | null>(null)
 
   const { data, isLoading, error } = useProductSearch(query)
 
@@ -35,7 +37,16 @@ export function ProductsTable() {
       accessorKey: 'name',
       header: ({ column }) => <DataTableColumnHeader column={column} title="اسم المنتج" />,
       meta: { exportLabel: 'اسم المنتج' },
-      cell: ({ row }) => <span className="font-medium text-foreground">{row.original.name}</span>
+      cell: ({ row }) => (
+        <button
+          type="button"
+          onClick={() => setEditProduct(row.original)}
+          className="group flex items-center gap-1.5 text-start font-medium text-foreground hover:text-primary"
+        >
+          {row.original.name}
+          <Pencil className="size-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
+        </button>
+      )
     },
     {
       accessorKey: 'barcode',
@@ -106,7 +117,7 @@ export function ProductsTable() {
     },
     {
       id: 'actions',
-      header: 'سعر الشراء',
+      header: 'سجل الأسعار',
       enableHiding: false,
       cell: ({ row }) => (
         <Button variant="outline" size="sm" onClick={() => setPriceHistoryProduct(row.original)}>
@@ -153,6 +164,8 @@ export function ProductsTable() {
       />
 
       <EditSalePriceDialog product={editPriceProduct} onOpenChange={(open) => !open && setEditPriceProduct(null)} />
+
+      <EditProductDialog product={editProduct} onOpenChange={(open) => !open && setEditProduct(null)} />
     </>
   )
 }

@@ -468,3 +468,37 @@ Approved invoice — the only escape hatch is `Cancelled` and creating a new
 PO.
 
 **Status**: Accepted, implemented.
+
+### ADR-019: Product catalog editing is split from cost/price editing into separate endpoints
+
+**Decision**: `PATCH /api/products/:id` accepts only catalog metadata
+(`name`, `barcode`, `category`, `unit`) via `db.stmts.products.update`.
+`PATCH /api/products/:id/price` is a separate endpoint that accepts only
+`default_sale_price` via `db.stmts.products.updateSalePrice`. Neither route
+accepts `last_purchase_price` or `average_cost` — there is no route
+anywhere that lets a request body set those two fields.
+
+**Reason**: Earlier in this session the user was asked directly whether
+product editing should include cost values, and explicitly scoped it to
+"catalog fields only, not cost values." `last_purchase_price` and
+`average_cost` are snapshot columns maintained exclusively by
+`updateCost()` at invoice approval (see the append-only-ledger exception
+list in `business-rules.md`) — letting a user overwrite them through a
+generic "edit product" form would silently desync the snapshot from the
+approved-invoice history it's supposed to reflect. `default_sale_price` is
+different: it's not derived from anything, it's a value someone in Sales
+sets directly, so it keeps its own dedicated endpoint/dialog
+(`EditSalePriceDialog`, pre-existing) rather than folding into the catalog
+form.
+
+**Consequences**: This also fixes a real bug reported earlier — the
+sale-price edit button 404'd because `PATCH /:id/price` had been built
+once, then reverted along with an in-progress `PATCH /:id` at the user's
+request, leaving the schema column, migration, and prepared statements
+orphaned with no route calling them. Both routes now exist. The Products
+table's "سعر الشراء" (purchase price) button was also renamed to "سجل
+الأسعار" (price history) — it only ever opened a read-only history view
+and never let anyone set a purchase price, so the old label implied an
+edit capability that doesn't and shouldn't exist.
+
+**Status**: Accepted, implemented.

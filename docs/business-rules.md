@@ -98,6 +98,16 @@ quantities into one row) + `deleteInvoiceItem` (remove the other). Split =
 (a new row for the remainder, carrying over the same product/unit/price).
 Both are safe specifically *because* nothing has posted yet pre-approval.
 
+### Product catalog editing (`routes/products.js`)
+- Only catalog metadata is user-editable: `name`, `barcode`, `category`,
+  `unit` (`PATCH /:id`) and the suggested selling price, `default_sale_price`
+  (`PATCH /:id/price`, its own endpoint since it's the one price a user sets
+  directly).
+- `last_purchase_price` and `average_cost` are **never** accepted from a
+  request body anywhere — they're system-computed snapshots, written only by
+  `updateCost` at invoice approval (see the append-only-ledger exceptions
+  above). There is no route that lets a user set them directly, by design.
+
 ### Product matching (`productMatcher.js`)
 - OCR-extracted line items are matched to canonical products via
   `product_aliases` (normalized-name lookup) first, then fuzzy match, then

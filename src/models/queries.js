@@ -22,8 +22,11 @@ const QUERIES = {
     getById: `SELECT * FROM products WHERE id = ?`,
     getByName: `SELECT * FROM products WHERE LOWER(name) = LOWER(?)`,
     getAll: `SELECT * FROM products ORDER BY name`,
-    insert: `INSERT INTO products (name, barcode, category, unit, last_purchase_price, average_cost)
-                 VALUES (?, ?, ?, ?, ?, ?)`,
+    // Cost fields (last_purchase_price/average_cost) are deliberately absent
+    // here — they start NULL and are only ever written by updateCost, at
+    // invoice approval. A newly created product has no purchase history yet.
+    insert: `INSERT INTO products (name, barcode, category, unit, default_sale_price)
+                 VALUES (?, ?, ?, ?, ?)`,
     updateCost: `UPDATE products SET last_purchase_price = ?, average_cost = ? WHERE id = ?`,
     updateSalePrice: `UPDATE products SET default_sale_price = ? WHERE id = ?`,
     update: `UPDATE products SET name = ?, barcode = ?, category = ?, unit = ? WHERE id = ?`,

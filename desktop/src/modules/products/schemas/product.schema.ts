@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import type { Product } from '@shared/types/api'
 
 export const PRODUCT_UNITS = [
   { value: 'piece', label: 'قطعة' },
@@ -27,4 +28,19 @@ export const productFormDefaults: ProductFormValues = {
   category: '',
   unit: 'piece',
   defaultSalePrice: null
+}
+
+// Catalog-only editing — no sale price field, that stays on its own
+// dedicated dialog/endpoint (EditSalePriceDialog / PATCH /:id/price).
+export const editProductSchema = productSchema.omit({ defaultSalePrice: true })
+
+export type EditProductFormValues = z.infer<typeof editProductSchema>
+
+export function editProductDefaults(product: Product): EditProductFormValues {
+  return {
+    name: product.name,
+    barcode: product.barcode ?? '',
+    category: product.category ?? '',
+    unit: (product.unit as EditProductFormValues['unit']) ?? 'piece'
+  }
 }

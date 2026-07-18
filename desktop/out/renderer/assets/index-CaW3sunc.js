@@ -55233,6 +55233,7 @@ const productsApi = {
     category: data.category || null,
     defaultSalePrice: data.defaultSalePrice ?? null
   }),
+  update: (productId, data) => apiClient.patch(`/api/products/${productId}`, data),
   getPriceHistory: (productId) => apiClient.get(`/api/products/${productId}/price-history`),
   updateSalePrice: (productId, defaultSalePrice) => apiClient.patch(`/api/products/${productId}/price`, { defaultSalePrice })
 };
@@ -55844,132 +55845,6 @@ function EditSalePriceDialog({ product, onOpenChange }) {
       /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", onClick: handleSave, disabled: updatePrice.isPending, children: updatePrice.isPending ? "جاري الحفظ..." : "حفظ" })
     ] })
   ] }) });
-}
-const UNIT_LABELS = {
-  piece: "قطعة",
-  kg: "كيلو",
-  box: "علبة",
-  liter: "لتر",
-  g: "غرام"
-};
-function ProductsTable() {
-  const { t: t2 } = useI18n();
-  const [query, setQuery] = reactExports.useState("");
-  const [priceHistoryProduct, setPriceHistoryProduct] = reactExports.useState(null);
-  const [editPriceProduct, setEditPriceProduct] = reactExports.useState(null);
-  const { data, isLoading, error } = useProductSearch(query);
-  const columns2 = [
-    {
-      accessorKey: "name",
-      header: ({ column }) => /* @__PURE__ */ jsxRuntimeExports.jsx(DataTableColumnHeader, { column, title: "اسم المنتج" }),
-      meta: { exportLabel: "اسم المنتج" },
-      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium text-foreground", children: row.original.name })
-    },
-    {
-      accessorKey: "barcode",
-      header: "الباركود",
-      meta: { exportLabel: "الباركود" },
-      cell: ({ row }) => row.original.barcode ?? "—"
-    },
-    {
-      accessorKey: "category",
-      header: "الفئة",
-      meta: { exportLabel: "الفئة" },
-      cell: ({ row }) => row.original.category ?? "—"
-    },
-    {
-      accessorKey: "unit",
-      header: "الوحدة",
-      meta: { exportLabel: "الوحدة" },
-      cell: ({ row }) => row.original.unit ? UNIT_LABELS[row.original.unit] ?? row.original.unit : "—"
-    },
-    {
-      accessorKey: "current_stock",
-      header: ({ column }) => /* @__PURE__ */ jsxRuntimeExports.jsx(DataTableColumnHeader, { column, title: "المخزون" }),
-      meta: { exportLabel: "المخزون" },
-      cell: ({ row }) => {
-        const stock = Number(row.original.current_stock ?? 0);
-        return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: cn$1("tabular-nums font-semibold", stock > 0 ? "text-success" : "text-destructive"), children: stock.toLocaleString("ar-DZ") });
-      }
-    },
-    {
-      accessorKey: "average_cost",
-      header: "التكلفة",
-      meta: { exportLabel: "متوسط التكلفة" },
-      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-xs", children: [
-        row.original.last_purchase_price != null && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-muted-foreground", children: [
-          "آخر شراء: ",
-          formatCurrency(row.original.last_purchase_price)
-        ] }),
-        row.original.average_cost != null && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-primary", children: [
-          "متوسط: ",
-          formatCurrency(row.original.average_cost)
-        ] })
-      ] })
-    },
-    {
-      accessorKey: "default_sale_price",
-      header: "سعر البيع",
-      meta: { exportLabel: "سعر البيع" },
-      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
-        "button",
-        {
-          type: "button",
-          onClick: () => setEditPriceProduct(row.original),
-          className: "group flex items-center gap-1.5 text-xs hover:text-primary",
-          children: [
-            row.original.default_sale_price != null ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums font-medium text-foreground", children: formatCurrency(row.original.default_sale_price) }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: "تعيين سعر" }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx(Pencil, { className: "size-3 text-muted-foreground opacity-0 group-hover:opacity-100" })
-          ]
-        }
-      )
-    },
-    {
-      id: "actions",
-      header: "سعر الشراء",
-      enableHiding: false,
-      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { variant: "outline", size: "sm", onClick: () => setPriceHistoryProduct(row.original), children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(ChartLine, { className: "size-3.5" }),
-        t2("products.priceHistory")
-      ] })
-    }
-  ];
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      DataTable,
-      {
-        columns: columns2,
-        data: data ?? [],
-        isLoading: query.trim().length > 0 && isLoading,
-        exportFileName: "products",
-        emptyTitle: query.trim() ? `لا نتائج لـ "${query}"` : t2("products.searchPlaceholder"),
-        emptyDescription: query.trim() ? "حاول بكلمات أخرى أو أضف المنتج يدوياً" : void 0,
-        toolbar: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative max-w-sm", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Search, { className: "absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            Input,
-            {
-              value: query,
-              onChange: (e) => setQuery(e.target.value),
-              placeholder: t2("products.searchPlaceholder"),
-              className: "ps-9"
-            }
-          )
-        ] })
-      }
-    ),
-    error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(EmptyState, { icon: Search, title: "فشل البحث", description: error.message }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(
-      PriceHistorySheet,
-      {
-        productId: priceHistoryProduct?.id ?? null,
-        productName: priceHistoryProduct?.name ?? null,
-        open: priceHistoryProduct != null,
-        onOpenChange: (open) => !open && setPriceHistoryProduct(null)
-      }
-    ),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(EditSalePriceDialog, { product: editPriceProduct, onOpenChange: (open) => !open && setEditPriceProduct(null) })
-  ] });
 }
 var isCheckBoxInput = (element) => element.type === "checkbox";
 var isDateObject = (value) => value instanceof Date;
@@ -63481,18 +63356,16 @@ const SelectItem = reactExports.forwardRef(({ className, children, ...props }, r
   }
 ));
 SelectItem.displayName = SelectItem$1.displayName;
-function useCreateProduct() {
+function useUpdateProduct() {
   const queryClient2 = useQueryClient();
   return useMutation({
-    mutationFn: (data) => productsApi.create(data),
-    onSuccess: (result, variables) => {
-      toast.success(`تم إضافة المنتج "${variables.name}" بنجاح`, {
-        description: `رقم المنتج: ${result.id}`
-      });
+    mutationFn: ({ productId, data }) => productsApi.update(productId, data),
+    onSuccess: () => {
+      toast.success("تم تحديث المنتج");
       queryClient2.invalidateQueries({ queryKey: ["products", "search"] });
     },
     onError: (error) => {
-      toast.error("فشل إنشاء المنتج", { description: error.message });
+      toast.error("فشل تحديث المنتج", { description: error.message });
     }
   });
 }
@@ -64367,6 +64240,252 @@ const productFormDefaults = {
   unit: "piece",
   defaultSalePrice: null
 };
+const editProductSchema = productSchema.omit({ defaultSalePrice: true });
+function editProductDefaults(product) {
+  return {
+    name: product.name,
+    barcode: product.barcode ?? "",
+    category: product.category ?? "",
+    unit: product.unit ?? "piece"
+  };
+}
+function EditProductDialog({ product, onOpenChange }) {
+  const { t: t2 } = useI18n();
+  const updateProduct = useUpdateProduct();
+  const form = useForm({
+    resolver: u(editProductSchema),
+    defaultValues: product ? editProductDefaults(product) : void 0
+  });
+  reactExports.useEffect(() => {
+    if (product) form.reset(editProductDefaults(product));
+  }, [product, form]);
+  function onSubmit(values) {
+    if (!product) return;
+    updateProduct.mutate(
+      { productId: product.id, data: values },
+      { onSuccess: () => onOpenChange(false) }
+    );
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Dialog, { open: product != null, onOpenChange, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogContent, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: "تعديل المنتج" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: product?.name })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Form, { ...form, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: form.handleSubmit(onSubmit), className: "grid gap-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        FormField,
+        {
+          control: form.control,
+          name: "name",
+          render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "اسم المنتج *" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { ...field }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
+          ] })
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-4", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          FormField,
+          {
+            control: form.control,
+            name: "barcode",
+            render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "الباركود" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "اختياري", ...field }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
+            ] })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          FormField,
+          {
+            control: form.control,
+            name: "category",
+            render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "الفئة" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "مثال: زيوت، توابل...", ...field }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
+            ] })
+          }
+        )
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        FormField,
+        {
+          control: form.control,
+          name: "unit",
+          render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "الوحدة" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs(Select, { value: field.value, onValueChange: field.onChange, children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectTrigger, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, {}) }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: PRODUCT_UNITS.map((u2) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: u2.value, children: u2.label }, u2.value)) })
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
+          ] })
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogFooter, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "ghost", onClick: () => onOpenChange(false), children: t2("common.cancel") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", disabled: updateProduct.isPending || !form.formState.isDirty, children: updateProduct.isPending ? t2("common.loading") : t2("common.save") })
+      ] })
+    ] }) })
+  ] }) });
+}
+const UNIT_LABELS = {
+  piece: "قطعة",
+  kg: "كيلو",
+  box: "علبة",
+  liter: "لتر",
+  g: "غرام"
+};
+function ProductsTable() {
+  const { t: t2 } = useI18n();
+  const [query, setQuery] = reactExports.useState("");
+  const [priceHistoryProduct, setPriceHistoryProduct] = reactExports.useState(null);
+  const [editPriceProduct, setEditPriceProduct] = reactExports.useState(null);
+  const [editProduct, setEditProduct] = reactExports.useState(null);
+  const { data, isLoading, error } = useProductSearch(query);
+  const columns2 = [
+    {
+      accessorKey: "name",
+      header: ({ column }) => /* @__PURE__ */ jsxRuntimeExports.jsx(DataTableColumnHeader, { column, title: "اسم المنتج" }),
+      meta: { exportLabel: "اسم المنتج" },
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          type: "button",
+          onClick: () => setEditProduct(row.original),
+          className: "group flex items-center gap-1.5 text-start font-medium text-foreground hover:text-primary",
+          children: [
+            row.original.name,
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Pencil, { className: "size-3 text-muted-foreground opacity-0 group-hover:opacity-100" })
+          ]
+        }
+      )
+    },
+    {
+      accessorKey: "barcode",
+      header: "الباركود",
+      meta: { exportLabel: "الباركود" },
+      cell: ({ row }) => row.original.barcode ?? "—"
+    },
+    {
+      accessorKey: "category",
+      header: "الفئة",
+      meta: { exportLabel: "الفئة" },
+      cell: ({ row }) => row.original.category ?? "—"
+    },
+    {
+      accessorKey: "unit",
+      header: "الوحدة",
+      meta: { exportLabel: "الوحدة" },
+      cell: ({ row }) => row.original.unit ? UNIT_LABELS[row.original.unit] ?? row.original.unit : "—"
+    },
+    {
+      accessorKey: "current_stock",
+      header: ({ column }) => /* @__PURE__ */ jsxRuntimeExports.jsx(DataTableColumnHeader, { column, title: "المخزون" }),
+      meta: { exportLabel: "المخزون" },
+      cell: ({ row }) => {
+        const stock = Number(row.original.current_stock ?? 0);
+        return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: cn$1("tabular-nums font-semibold", stock > 0 ? "text-success" : "text-destructive"), children: stock.toLocaleString("ar-DZ") });
+      }
+    },
+    {
+      accessorKey: "average_cost",
+      header: "التكلفة",
+      meta: { exportLabel: "متوسط التكلفة" },
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-xs", children: [
+        row.original.last_purchase_price != null && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-muted-foreground", children: [
+          "آخر شراء: ",
+          formatCurrency(row.original.last_purchase_price)
+        ] }),
+        row.original.average_cost != null && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-primary", children: [
+          "متوسط: ",
+          formatCurrency(row.original.average_cost)
+        ] })
+      ] })
+    },
+    {
+      accessorKey: "default_sale_price",
+      header: "سعر البيع",
+      meta: { exportLabel: "سعر البيع" },
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          type: "button",
+          onClick: () => setEditPriceProduct(row.original),
+          className: "group flex items-center gap-1.5 text-xs hover:text-primary",
+          children: [
+            row.original.default_sale_price != null ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums font-medium text-foreground", children: formatCurrency(row.original.default_sale_price) }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: "تعيين سعر" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Pencil, { className: "size-3 text-muted-foreground opacity-0 group-hover:opacity-100" })
+          ]
+        }
+      )
+    },
+    {
+      id: "actions",
+      header: "سجل الأسعار",
+      enableHiding: false,
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { variant: "outline", size: "sm", onClick: () => setPriceHistoryProduct(row.original), children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(ChartLine, { className: "size-3.5" }),
+        t2("products.priceHistory")
+      ] })
+    }
+  ];
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      DataTable,
+      {
+        columns: columns2,
+        data: data ?? [],
+        isLoading: query.trim().length > 0 && isLoading,
+        exportFileName: "products",
+        emptyTitle: query.trim() ? `لا نتائج لـ "${query}"` : t2("products.searchPlaceholder"),
+        emptyDescription: query.trim() ? "حاول بكلمات أخرى أو أضف المنتج يدوياً" : void 0,
+        toolbar: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative max-w-sm", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Search, { className: "absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Input,
+            {
+              value: query,
+              onChange: (e) => setQuery(e.target.value),
+              placeholder: t2("products.searchPlaceholder"),
+              className: "ps-9"
+            }
+          )
+        ] })
+      }
+    ),
+    error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(EmptyState, { icon: Search, title: "فشل البحث", description: error.message }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      PriceHistorySheet,
+      {
+        productId: priceHistoryProduct?.id ?? null,
+        productName: priceHistoryProduct?.name ?? null,
+        open: priceHistoryProduct != null,
+        onOpenChange: (open) => !open && setPriceHistoryProduct(null)
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(EditSalePriceDialog, { product: editPriceProduct, onOpenChange: (open) => !open && setEditPriceProduct(null) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(EditProductDialog, { product: editProduct, onOpenChange: (open) => !open && setEditProduct(null) })
+  ] });
+}
+function useCreateProduct() {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => productsApi.create(data),
+    onSuccess: (result, variables) => {
+      toast.success(`تم إضافة المنتج "${variables.name}" بنجاح`, {
+        description: `رقم المنتج: ${result.id}`
+      });
+      queryClient2.invalidateQueries({ queryKey: ["products", "search"] });
+    },
+    onError: (error) => {
+      toast.error("فشل إنشاء المنتج", { description: error.message });
+    }
+  });
+}
 function CreateProductDialog() {
   const { t: t2 } = useI18n();
   const [open, setOpen] = reactExports.useState(false);

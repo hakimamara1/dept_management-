@@ -17,7 +17,9 @@ code, the code wins; fix this file.
 |---|---|---|
 | GET | `/search?query=` | Name + alias search (Arabic-normalized), limit 10 |
 | GET | `/:id/price-history` | Points (date/price/qty/supplier/invoiceNumber) + stats (min/max/avg/first/last/change/trend) |
-| POST | `/` | Body: `{ name, barcode, category, unit }` |
+| POST | `/` | Body: `{ name, barcode, category, unit, defaultSalePrice? }` |
+| PATCH | `/:id` | Body: `{ name?, barcode?, category?, unit? }`. Catalog fields only — never accepts cost fields |
+| PATCH | `/:id/price` | Body: `{ defaultSalePrice }`. Sets the suggested selling price only |
 
 ## Suppliers — `/api/suppliers`
 
