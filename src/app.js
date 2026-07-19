@@ -31,6 +31,8 @@ app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/purchase-orders', require('./routes/purchaseOrders'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/customers', require('./routes/customers'));
+app.use('/api/expiration-batches', require('./routes/expirationBatches'));
+app.use('/api/settings', require('./routes/settings'));
 
 
 // Health check

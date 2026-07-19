@@ -240,6 +240,47 @@ CREATE TABLE IF NOT EXISTS customer_payments (
     FOREIGN KEY (customer_id) REFERENCES customers(id)
 );
 
+-- ═══════════════════════════════════════════════════════════════
+-- EXPIRATION TRACKING — fully independent module. The only link to the
+-- rest of the schema is product_id; no FK to suppliers, invoices, or
+-- stock_movements anywhere here, by design (see business-rules.md).
+-- ═══════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS expiration_batches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL,
+    batch_number TEXT NOT NULL,
+    manufacturing_date DATE,
+    expiration_date DATE NOT NULL,
+    quantity DECIMAL(10,2),
+    unit TEXT,
+    location TEXT,
+    -- Only a meaningful stored value when terminal ('DISCARDED'/'SOLD', a
+    -- user action). Otherwise ('ACTIVE' default) the real display status
+    -- is always recomputed live from expiration_date — see business-rules.md.
+    status TEXT NOT NULL DEFAULT 'ACTIVE',
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+-- ═══════════════════════════════════════════════════════════════
+-- SETTINGS — single-row table (id is always 1). No key-value indirection;
+-- a fixed, directly-typed set of fields is simpler for the small, known
+-- scope this covers (business identity for print headers).
+-- ═══════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS business_profile (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    business_name TEXT,
+    address TEXT,
+    phone TEXT,
+    email TEXT,
+    tax_number TEXT,
+    commercial_register TEXT,
+    logo_path TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_aliases_normalized ON product_aliases(normalized_alias);
 CREATE INDEX IF NOT EXISTS idx_invoices_status ON purchase_invoices(status);
@@ -253,3 +294,7 @@ CREATE INDEX IF NOT EXISTS idx_supplier_trans_supplier ON supplier_transactions(
 CREATE INDEX IF NOT EXISTS idx_sales_invoices_customer ON sales_invoices(customer_id);
 CREATE INDEX IF NOT EXISTS idx_sales_invoice_items_invoice ON sales_invoice_items(invoice_id);
 CREATE INDEX IF NOT EXISTS idx_customer_payments_customer ON customer_payments(customer_id);
+CREATE INDEX IF NOT EXISTS idx_expiration_batches_product ON expiration_batches(product_id);
+CREATE INDEX IF NOT EXISTS idx_expiration_batches_expiration_date ON expiration_batches(expiration_date);
+CREATE INDEX IF NOT EXISTS idx_expiration_batches_status ON expiration_batches(status);
+CREATE INDEX IF NOT EXISTS idx_expiration_batches_batch_number ON expiration_batches(batch_number);

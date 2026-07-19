@@ -22,6 +22,7 @@ const resources = {
       debt: 'الديون',
       reports: 'التقارير',
       notifications: 'الإشعارات',
+      expiration: 'تتبع الصلاحية',
       settings: 'الإعدادات',
       aiAssistant: 'المساعد الذكي'
     },
@@ -112,6 +113,7 @@ const resources = {
       debt: 'Dettes',
       reports: 'Rapports',
       notifications: 'Notifications',
+      expiration: 'Suivi de péremption',
       settings: 'Paramètres',
       aiAssistant: 'Assistant IA'
     },
@@ -202,6 +204,7 @@ const resources = {
       debt: 'Debt',
       reports: 'Reports',
       notifications: 'Notifications',
+      expiration: 'Expiration Tracking',
       settings: 'Settings',
       aiAssistant: 'AI Assistant'
     },

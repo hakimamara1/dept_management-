@@ -470,3 +470,93 @@ export interface CustomerReportsSummary {
   largestDebtors: { id: number; full_name: string; balance: number }[]
   mostActive: { id: number; full_name: string; activity_count: number }[]
 }
+
+// ── Expiration Tracking ───────────────────────────────────
+// Fully independent module — only ever references product_id. Never
+// touches stock, purchase invoices, or supplier/customer accounting.
+// ACTIVE/NEAR_EXPIRY/EXPIRED are always computed live from expiration_date
+// (see business-rules.md) — DISCARDED/SOLD are the only two a user sets.
+export type ExpirationBatchStatus = 'ACTIVE' | 'NEAR_EXPIRY' | 'EXPIRED' | 'DISCARDED' | 'SOLD'
+
+export interface ExpirationBatch {
+  id: number
+  product_id: number
+  batch_number: string
+  manufacturing_date: string | null
+  expiration_date: string
+  quantity: number | null
+  unit: string | null
+  location: string | null
+  status: ExpirationBatchStatus
+  notes: string | null
+  created_at: string
+  updated_at: string
+  product_name: string
+  product_barcode: string | null
+  product_category: string | null
+  product_unit: string | null
+  days_remaining: number
+  computed_status: ExpirationBatchStatus
+}
+
+export interface ExpirationDashboardSummary {
+  active_count: number
+  near_expiry_count: number
+  expired_count: number
+  discarded_count: number
+  expiring_today_count: number
+  expiring_this_week_count: number
+  expiring_this_month_count: number
+}
+
+export interface ExpirationBatchFilters {
+  productId?: number
+  category?: string
+  status?: ExpirationBatchStatus
+  expiringWithinDays?: number
+  search?: string
+}
+
+export interface CreateExpirationBatchInput {
+  productId: number
+  batchNumber: string
+  expirationDate: string
+  manufacturingDate?: string
+  quantity?: number
+  unit?: string
+  location?: string
+  notes?: string
+}
+
+export interface UpdateExpirationBatchInput {
+  batchNumber?: string
+  manufacturingDate?: string
+  expirationDate?: string
+  quantity?: number
+  unit?: string
+  location?: string
+  notes?: string
+}
+
+// ── Settings ──────────────────────────────────────────────
+// Single-row table (id always 1) — business identity for print headers.
+export interface BusinessProfile {
+  id: 1
+  business_name: string | null
+  address: string | null
+  phone: string | null
+  email: string | null
+  tax_number: string | null
+  commercial_register: string | null
+  logo_path: string | null
+  updated_at: string
+}
+
+export interface UpdateBusinessProfileInput {
+  businessName?: string
+  address?: string
+  phone?: string
+  email?: string
+  taxNumber?: string
+  commercialRegister?: string
+}

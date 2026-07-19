@@ -2,6 +2,7 @@ import type { LucideIcon } from 'lucide-react'
 import {
   Bell,
   Bot,
+  CalendarClock,
   FileText,
   LayoutDashboard,
   Package,
@@ -31,7 +32,8 @@ export const NAV_ITEMS: NavItem[] = [
   { path: '/invoices', labelKey: 'nav.invoices', icon: Receipt, comingSoon: false },
   { path: '/payments', labelKey: 'nav.payments', icon: Wallet, comingSoon: false },
   { path: '/reports', labelKey: 'nav.reports', icon: FileText, comingSoon: false },
+  { path: '/expiration', labelKey: 'nav.expiration', icon: CalendarClock, comingSoon: false },
   { path: '/notifications', labelKey: 'nav.notifications', icon: Bell, comingSoon: true },
   { path: '/ai-assistant', labelKey: 'nav.aiAssistant', icon: Bot, comingSoon: true },
-  { path: '/settings', labelKey: 'nav.settings', icon: Settings, comingSoon: true }
+  { path: '/settings', labelKey: 'nav.settings', icon: Settings, comingSoon: false }
 ]

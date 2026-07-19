@@ -136,6 +136,38 @@ boundary (no stock/accounting/supplier interaction).
 | POST | `/:id/payments` | Body: `{ paymentDate, amount, paymentMethod, notes }`. Plain insert — no invoice linkage, no overpayment guard (deliberate, see `business-rules.md`) |
 | GET | `/:id/statement` | Window-function running ledger — see `database.md` |
 
+## Expiration Tracking — `/api/expiration-batches`
+
+Fully independent module — see `business-rules.md`. No route here ever
+touches stock, purchase invoices, or supplier/customer accounting.
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/?productId=&category=&status=&expiringWithinDays=&search=` | All filters optional and combinable. `search` matches product name/barcode or batch number |
+| GET | `/dashboard-summary` | Active/near-expiry/expired/discarded counts + expiring-today/this-week/this-month — **registered before `/:id`** |
+| GET | `/reports/expiring?days=7` | Batches with `0 <= days_remaining <= days` (excludes already-expired) |
+| GET | `/reports/expired` | Shorthand for `?status=EXPIRED` |
+| GET | `/reports/discarded` | Shorthand for `?status=DISCARDED` |
+| GET | `/:id` | 404 if not found |
+| POST | `/` | Body: `{ productId, batchNumber, expirationDate, manufacturingDate?, quantity?, unit?, location?, notes? }`. `productId`/`batchNumber`/`expirationDate` required; `unit` defaults to the product's own unit if omitted |
+| PATCH | `/:id` | Body: `{ batchNumber?, manufacturingDate?, expirationDate?, quantity?, unit?, location?, notes? }`. **No `productId`** — a batch's product can never change after creation |
+| PATCH | `/:id/status` | Body: `{ status }` — only `DISCARDED`/`SOLD`/`ACTIVE` accepted. `ACTIVE` clears a terminal marker back to date-derived tracking. The date-derived values (`NEAR_EXPIRY`/`EXPIRED`) are never user-settable — 400 if attempted |
+| DELETE | `/:id` | Hard delete |
+
+Every response row includes `computed_status` and `days_remaining` — see
+`database.md`'s note on why `status` alone is never trusted for the
+date-derived states.
+
+## Settings — `/api/settings`
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/business-profile` | Always returns the singleton row (seeded at first run) |
+| PATCH | `/business-profile` | Body: `{ businessName?, address?, phone?, email?, taxNumber?, commercialRegister? }` |
+| POST | `/business-profile/logo` | Multipart, field `logo` (image, 5MB limit) |
+| GET | `/backup` | Checkpoints WAL (`wal_checkpoint(FULL)`) then downloads the live SQLite file as `spice-erp-backup-<date>.db` — checkpointing first matters, otherwise recent writes sitting in `invoices.db-wal` could be missing from the download |
+| POST | `/restore` | Multipart, field `backup` (`.db` file, 500MB limit). Validates the SQLite header magic bytes, renames the current db file to `invoices.db.before-restore-<timestamp>` (never deleted), moves the upload into place. Responds `{ success, requiresRestart: true }` — the live connection is **not** hot-swapped, see `business-rules.md` |
+
 ## Adding an endpoint — checklist
 
 1. Business logic goes in the matching `services/*.js` file (new service if

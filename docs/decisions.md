@@ -580,3 +580,74 @@ image stays available on the review page for cross-checking the AI's
 extraction against the original.
 
 **Status**: Accepted, implemented.
+
+### ADR-020: Expiration Tracking — hybrid status, no supplier filter, CSV-only export
+
+**Decision**: New, fully independent `expiration_batches` table/module.
+Three things worth recording:
+
+1. **Status is split into a computed band and a terminal band.**
+   `ACTIVE`/`NEAR_EXPIRY`/`EXPIRED` are recomputed live from
+   `expiration_date` on every read (never trusted from the stored `status`
+   column); `DISCARDED`/`SOLD` are the only two values a user can actually
+   set, via a dedicated `PATCH /:id/status` that rejects the other three.
+2. **No supplier filter**, despite the original spec listing one as
+   optional. There's no way to derive a batch's supplier without joining
+   through purchase-invoice history, which would violate the spec's own
+   harder rule that this module "must not depend on purchase invoices."
+3. **CSV export only** (reusing the shared `DataTable`'s existing export)
+   and the existing `window.print()` pattern for PDF — no new spreadsheet
+   library for a native `.xlsx` file.
+
+**Reason**: (1) mirrors the exact same "don't trust a value that drifts
+from reality" principle already established for `products.current_stock`
+— a stored `NEAR_EXPIRY` from yesterday would be a silent lie today. (2)
+and (3) were explicit trade-offs confirmed with the user rather than
+assumed, given the spec contained an internal tension (an optional field
+that only a forbidden dependency could populate) and an unscoped
+requirement ("Excel export") with no existing precedent in this codebase.
+
+**Consequences**: The module has zero foreign keys to anything except
+`products.id` — genuinely independent, exactly as required, and provably
+so by inspection of `schema.sql` rather than by convention alone. A future
+"auto-create batch on invoice approval" integration (explicitly designed
+for but not built now) can call `expirationService.createBatch()` directly
+without any schema change.
+
+**Status**: Accepted, implemented.
+
+### ADR-021: Settings — backup/restore never hot-swaps the live connection; single-row business profile
+
+**Decision**: New `business_profile` table, constrained to exactly one row
+(`CHECK (id = 1)`). Backup (`GET /api/settings/backup`) checkpoints WAL
+then downloads the live db file. Restore (`POST /api/settings/restore`)
+validates the upload is really a SQLite file (magic-byte header check),
+renames the current db file aside (`invoices.db.before-restore-<ts>`,
+never deleted), moves the upload into place, and responds
+`{ requiresRestart: true }` **without** attempting to reopen
+`config/database.js`'s `better-sqlite3` connection in-process. Scope was
+explicitly narrowed twice during planning: theme/language and alert
+thresholds were left out (Settings here means only Business Profile + Data
+& Backup), and a destructive "reset all data" action was considered and
+explicitly rejected in favor of backup/restore only.
+
+**Reason**: `config/database.js` opens its database connection exactly
+once, as a long-lived singleton, at process start — every other service in
+this codebase assumes that connection stays valid for the process's entire
+life. Swapping the underlying file out from under it mid-session (closing,
+replacing, reopening) is a materially different and riskier operation than
+this pass was scoped to solve, and every other consequence of getting it
+wrong (stale prepared statements, WAL/SHM files pointing at a file that no
+longer exists at that path, partial writes mid-swap) is avoided entirely by
+just requiring a restart — the same restart the user would need to do
+anyway to trust that every other module's in-memory assumptions are fresh
+against the new data.
+
+**Consequences**: A restore is not instant — the user must close and
+reopen the app afterward for it to take effect, which must be communicated
+clearly in the UI (the frontend toast says so explicitly). In exchange, the
+implementation has no code path that can corrupt the live connection's
+state, and a mistaken restore is always recoverable from the automatically-
+kept `.before-restore-*` copy.
+
+**Status**: Accepted, implemented.

@@ -421,6 +421,95 @@ const QUERIES = {
     getByCustomer: `SELECT * FROM customer_payments WHERE customer_id = ? ORDER BY payment_date DESC, id DESC`,
     insert: `INSERT INTO customer_payments (customer_id, payment_date, amount, payment_method, notes)
                   VALUES (?, ?, ?, ?, ?)`
+  },
+
+  // ─── EXPIRATION TRACKING ───
+  // Fully independent module — the only join anywhere here is to products,
+  // for display (name/barcode/category/unit fallback). No supplier/invoice/
+  // stock table is ever referenced. See business-rules.md.
+  //
+  // `computed_status`/`days_remaining` are never trusted from the stored
+  // `status` column except for the two terminal, user-set values
+  // (DISCARDED/SOLD) — everything else is recomputed live from
+  // expiration_date on every read, same principle as products.current_stock
+  // (see database.md).
+  expirationBatches: {
+    getAll: `SELECT sub.* FROM (
+                    SELECT eb.*,
+                           p.name as product_name, p.barcode as product_barcode, p.category as product_category,
+                           p.unit as product_unit,
+                           CAST(julianday(eb.expiration_date) - julianday('now') AS INTEGER) as days_remaining,
+                           CASE
+                             WHEN eb.status IN ('DISCARDED', 'SOLD') THEN eb.status
+                             WHEN CAST(julianday(eb.expiration_date) - julianday('now') AS INTEGER) < 0 THEN 'EXPIRED'
+                             WHEN CAST(julianday(eb.expiration_date) - julianday('now') AS INTEGER) <= 30 THEN 'NEAR_EXPIRY'
+                             ELSE 'ACTIVE'
+                           END as computed_status
+                    FROM expiration_batches eb
+                    JOIN products p ON eb.product_id = p.id
+                  ) sub
+                  WHERE (? IS NULL OR sub.product_id = ?)
+                    AND (? IS NULL OR sub.product_category = ?)
+                    AND (? IS NULL OR sub.computed_status = ?)
+                    AND (? IS NULL OR sub.days_remaining <= ?)
+                    AND (? IS NULL OR sub.product_name LIKE '%' || ? || '%'
+                                    OR sub.product_barcode LIKE '%' || ? || '%'
+                                    OR sub.batch_number LIKE '%' || ? || '%')
+                  ORDER BY sub.expiration_date ASC`,
+    getById: `SELECT eb.*,
+                    p.name as product_name, p.barcode as product_barcode, p.category as product_category,
+                    p.unit as product_unit,
+                    CAST(julianday(eb.expiration_date) - julianday('now') AS INTEGER) as days_remaining,
+                    CASE
+                      WHEN eb.status IN ('DISCARDED', 'SOLD') THEN eb.status
+                      WHEN CAST(julianday(eb.expiration_date) - julianday('now') AS INTEGER) < 0 THEN 'EXPIRED'
+                      WHEN CAST(julianday(eb.expiration_date) - julianday('now') AS INTEGER) <= 30 THEN 'NEAR_EXPIRY'
+                      ELSE 'ACTIVE'
+                    END as computed_status
+                  FROM expiration_batches eb
+                  JOIN products p ON eb.product_id = p.id
+                  WHERE eb.id = ?`,
+    insert: `INSERT INTO expiration_batches
+                    (product_id, batch_number, manufacturing_date, expiration_date, quantity, unit, location, notes)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
+    // No product_id here — a batch's product is immutable after creation.
+    update: `UPDATE expiration_batches
+                  SET batch_number = ?, manufacturing_date = ?, expiration_date = ?,
+                      quantity = ?, unit = ?, location = ?, notes = ?, updated_at = CURRENT_TIMESTAMP
+                  WHERE id = ?`,
+    updateStatus: `UPDATE expiration_batches SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?`,
+    delete: `DELETE FROM expiration_batches WHERE id = ?`,
+    // One aggregate pass over the same computed_status/days_remaining logic.
+    getDashboardSummary: `SELECT
+                    COUNT(*) FILTER (WHERE computed_status IN ('ACTIVE', 'NEAR_EXPIRY')) as active_count,
+                    COUNT(*) FILTER (WHERE computed_status = 'NEAR_EXPIRY') as near_expiry_count,
+                    COUNT(*) FILTER (WHERE computed_status = 'EXPIRED') as expired_count,
+                    COUNT(*) FILTER (WHERE computed_status = 'DISCARDED') as discarded_count,
+                    COUNT(*) FILTER (WHERE computed_status NOT IN ('DISCARDED', 'SOLD') AND days_remaining = 0) as expiring_today_count,
+                    COUNT(*) FILTER (WHERE computed_status NOT IN ('DISCARDED', 'SOLD') AND days_remaining BETWEEN 0 AND 7) as expiring_this_week_count,
+                    COUNT(*) FILTER (WHERE computed_status NOT IN ('DISCARDED', 'SOLD') AND days_remaining BETWEEN 0 AND 30) as expiring_this_month_count
+                  FROM (
+                    SELECT eb.status,
+                           CAST(julianday(eb.expiration_date) - julianday('now') AS INTEGER) as days_remaining,
+                           CASE
+                             WHEN eb.status IN ('DISCARDED', 'SOLD') THEN eb.status
+                             WHEN CAST(julianday(eb.expiration_date) - julianday('now') AS INTEGER) < 0 THEN 'EXPIRED'
+                             WHEN CAST(julianday(eb.expiration_date) - julianday('now') AS INTEGER) <= 30 THEN 'NEAR_EXPIRY'
+                             ELSE 'ACTIVE'
+                           END as computed_status
+                    FROM expiration_batches eb
+                  )`
+  },
+
+  // ─── SETTINGS ───
+  // Single-row table (id always 1) — see database.md.
+  businessProfile: {
+    get: `SELECT * FROM business_profile WHERE id = 1`,
+    update: `UPDATE business_profile
+                 SET business_name = ?, address = ?, phone = ?, email = ?,
+                     tax_number = ?, commercial_register = ?, updated_at = CURRENT_TIMESTAMP
+                 WHERE id = 1`,
+    updateLogo: `UPDATE business_profile SET logo_path = ?, updated_at = CURRENT_TIMESTAMP WHERE id = 1`
   }
 };
 

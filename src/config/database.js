@@ -7,6 +7,7 @@ const fs = require('fs');
 class DatabaseManager {
     constructor() {
         const dbPath = path.join(__dirname, '../data/invoices.db');
+        this.dbPath = dbPath; // exposed for settingsService's backup/restore
 
         // Ensure data directory exists
         const dir = path.dirname(dbPath);
@@ -74,6 +75,9 @@ class DatabaseManager {
         this._addColumnIfMissing('purchase_invoices', 'ocr_header_total', 'DECIMAL(15,2)');
         this._addColumnIfMissing('products', 'default_sale_price', 'DECIMAL(10,2)');
         this._addColumnIfMissing('purchase_invoices', 'source', "TEXT DEFAULT 'ocr'");
+
+        // Seed the settings singleton row once — GET never has to special-case "no row yet".
+        this.db.prepare('INSERT OR IGNORE INTO business_profile (id) VALUES (1)').run();
     }
 
     _addColumnIfMissing(table, column, definition) {
@@ -338,14 +342,32 @@ class DatabaseManager {
                  GROUP BY pi.id`
             ),
             getReviewData: this.db.prepare(
-                `SELECT pii.*, 
+                `SELECT pii.*,
                         p.name as matched_product_name,
                         sp.name as suggested_product_name
                  FROM purchase_invoice_items pii
                  LEFT JOIN products p ON pii.product_id = p.id
                  LEFT JOIN products sp ON pii.suggested_product_id = sp.id
                  WHERE pii.invoice_id = ?`
-            )
+            ),
+
+            // Expiration Tracking — fully independent module (see business-rules.md)
+            expirationBatches: {
+                getAll: this.db.prepare(QUERIES.expirationBatches.getAll),
+                getById: this.db.prepare(QUERIES.expirationBatches.getById),
+                insert: this.db.prepare(QUERIES.expirationBatches.insert),
+                update: this.db.prepare(QUERIES.expirationBatches.update),
+                updateStatus: this.db.prepare(QUERIES.expirationBatches.updateStatus),
+                delete: this.db.prepare(QUERIES.expirationBatches.delete),
+                getDashboardSummary: this.db.prepare(QUERIES.expirationBatches.getDashboardSummary)
+            },
+
+            // Settings
+            businessProfile: {
+                get: this.db.prepare(QUERIES.businessProfile.get),
+                update: this.db.prepare(QUERIES.businessProfile.update),
+                updateLogo: this.db.prepare(QUERIES.businessProfile.updateLogo)
+            }
         };
     }
 
@@ -356,6 +378,10 @@ class DatabaseManager {
 
     exec(sql) {
         return this.db.exec(sql);
+    }
+
+    pragma(sql) {
+        return this.db.pragma(sql);
     }
 
     transaction(fn) {

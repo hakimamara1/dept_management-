@@ -53,6 +53,18 @@ foreign key crosses between them.
 | `sales_invoice_items` | Invoice lines | `product_name` is **free text**, deliberately not a FK to `products` |
 | `customer_payments` | Payment record | **No `invoice_id` column at all** — payments are never linked to a specific invoice, only to the customer account |
 
+### Expiration Tracking (fully independent module)
+
+| Table | Purpose | Key columns |
+|---|---|---|
+| `expiration_batches` | Manually-tracked product batches with an expiration date | `product_id` is the **only** FK anywhere in this table — no supplier, invoice, or stock_movements reference exists, by design (see `business-rules.md`). `status` is a **hybrid**: it only holds a meaningful value for the two terminal, user-set states (`DISCARDED`, `SOLD`); for everything else (`ACTIVE` default) the real displayed status — `ACTIVE`/`NEAR_EXPIRY`/`EXPIRED` — is recomputed live from `expiration_date` vs. today by every read query (`queries.js`'s `expirationBatches.getAll`/`getById`/`getDashboardSummary`), same principle as `products.current_stock` below: never trust a stored value for something that changes with the calendar. `product_id` cannot be changed after creation — enforced by omission from `expirationBatches.update`'s SQL, not a runtime check |
+
+### Settings
+
+| Table | Purpose | Key columns |
+|---|---|---|
+| `business_profile` | Business identity (name/address/phone/email/tax number/commercial register/logo) for print headers | **Single-row table** — `id INTEGER PRIMARY KEY CHECK (id = 1)` enforces exactly one row, seeded once by `INSERT OR IGNORE ... VALUES (1)` in `runMigrations()` so `GET` never has to special-case "no row yet." Not currently read by any print template (invoices/reports) — this table only stores the data, wiring it into print headers is a separate follow-up |
+
 ## The "current stock" rule
 
 `products.current_stock` is a real column in the schema but is **never
@@ -185,6 +197,10 @@ idx_supplier_trans_supplier           supplier_transactions(supplier_id)
 idx_sales_invoices_customer            sales_invoices(customer_id)
 idx_sales_invoice_items_invoice         sales_invoice_items(invoice_id)
 idx_customer_payments_customer           customer_payments(customer_id)
+idx_expiration_batches_product           expiration_batches(product_id)
+idx_expiration_batches_expiration_date    expiration_batches(expiration_date)
+idx_expiration_batches_status            expiration_batches(status)
+idx_expiration_batches_batch_number       expiration_batches(batch_number)
 ```
 
 ## Adding a table — checklist

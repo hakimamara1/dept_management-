@@ -299,3 +299,67 @@ spec (ADR-014):
 - Typecheck and build verified clean. Verified via curl: deletes a Pending
   invoice fully (header, items, attachment file); rejects deleting an
   Approved invoice.
+
+## Phase 15 — Expiration Tracking module (independent of inventory/accounting, ADR-020)
+
+- New `expiration_batches` table — `product_id` is the only FK anywhere in
+  it; no schema change to any existing table. `status` only meaningfully
+  stores the two terminal, user-set values (`DISCARDED`/`SOLD`);
+  `ACTIVE`/`NEAR_EXPIRY`/`EXPIRED` are always recomputed live from
+  `expiration_date` by the SQL in `queries.js`'s new `expirationBatches`
+  namespace (`getAll`/`getById`/`getDashboardSummary`).
+- New `src/services/expirationService.js` (CRUD, dashboard summary,
+  expiring/expired/discarded reports) and `src/routes/expirationBatches.js`,
+  mounted at `/api/expiration-batches` — the only line touched in `app.js`.
+  No existing service (`invoiceProcessor`, `stockService`, `debtService`,
+  `accountingService`) was modified.
+- Frontend: new `desktop/src/modules/expiration/` — `ExpirationPage.tsx`
+  (Dashboard/Batches/Reports tabs, mirroring the `SuppliersPage`/
+  `ReportsPage` sub-tab pattern), `ExpirationBatchDetailPage.tsx`
+  (product/batch info, days remaining, edit/delete/mark-sold/mark-discarded
+  actions), `CreateBatchDialog.tsx`/`EditBatchDialog.tsx` (product picker +
+  fields, product locked after creation), `BatchStatusBadge.tsx`. New nav
+  item ("تتبع الصلاحية"), new routes `/expiration` and `/expiration/:id`.
+- `useExpirationStartupAlerts()` wired into `AppShell.tsx` — a dashboard-
+  summary check fired once per app session (ref-guarded), toasting
+  near-expiry/expired counts on launch. Not a new notification subsystem —
+  this app has none — just a cheap query + toast.
+- Confirmed with the user and recorded in ADR-020: no supplier filter on
+  the batch list (would require depending on purchase-invoice history,
+  which the spec's own independence rule forbids); CSV export only, no new
+  spreadsheet library.
+- Verified via curl: status computed correctly across past/near/far
+  expiration dates, `productId` immutable on edit, invalid status
+  transitions rejected, dashboard-summary counts, delete. Typecheck and
+  build verified clean.
+
+## Phase 16 — Settings: Business Profile + Data Backup/Restore (ADR-021)
+
+- `/settings` flipped from a `comingSoon` stub to a real module — first
+  actual settings backend this app has ever had.
+- New single-row `business_profile` table (name/address/phone/email/tax
+  number/commercial register/logo), seeded once via `INSERT OR IGNORE` in
+  `runMigrations()`. Added `pragma()` and `dbPath` to `DatabaseManager`
+  (`config/database.js`) — small, consistent additions alongside its
+  existing `prepare()`/`transaction()` delegates, needed for the backup/
+  restore work below.
+- New `src/services/settingsService.js` + `src/routes/settings.js`, mounted
+  at `/api/settings`. Backup checkpoints WAL (`wal_checkpoint(FULL)`) before
+  downloading the db file — otherwise recent writes sitting in
+  `invoices.db-wal` could be missing. Restore validates the SQLite magic
+  header, renames the current file aside (never deletes it), and responds
+  `{ requiresRestart: true }` rather than trying to hot-swap the live
+  connection — see ADR-021 for why.
+- Frontend: new `desktop/src/modules/settings/` — `SettingsPage.tsx` (ملف
+  الشركة / النسخ الاحتياطي tabs), logo upload reusing the same multer/
+  static-serving pattern as invoice attachments, backup download reusing
+  `DataTable.tsx`'s existing Blob-URL download technique (no new mechanism).
+  Scope deliberately excludes theme/language (already work from the Topbar)
+  and alert thresholds (not asked for), and there is no data-reset feature
+  (considered, explicitly rejected — export/backup only).
+- Verified via curl: business profile CRUD, logo upload, backup produces a
+  genuinely complete/valid SQLite file (opened and inspected its table
+  list), invalid-file restore correctly rejected. The actual restore-swap
+  against the live database was **not** tested end-to-end — doing so would
+  swap out real working data outside a controlled test, so it's deferred
+  until explicitly requested. Typecheck and build verified clean.

@@ -231,6 +231,81 @@ in the shipped code:
   regenerated from `sales_invoices` + `customer_payments` via the window-
   function query in `database.md` — never cached, never stored.
 
+## Expiration Tracking (`expirationService.js`)
+
+Built from a spec with hard constraints stated up front, all still true in
+the shipped code:
+
+- **Must never touch** stock/`stock_movements`, purchase-invoice approval,
+  or supplier/customer accounting. `expiration_batches.product_id` is the
+  **only** foreign key anywhere in this table — no supplier, invoice, or
+  stock reference exists, so this module cannot accidentally start
+  depending on any of them. This is deliberate, matching the same
+  independence discipline as the Sales domain above (free-text
+  `sales_invoice_items.product_name` for the same reason).
+- **Status is a hybrid, never a single stored truth**:
+  - `ACTIVE`, `NEAR_EXPIRY`, `EXPIRED` are pure functions of
+    `expiration_date` vs. today and are **always recomputed live** by every
+    read query — the stored `status` column is never trusted for these
+    three. Same "don't trust a value that drifts from reality" principle as
+    `products.current_stock` (see `database.md`).
+  - `DISCARDED`, `SOLD` are **terminal, user-set actions** with no date
+    logic — set via `PATCH /:id/status`, and they override the date-derived
+    computation until explicitly cleared back to `'ACTIVE'` (which resumes
+    live date-based tracking, it does not mean "the batch is currently
+    fine" as a literal claim).
+  - The date-derived values are **never accepted** as a `PATCH /:id/status`
+    body — only `ACTIVE`/`DISCARDED`/`SOLD` are settable; anything else is
+    a 400.
+- **A batch's product is immutable after creation.** `PATCH /:id` has no
+  `productId` in its accepted fields at all — enforced by the SQL simply
+  never including that column, not a runtime rejection.
+- **No supplier filter on the batch list**, even though the original spec
+  suggested one as optional — deriving a batch's supplier would require
+  joining through purchase-invoice history, which directly violates this
+  module's own independence rule. Product/category/status/expiration-date
+  filters cover the real use cases instead.
+- **Export is CSV-only** (the shared `DataTable`'s existing one-click
+  export) plus the existing `window.print()` pattern for a PDF — no new
+  spreadsheet dependency was added for a native `.xlsx` file.
+- **"Notify on app start"** is a dashboard-summary fetch + toast fired once
+  per app session from `AppShell.tsx` (`useExpirationStartupAlerts`), not a
+  new push-notification or background-job subsystem — this app has neither,
+  and building one wasn't asked for.
+- Future compatibility: a future "Purchase Invoice Approved → auto-create
+  batch" integration was explicitly designed for but not built — it would
+  call `expirationService.createBatch()` the same way a user's manual entry
+  does, requiring no schema change, since the table already stands alone.
+
+## Settings (`settingsService.js`)
+
+- **Business profile is a single row, never a list.** `business_profile.id`
+  is constrained to `1` at the schema level (`CHECK (id = 1)`) — there is
+  exactly one business identity, not a multi-tenant concept. It is not
+  currently read by any invoice/report print template; this only stores the
+  data, wiring it into print headers is a deliberate follow-up, not done here.
+- **Backup always checkpoints WAL first** (`db.pragma('wal_checkpoint(FULL)')`)
+  before the file is downloaded. In WAL mode recent writes live in
+  `invoices.db-wal`, not the main file — skipping the checkpoint could hand
+  back a backup that's silently missing the newest data.
+- **Restore never destroys the current database.** The live file is
+  *renamed* to `invoices.db.before-restore-<timestamp>` (kept, not deleted)
+  before the uploaded file takes its place. A mistaken restore is always
+  recoverable by hand from that file.
+- **Restore does not hot-swap the live connection.** `config/database.js`
+  opens its `better-sqlite3` connection exactly once, at process start, as a
+  long-lived singleton — swapping the underlying file out from under an
+  already-open connection is unsupported territory, not attempted here.
+  `POST /api/settings/restore` responds `{ requiresRestart: true }`; the
+  restored file only takes effect the next time the app (and its backend
+  child process) starts fresh.
+- **Restore validates the SQLite file header** (the first 16 bytes must
+  equal `"SQLite format 3\0"`) before touching anything — an invalid upload
+  is rejected and deleted without ever renaming the live database aside.
+- **No data-reset feature.** Explicitly scoped out — this is backup/restore
+  only, never a way to wipe transactional data while keeping the app
+  installed.
+
 ## Validation rules (services, "not yet enforced" called out explicitly)
 
 | Rule | Enforced? | Where |
