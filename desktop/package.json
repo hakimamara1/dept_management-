@@ -10,9 +10,14 @@
     "preview": "electron-vite preview",
     "typecheck": "tsc -b --noEmit",
     "rebuild:native": "node scripts/rebuild-native.js",
-    "dist:mac": "npm run build && npm run rebuild:native && electron-builder --mac",
-    "dist:win": "npm run build && npm run rebuild:native && electron-builder --win",
-    "dist": "npm run build && npm run rebuild:native && electron-builder --mac --win"
+    "rebuild:native:mac": "node scripts/rebuild-native.js darwin",
+    "rebuild:native:win": "node scripts/rebuild-native.js win32 x64",
+    "verify:native:mac": "node scripts/verify-native-binary.js darwin",
+    "verify:native:win": "node scripts/verify-native-binary.js win32",
+    "restore:native": "npm --prefix .. run rebuild:dev",
+    "dist:mac": "npm run build && npm run rebuild:native:mac && npm run verify:native:mac && electron-builder --mac && npm run restore:native",
+    "dist:win": "npm run build && npm run rebuild:native:win && npm run verify:native:win && electron-builder --win && npm run restore:native",
+    "dist": "npm run dist:mac && npm run dist:win"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
