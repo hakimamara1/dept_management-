@@ -24,6 +24,7 @@ CREATE TABLE IF NOT EXISTS products (
     current_stock DECIMAL(10,2) DEFAULT 0, -- derived from SUM(stock_movements)
     last_purchase_price DECIMAL(10,2),
     average_cost DECIMAL(10,2),            -- weighted average cost
+    default_sale_price DECIMAL(10,2),      -- suggested selling price, separate from purchase cost above
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
@@ -49,7 +50,8 @@ CREATE TABLE IF NOT EXISTS purchase_invoices (
     supplier_id INTEGER,
     currency TEXT DEFAULT 'دج',
     previous_balance DECIMAL(15,2),
-    invoice_amount DECIMAL(15,2) NOT NULL,
+    invoice_amount DECIMAL(15,2) NOT NULL,  -- ALWAYS = SUM(purchase_invoice_items.total_price), kept live — see business-rules.md
+    ocr_header_total DECIMAL(15,2),        -- raw OCR-extracted header total, reference/validation only — never used in business logic
     discount DECIMAL(15,2) DEFAULT 0,
     tax DECIMAL(15,2) DEFAULT 0,
     new_balance DECIMAL(15,2),
@@ -57,9 +59,23 @@ CREATE TABLE IF NOT EXISTS purchase_invoices (
     notes TEXT,
     status TEXT DEFAULT 'Pending Review',  -- 'Pending Review', 'Approved', 'Rejected'
     validation_errors JSON,                  -- SQLite: TEXT storing JSON array
+    approved_at DATETIME,                  -- set once, at the moment of approval — see invoiceProcessor.approveInvoice
+    source TEXT DEFAULT 'ocr',             -- 'ocr' (pasted OCR JSON) or 'manual' (typed in from a handwritten invoice)
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (supplier_id) REFERENCES suppliers(id),
     UNIQUE(invoice_number, supplier_id)    -- prevent duplicates per supplier
+);
+
+-- Photos of the physical invoice (mainly for manually-entered handwritten
+-- invoices, but usable on any invoice) — backup documentation only, never
+-- read by business logic.
+CREATE TABLE IF NOT EXISTS invoice_attachments (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    invoice_id INTEGER NOT NULL,
+    file_path TEXT NOT NULL,               -- relative path under src/data/uploads/
+    original_name TEXT,
+    uploaded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (invoice_id) REFERENCES purchase_invoices(id)
 );
 
 CREATE TABLE IF NOT EXISTS purchase_invoice_items (
@@ -70,6 +86,7 @@ CREATE TABLE IF NOT EXISTS purchase_invoice_items (
     ocr_product_name TEXT NOT NULL,        -- raw OCR name
     normalized_ocr_name TEXT,              -- normalized for matching
     package TEXT,
+    unit TEXT,                             -- per-line unit of measure, editable pre-approval
     quantity DECIMAL(10,2) NOT NULL,
     unit_price DECIMAL(10,2) NOT NULL,
     discount DECIMAL(10,2) DEFAULT 0,
@@ -223,6 +240,47 @@ CREATE TABLE IF NOT EXISTS customer_payments (
     FOREIGN KEY (customer_id) REFERENCES customers(id)
 );
 
+-- ═══════════════════════════════════════════════════════════════
+-- EXPIRATION TRACKING — fully independent module. The only link to the
+-- rest of the schema is product_id; no FK to suppliers, invoices, or
+-- stock_movements anywhere here, by design (see business-rules.md).
+-- ═══════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS expiration_batches (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    product_id INTEGER NOT NULL,
+    batch_number TEXT NOT NULL,
+    manufacturing_date DATE,
+    expiration_date DATE NOT NULL,
+    quantity DECIMAL(10,2),
+    unit TEXT,
+    location TEXT,
+    -- Only a meaningful stored value when terminal ('DISCARDED'/'SOLD', a
+    -- user action). Otherwise ('ACTIVE' default) the real display status
+    -- is always recomputed live from expiration_date — see business-rules.md.
+    status TEXT NOT NULL DEFAULT 'ACTIVE',
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (product_id) REFERENCES products(id)
+);
+
+-- ═══════════════════════════════════════════════════════════════
+-- SETTINGS — single-row table (id is always 1). No key-value indirection;
+-- a fixed, directly-typed set of fields is simpler for the small, known
+-- scope this covers (business identity for print headers).
+-- ═══════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS business_profile (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    business_name TEXT,
+    address TEXT,
+    phone TEXT,
+    email TEXT,
+    tax_number TEXT,
+    commercial_register TEXT,
+    logo_path TEXT,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_aliases_normalized ON product_aliases(normalized_alias);
 CREATE INDEX IF NOT EXISTS idx_invoices_status ON purchase_invoices(status);
@@ -236,3 +294,7 @@ CREATE INDEX IF NOT EXISTS idx_supplier_trans_supplier ON supplier_transactions(
 CREATE INDEX IF NOT EXISTS idx_sales_invoices_customer ON sales_invoices(customer_id);
 CREATE INDEX IF NOT EXISTS idx_sales_invoice_items_invoice ON sales_invoice_items(invoice_id);
 CREATE INDEX IF NOT EXISTS idx_customer_payments_customer ON customer_payments(customer_id);
+CREATE INDEX IF NOT EXISTS idx_expiration_batches_product ON expiration_batches(product_id);
+CREATE INDEX IF NOT EXISTS idx_expiration_batches_expiration_date ON expiration_batches(expiration_date);
+CREATE INDEX IF NOT EXISTS idx_expiration_batches_status ON expiration_batches(status);
+CREATE INDEX IF NOT EXISTS idx_expiration_batches_batch_number ON expiration_batches(batch_number);

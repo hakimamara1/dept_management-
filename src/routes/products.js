@@ -73,14 +73,64 @@ router.get('/:id/price-history', (req, res) => {
 // POST /api/products
 router.post('/', (req, res) => {
     try {
-        const { name, barcode, category, unit } = req.body;
-        const result = db.prepare(
-            'INSERT INTO products (name, barcode, category, unit) VALUES (?, ?, ?, ?)'
-        ).run(name, barcode, category, unit);
+        const { name, barcode, category, unit, defaultSalePrice } = req.body;
+        const result = db.stmts.products.insert.run(
+            name, barcode || null, category || null, unit || null, defaultSalePrice ?? null
+        );
 
         res.json({ id: result.lastInsertRowid });
     } catch (err) {
         res.status(500).json({ error: err.message });
+    }
+});
+
+// PATCH /api/products/:id — catalog fields only (name/barcode/category/unit).
+// Cost fields (last_purchase_price/average_cost) stay system-computed and
+// are never accepted here; the sale price has its own endpoint below.
+router.patch('/:id', (req, res) => {
+    try {
+        const productId = parseInt(req.params.id);
+        const product = db.stmts.getProductById.get(productId);
+        if (!product) {
+            return res.status(404).json({ error: 'المنتج غير موجود' });
+        }
+
+        const { name, barcode, category, unit } = req.body;
+        db.stmts.products.update.run(
+            name ?? product.name,
+            barcode !== undefined ? barcode : product.barcode,
+            category !== undefined ? category : product.category,
+            unit ?? product.unit,
+            productId
+        );
+
+        res.json(db.stmts.getProductById.get(productId));
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// PATCH /api/products/:id/price — sets the suggested selling price
+// (default_sale_price). Separate from PATCH /:id since this is the one
+// product field a user sets directly rather than it being derived from
+// invoice history.
+router.patch('/:id/price', (req, res) => {
+    try {
+        const productId = parseInt(req.params.id);
+        const product = db.stmts.getProductById.get(productId);
+        if (!product) {
+            return res.status(404).json({ error: 'المنتج غير موجود' });
+        }
+
+        const { defaultSalePrice } = req.body;
+        if (defaultSalePrice == null || Number(defaultSalePrice) < 0) {
+            return res.status(400).json({ error: 'السعر مطلوب ويجب أن يكون صفراً أو أكبر' });
+        }
+
+        db.stmts.products.updateSalePrice.run(Number(defaultSalePrice), productId);
+        res.json(db.stmts.getProductById.get(productId));
+    } catch (err) {
+        res.status(400).json({ error: err.message });
     }
 });
 

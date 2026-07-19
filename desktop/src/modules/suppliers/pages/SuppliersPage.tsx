@@ -13,6 +13,7 @@ import { useI18n } from '@shared/lib/i18n'
 import { cn } from '@shared/lib/utils'
 import type { Supplier, SupplierAging } from '@shared/types/api'
 import { useSupplierAging, useSuppliers } from '../hooks/useSuppliers'
+import { CreateSupplierDialog } from '../components/CreateSupplierDialog'
 
 type SubTab = 'all' | 'aging'
 
@@ -94,7 +95,11 @@ export function SuppliersPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader title={t('suppliers.title')} subtitle={t('suppliers.subtitle')} />
+      <PageHeader
+        title={t('suppliers.title')}
+        subtitle={t('suppliers.subtitle')}
+        actions={<CreateSupplierDialog />}
+      />
 
       <div className="mb-4 flex gap-2">
         <Button variant={tab === 'all' ? 'default' : 'ghost'} size="sm" onClick={() => setTab('all')}>

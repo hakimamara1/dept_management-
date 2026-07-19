@@ -62,5 +62,11 @@ export const queryKeys = {
     payments: (customerId: number) => ['customers', customerId, 'payments'] as const,
     statement: (customerId: number) => ['customers', customerId, 'statement'] as const,
     reports: ['customers', 'reports'] as const
+  },
+  expiration: {
+    list: (filters: Record<string, unknown>) => ['expiration', 'list', filters] as const,
+    detail: (id: number) => ['expiration', 'detail', id] as const,
+    dashboard: ['expiration', 'dashboard'] as const,
+    report: (kind: string, extra?: number) => ['expiration', 'report', kind, extra] as const
   }
 }

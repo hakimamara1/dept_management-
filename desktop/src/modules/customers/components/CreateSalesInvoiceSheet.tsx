@@ -7,6 +7,7 @@ import { Input } from '@shared/components/ui/input'
 import { Textarea } from '@shared/components/ui/textarea'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@shared/components/ui/sheet'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@shared/components/ui/form'
+import { ProductPicker } from '@shared/components/ProductPicker'
 import { formatCurrency } from '@shared/lib/format'
 import { useI18n } from '@shared/lib/i18n'
 import { useCreateSalesInvoice } from '../hooks/useCustomerMutations'
@@ -91,7 +92,7 @@ export function CreateSalesInvoiceSheet({ customerId, previousBalance }: { custo
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={() => append({ productName: '', unit: '', quantity: 1, unitPrice: 0 })}
+                onClick={() => append({ productId: null, productName: '', unit: '', quantity: 1, unitPrice: 0 })}
               >
                 <Plus className="size-3.5" />
                 إضافة صنف
@@ -109,7 +110,40 @@ export function CreateSalesInvoiceSheet({ customerId, previousBalance }: { custo
                         <FormItem>
                           <FormLabel className="text-xs">الصنف</FormLabel>
                           <FormControl>
-                            <Input placeholder="اسم الصنف" {...nameField} />
+                            <ProductPicker
+                              value={null}
+                              placeholder="اسم الصنف أو ابحث في الكتالوج..."
+                              onQueryChange={(text) => {
+                                nameField.onChange(text)
+                                form.setValue(`items.${index}.productId`, null, { shouldDirty: true })
+                              }}
+                              onChange={(product) => {
+                                if (!product) return
+                                nameField.onChange(product.name)
+                                form.setValue(`items.${index}.productId`, product.id, { shouldDirty: true })
+
+                                // Only prefill unit/price when the user hasn't already
+                                // typed something — picking a product never overwrites
+                                // a value the user set themselves, and both stay
+                                // editable afterward either way.
+                                const unitFieldName = `items.${index}.unit` as const
+                                if (product.unit && !form.getValues(unitFieldName)) {
+                                  form.setValue(unitFieldName, product.unit, { shouldDirty: true })
+                                }
+
+                                const priceFieldName = `items.${index}.unitPrice` as const
+                                const currentPrice = form.getValues(priceFieldName)
+                                if (
+                                  product.defaultSalePrice != null &&
+                                  (!currentPrice || Number.isNaN(currentPrice))
+                                ) {
+                                  form.setValue(priceFieldName, product.defaultSalePrice, {
+                                    shouldDirty: true,
+                                    shouldValidate: true
+                                  })
+                                }
+                              }}
+                            />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

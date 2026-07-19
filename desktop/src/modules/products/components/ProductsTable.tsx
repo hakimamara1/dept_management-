@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import type { ColumnDef } from '@tanstack/react-table'
-import { LineChart, Search } from 'lucide-react'
+import { LineChart, Pencil, Search } from 'lucide-react'
 import { Input } from '@shared/components/ui/input'
 import { Button } from '@shared/components/ui/button'
 import { DataTable } from '@shared/components/data-table/DataTable'
@@ -12,6 +12,8 @@ import { cn } from '@shared/lib/utils'
 import type { Product } from '@shared/types/api'
 import { useProductSearch } from '../hooks/useProductSearch'
 import { PriceHistorySheet } from './PriceHistorySheet'
+import { EditSalePriceDialog } from './EditSalePriceDialog'
+import { EditProductDialog } from './EditProductDialog'
 
 const UNIT_LABELS: Record<string, string> = {
   piece: 'قطعة',
@@ -25,6 +27,8 @@ export function ProductsTable() {
   const { t } = useI18n()
   const [query, setQuery] = useState('')
   const [priceHistoryProduct, setPriceHistoryProduct] = useState<Product | null>(null)
+  const [editPriceProduct, setEditPriceProduct] = useState<Product | null>(null)
+  const [editProduct, setEditProduct] = useState<Product | null>(null)
 
   const { data, isLoading, error } = useProductSearch(query)
 
@@ -33,7 +37,16 @@ export function ProductsTable() {
       accessorKey: 'name',
       header: ({ column }) => <DataTableColumnHeader column={column} title="اسم المنتج" />,
       meta: { exportLabel: 'اسم المنتج' },
-      cell: ({ row }) => <span className="font-medium text-foreground">{row.original.name}</span>
+      cell: ({ row }) => (
+        <button
+          type="button"
+          onClick={() => setEditProduct(row.original)}
+          className="group flex items-center gap-1.5 text-start font-medium text-foreground hover:text-primary"
+        >
+          {row.original.name}
+          <Pencil className="size-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
+        </button>
+      )
     },
     {
       accessorKey: 'barcode',
@@ -82,8 +95,29 @@ export function ProductsTable() {
       )
     },
     {
+      accessorKey: 'default_sale_price',
+      header: 'سعر البيع',
+      meta: { exportLabel: 'سعر البيع' },
+      cell: ({ row }) => (
+        <button
+          type="button"
+          onClick={() => setEditPriceProduct(row.original)}
+          className="group flex items-center gap-1.5 text-xs hover:text-primary"
+        >
+          {row.original.default_sale_price != null ? (
+            <span className="tabular-nums font-medium text-foreground">
+              {formatCurrency(row.original.default_sale_price)}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">تعيين سعر</span>
+          )}
+          <Pencil className="size-3 text-muted-foreground opacity-0 group-hover:opacity-100" />
+        </button>
+      )
+    },
+    {
       id: 'actions',
-      header: 'سعر الشراء',
+      header: 'سجل الأسعار',
       enableHiding: false,
       cell: ({ row }) => (
         <Button variant="outline" size="sm" onClick={() => setPriceHistoryProduct(row.original)}>
@@ -128,6 +162,10 @@ export function ProductsTable() {
         open={priceHistoryProduct != null}
         onOpenChange={(open) => !open && setPriceHistoryProduct(null)}
       />
+
+      <EditSalePriceDialog product={editPriceProduct} onOpenChange={(open) => !open && setEditPriceProduct(null)} />
+
+      <EditProductDialog product={editProduct} onOpenChange={(open) => !open && setEditProduct(null)} />
     </>
   )
 }

@@ -1,5 +1,6 @@
 // services/debtService.js
 const db = require('../config/database');
+const { parseNumber } = require('../utils/parseNumber');
 
 /**
  * Debt Service — Supplier debt/accounts payable management.
@@ -13,9 +14,15 @@ class DebtService {
      * @param {number} supplierId
      * @returns {number} Current balance in DZD
      */
+    // Guarded with parseNumber, not a raw Number(...) cast — current_balance
+    // is a maintained snapshot column, and a bad write from anywhere (a
+    // string with a thousands separator, corrupted legacy data, etc.) must
+    // never propagate as NaN into every future balance update. See
+    // ADR-017: this is exactly the failure mode that corrupted a real
+    // supplier's balance to the literal text "NaN99,220.00".
     getCurrentBalance(supplierId) {
         const supplier = db.prepare('SELECT current_balance FROM suppliers WHERE id = ?').get(supplierId);
-        return supplier ? Number(supplier.current_balance) : 0;
+        return supplier ? parseNumber(supplier.current_balance) : 0;
     }
 
     /**
@@ -27,14 +34,15 @@ class DebtService {
      * @returns {{transactionId: number, newBalance: number}}
      */
     addInvoiceDebt(supplierId, invoiceId, amount, description = '') {
+        const sanitizedAmount = parseNumber(amount);
         const currentBalance = this.getCurrentBalance(supplierId);
-        const newBalance = currentBalance + amount;
+        const newBalance = currentBalance + sanitizedAmount;
 
         const result = db.stmts.debt.insertTransaction.run(
             supplierId,
             invoiceId,
             'invoice',
-            amount,
+            sanitizedAmount,
             newBalance,
             description || `Invoice debt`
         );
@@ -45,7 +53,7 @@ class DebtService {
         return {
             transactionId: result.lastInsertRowid,
             previousBalance: currentBalance,
-            amount,
+            amount: sanitizedAmount,
             newBalance
         };
     }
@@ -60,16 +68,17 @@ class DebtService {
      * @returns {{transactionId: number, newBalance: number}}
      */
     recordPayment(supplierId, amount, paymentMethod = 'cash', reference = '', notes = '') {
-        if (amount <= 0) {
+        const sanitizedAmount = parseNumber(amount);
+        if (sanitizedAmount <= 0) {
             throw new Error('Payment amount must be positive');
         }
 
         const currentBalance = this.getCurrentBalance(supplierId);
-        const paymentAmount = -amount;  // Negative = debt reduction
-        const newBalance = currentBalance - amount;
+        const paymentAmount = -sanitizedAmount;  // Negative = debt reduction
+        const newBalance = currentBalance - sanitizedAmount;
 
         if (newBalance < 0) {
-            throw new Error(`Payment exceeds debt. Current balance: ${currentBalance}, Payment: ${amount}`);
+            throw new Error(`Payment exceeds debt. Current balance: ${currentBalance}, Payment: ${sanitizedAmount}`);
         }
 
         const result = db.stmts.debt.insertTransaction.run(
@@ -86,7 +95,7 @@ class DebtService {
         return {
             transactionId: result.lastInsertRowid,
             previousBalance: currentBalance,
-            paymentAmount: amount,
+            paymentAmount: sanitizedAmount,
             newBalance
         };
     }
@@ -98,14 +107,15 @@ class DebtService {
      * @param {string} reason
      */
     adjustBalance(supplierId, amount, reason) {
+        const sanitizedAmount = parseNumber(amount);
         const currentBalance = this.getCurrentBalance(supplierId);
-        const newBalance = currentBalance + amount;
+        const newBalance = currentBalance + sanitizedAmount;
 
         const result = db.stmts.debt.insertTransaction.run(
             supplierId,
             null,
             'adjustment',
-            amount,
+            sanitizedAmount,
             newBalance,
             reason
         );
@@ -115,7 +125,7 @@ class DebtService {
         return {
             transactionId: result.lastInsertRowid,
             previousBalance: currentBalance,
-            adjustment: amount,
+            adjustment: sanitizedAmount,
             newBalance
         };
     }

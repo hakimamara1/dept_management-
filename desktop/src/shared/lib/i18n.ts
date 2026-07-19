@@ -22,6 +22,7 @@ const resources = {
       debt: 'الديون',
       reports: 'التقارير',
       notifications: 'الإشعارات',
+      expiration: 'تتبع الصلاحية',
       settings: 'الإعدادات',
       aiAssistant: 'المساعد الذكي'
     },
@@ -71,7 +72,8 @@ const resources = {
       subtitle: 'مراجعة الفواتير المعلقة ومتابعة المعتمدة',
       pendingTab: 'معلقة',
       approvedTab: 'معتمدة',
-      submitInvoice: 'رفع فاتورة',
+      submitInvoice: 'رفع صورة الفاتورة',
+      createManual: 'فاتورة يدوية',
       review: 'مراجعة',
       approve: 'اعتماد الفاتورة'
     },
@@ -111,6 +113,7 @@ const resources = {
       debt: 'Dettes',
       reports: 'Rapports',
       notifications: 'Notifications',
+      expiration: 'Suivi de péremption',
       settings: 'Paramètres',
       aiAssistant: 'Assistant IA'
     },
@@ -160,7 +163,8 @@ const resources = {
       subtitle: 'Examiner les factures en attente et suivre les approuvées',
       pendingTab: 'En attente',
       approvedTab: 'Approuvées',
-      submitInvoice: 'Soumettre une facture',
+      submitInvoice: 'Téléverser une photo de facture',
+      createManual: 'Facture manuelle',
       review: 'Examiner',
       approve: 'Approuver la facture'
     },
@@ -200,6 +204,7 @@ const resources = {
       debt: 'Debt',
       reports: 'Reports',
       notifications: 'Notifications',
+      expiration: 'Expiration Tracking',
       settings: 'Settings',
       aiAssistant: 'AI Assistant'
     },
@@ -249,7 +254,8 @@ const resources = {
       subtitle: 'Review pending invoices and track approved ones',
       pendingTab: 'Pending',
       approvedTab: 'Approved',
-      submitInvoice: 'Submit invoice',
+      submitInvoice: 'Upload invoice photo',
+      createManual: 'Manual invoice',
       review: 'Review',
       approve: 'Approve invoice'
     },

@@ -13,7 +13,18 @@ export interface Product {
   current_stock: number | null
   last_purchase_price: number | null
   average_cost: number | null
+  default_sale_price: number | null
   created_at: string
+}
+
+// Catalog fields only — cost values (last_purchase_price/average_cost) stay
+// system-computed from approved invoices, default_sale_price has its own
+// dedicated endpoint (PATCH /:id/price).
+export interface UpdateProductInput {
+  name?: string
+  barcode?: string | null
+  category?: string | null
+  unit?: string
 }
 
 export interface PriceHistoryPoint {
@@ -159,11 +170,24 @@ export interface InvoiceReviewHeader {
   currency: string
   previous_balance: number | null
   invoice_amount: number
+  ocr_header_total: number | null
   discount: number
   tax: number
   new_balance: number | null
   status: InvoiceStatus
   validation_errors: string | null
+  notes: string | null
+  approved_at: string | null
+  // 'ocr' (pasted OCR JSON) or 'manual' (typed in from a handwritten invoice)
+  source: 'ocr' | 'manual'
+}
+
+export interface InvoiceAttachment {
+  id: number
+  invoice_id: number
+  file_path: string
+  original_name: string | null
+  uploaded_at: string
 }
 
 export interface InvoiceReviewItem {
@@ -172,6 +196,7 @@ export interface InvoiceReviewItem {
   product_id: number | null
   line_number: number
   ocr_product_name: string
+  unit: string | null
   quantity: number
   unit_price: number
   total_price: number
@@ -185,15 +210,58 @@ export interface InvoiceReviewItem {
 export interface InvoiceReviewResponse {
   invoice: InvoiceReviewHeader
   items: InvoiceReviewItem[]
+  attachments: InvoiceAttachment[]
 }
 
-export type InvoiceDecisionAction = 'select_existing' | 'create_new'
+// Only meaningful while the invoice is still Pending Review — the backend
+// rejects all of these once it's Approved. productId resolves to an
+// existing product; createNewProduct creates one on the spot. Omitting
+// both just corrects name/quantity/unit/unitPrice without touching the match.
+export interface NewProductInput {
+  unit: string
+}
 
-export interface InvoiceDecision {
-  itemId: number
-  action: InvoiceDecisionAction
-  productId?: number
+export interface UpdateInvoiceItemInput {
+  productName?: string
+  quantity?: number
   unit?: string
+  unitPrice?: number
+  productId?: number
+  createNewProduct?: NewProductInput
+}
+
+export interface AddInvoiceItemInput {
+  productName: string
+  quantity: number
+  unit?: string
+  unitPrice: number
+  productId?: number
+  createNewProduct?: NewProductInput
+}
+
+// For a supplier's handwritten invoice — no OCR JSON to paste, typed in
+// directly. Every item requires either an existing productId (picked via
+// ProductPicker) or createNewProduct — no OCR ambiguity to resolve later.
+export interface CreateManualInvoiceItemInput {
+  productName: string
+  quantity: number
+  unit?: string
+  unitPrice: number
+  productId?: number
+  createNewProduct?: NewProductInput
+}
+
+export interface CreateManualInvoiceInput {
+  supplierId: number
+  invoiceNumber: string
+  invoiceDate: string
+  invoiceTime?: string
+  currency?: string
+  discount?: number
+  tax?: number
+  paymentMethod?: string
+  notes?: string
+  items: CreateManualInvoiceItemInput[]
 }
 
 // ── Purchase Orders ───────────────────────────────────────
@@ -233,6 +301,26 @@ export interface CreatePurchaseOrderInput {
   expectedDate?: string
   notes?: string
   items: { productId: number; quantity: number; expectedUnitPrice?: number }[]
+}
+
+// Editing is only ever accepted by the backend while status === 'Draft'.
+export interface UpdatePurchaseOrderInput {
+  supplierId?: number
+  orderDate?: string
+  expectedDate?: string
+  notes?: string
+}
+
+export interface UpdatePurchaseOrderItemInput {
+  productId?: number
+  quantity?: number
+  expectedUnitPrice?: number
+}
+
+export interface AddPurchaseOrderItemInput {
+  productId: number
+  quantity: number
+  expectedUnitPrice?: number
 }
 
 // ── Accounting / Reports ──────────────────────────────────
@@ -319,6 +407,7 @@ export interface SalesInvoiceListItem {
 export interface SalesInvoiceItem {
   id: number
   invoice_id: number
+  product_id: number | null
   product_name: string
   unit: string | null
   quantity: number
@@ -333,6 +422,7 @@ export interface SalesInvoiceDetail extends SalesInvoiceListItem {
 }
 
 export interface CreateSalesInvoiceItemInput {
+  productId?: number | null
   productName: string
   unit?: string
   quantity: number
@@ -379,4 +469,94 @@ export interface CustomerReportsSummary {
   average_invoice_value: number
   largestDebtors: { id: number; full_name: string; balance: number }[]
   mostActive: { id: number; full_name: string; activity_count: number }[]
+}
+
+// ── Expiration Tracking ───────────────────────────────────
+// Fully independent module — only ever references product_id. Never
+// touches stock, purchase invoices, or supplier/customer accounting.
+// ACTIVE/NEAR_EXPIRY/EXPIRED are always computed live from expiration_date
+// (see business-rules.md) — DISCARDED/SOLD are the only two a user sets.
+export type ExpirationBatchStatus = 'ACTIVE' | 'NEAR_EXPIRY' | 'EXPIRED' | 'DISCARDED' | 'SOLD'
+
+export interface ExpirationBatch {
+  id: number
+  product_id: number
+  batch_number: string
+  manufacturing_date: string | null
+  expiration_date: string
+  quantity: number | null
+  unit: string | null
+  location: string | null
+  status: ExpirationBatchStatus
+  notes: string | null
+  created_at: string
+  updated_at: string
+  product_name: string
+  product_barcode: string | null
+  product_category: string | null
+  product_unit: string | null
+  days_remaining: number
+  computed_status: ExpirationBatchStatus
+}
+
+export interface ExpirationDashboardSummary {
+  active_count: number
+  near_expiry_count: number
+  expired_count: number
+  discarded_count: number
+  expiring_today_count: number
+  expiring_this_week_count: number
+  expiring_this_month_count: number
+}
+
+export interface ExpirationBatchFilters {
+  productId?: number
+  category?: string
+  status?: ExpirationBatchStatus
+  expiringWithinDays?: number
+  search?: string
+}
+
+export interface CreateExpirationBatchInput {
+  productId: number
+  batchNumber: string
+  expirationDate: string
+  manufacturingDate?: string
+  quantity?: number
+  unit?: string
+  location?: string
+  notes?: string
+}
+
+export interface UpdateExpirationBatchInput {
+  batchNumber?: string
+  manufacturingDate?: string
+  expirationDate?: string
+  quantity?: number
+  unit?: string
+  location?: string
+  notes?: string
+}
+
+// ── Settings ──────────────────────────────────────────────
+// Single-row table (id always 1) — business identity for print headers.
+export interface BusinessProfile {
+  id: 1
+  business_name: string | null
+  address: string | null
+  phone: string | null
+  email: string | null
+  tax_number: string | null
+  commercial_register: string | null
+  logo_path: string | null
+  updated_at: string
+}
+
+export interface UpdateBusinessProfileInput {
+  businessName?: string
+  address?: string
+  phone?: string
+  email?: string
+  taxNumber?: string
+  commercialRegister?: string
 }

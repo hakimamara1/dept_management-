@@ -21,6 +21,35 @@ router.get('/', (req, res) => {
     }
 });
 
+// POST /api/suppliers — add a supplier directly, without waiting for an
+// invoice to create one via supplierMatcher.findOrCreateSupplier.
+router.post('/', (req, res) => {
+    try {
+        const { name, phone, email, address, taxNumber, commercialRegister } = req.body;
+        if (!name || !name.toString().trim()) {
+            return res.status(400).json({ error: 'اسم المورد مطلوب' });
+        }
+
+        const existing = db.stmts.getSupplierByName.get(name.toString().trim());
+        if (existing) {
+            return res.status(400).json({ error: 'مورد بنفس الاسم موجود مسبقاً' });
+        }
+
+        const result = db.stmts.insertSupplier.run(
+            name.toString().trim(),
+            phone || null,
+            email || null,
+            address || null,
+            taxNumber || null,
+            commercialRegister || null
+        );
+
+        res.json(db.stmts.suppliers.getById.get(result.lastInsertRowid));
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
 // GET /api/suppliers/aging
 router.get('/aging', (req, res) => {
     try {

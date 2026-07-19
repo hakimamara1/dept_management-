@@ -8,14 +8,23 @@ const HEALTH_TIMEOUT_MS = 15e3;
 const HEALTH_POLL_INTERVAL_MS = 250;
 let backendProcess = null;
 function backendEntryPath() {
+  if (electron.app.isPackaged) {
+    return node_path.join(process.resourcesPath, "backend/app.js");
+  }
   return node_path.join(__dirname, "../../../src/app.js");
 }
 function startBackend() {
   if (backendProcess) return backendProcess;
-  backendProcess = node_child_process.spawn("node", [backendEntryPath()], {
-    stdio: "inherit",
-    env: { ...process.env, PORT: String(BACKEND_PORT) }
-  });
+  const execPath = electron.app.isPackaged ? process.execPath : "node";
+  const env = {
+    ...process.env,
+    PORT: String(BACKEND_PORT),
+    ...electron.app.isPackaged && {
+      ELECTRON_RUN_AS_NODE: "1",
+      APP_DATA_DIR: electron.app.getPath("userData")
+    }
+  };
+  backendProcess = node_child_process.spawn(execPath, [backendEntryPath()], { stdio: "inherit", env });
   backendProcess.on("exit", (code) => {
     console.log(`[backend] exited with code ${code}`);
     backendProcess = null;

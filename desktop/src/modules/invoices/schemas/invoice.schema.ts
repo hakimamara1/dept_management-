@@ -1,41 +1,46 @@
 import { z } from 'zod'
 
-// This app deliberately doesn't do OCR itself — it accepts the already-
-// extracted JSON an external OCR/AI step produces (see invoice.json at the
-// repo root for a real sample of the shape). Validation here checks the
-// text is parseable JSON with the fields the backend requires, not the
-// full invoice schema — the backend's own validationService is the source
-// of truth for business rules (math checks, duplicates, etc).
-export const submitInvoiceSchema = z.object({
-  ocrJson: z
-    .string()
-    .trim()
-    .min(1, 'الصق نص JSON للفاتورة')
-    .superRefine((val, ctx) => {
-      let parsed: unknown
-      try {
-        parsed = JSON.parse(val)
-      } catch {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'النص المدخل ليس JSON صالحاً' })
-        return
-      }
+// For a supplier's handwritten invoice — typed in directly, no OCR JSON.
+// Same nullable-picker + superRefine shape as purchase-orders' create form.
+const pickedRef = z.object({ id: z.number(), name: z.string() })
 
-      const obj = parsed as Record<string, unknown>
-      if (!obj.invoice_number) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'الحقل invoice_number مطلوب' })
-      }
-      if (!obj.invoice_date) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'الحقل invoice_date مطلوب' })
-      }
-      if (!(obj.supplier as Record<string, unknown> | undefined)?.name) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'اسم المورد (supplier.name) مطلوب' })
-      }
-      if (!Array.isArray(obj.items) || obj.items.length === 0) {
-        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'يجب أن تحتوي الفاتورة على صنف واحد على الأقل' })
-      }
-    })
+const manualInvoiceItemSchema = z.object({
+  product: pickedRef.nullable(),
+  quantity: z.number().positive('الكمية يجب أن تكون أكبر من الصفر'),
+  unitPrice: z.number().min(0, 'السعر لا يمكن أن يكون سالباً')
 })
 
-export type SubmitInvoiceFormValues = z.infer<typeof submitInvoiceSchema>
+export const manualInvoiceSchema = z
+  .object({
+    supplier: pickedRef.nullable(),
+    invoiceNumber: z.string().trim().min(1, 'رقم الفاتورة مطلوب'),
+    invoiceDate: z.string().min(1, 'تاريخ الفاتورة مطلوب'),
+    discount: z.number().min(0).optional(),
+    tax: z.number().min(0).optional(),
+    paymentMethod: z.string().trim().optional().or(z.literal('')),
+    notes: z.string().trim().max(300).optional().or(z.literal('')),
+    items: z.array(manualInvoiceItemSchema).min(1, 'أضف صنفاً واحداً على الأقل')
+  })
+  .superRefine((data, ctx) => {
+    if (!data.supplier) {
+      ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'اختر مورداً', path: ['supplier'] })
+    }
+    data.items.forEach((item, index) => {
+      if (!item.product) {
+        ctx.addIssue({ code: z.ZodIssueCode.custom, message: 'اختر منتجاً', path: ['items', index, 'product'] })
+      }
+    })
+  })
 
-export const submitInvoiceDefaults: SubmitInvoiceFormValues = { ocrJson: '' }
+export type ManualInvoiceFormValues = z.infer<typeof manualInvoiceSchema>
+
+export const manualInvoiceDefaults: ManualInvoiceFormValues = {
+  supplier: null,
+  invoiceNumber: '',
+  invoiceDate: new Date().toISOString().split('T')[0],
+  discount: undefined,
+  tax: undefined,
+  paymentMethod: '',
+  notes: '',
+  items: [{ product: null, quantity: 1, unitPrice: 0 }]
+}

@@ -1,8 +1,11 @@
 import { Outlet } from 'react-router-dom'
+import { useExpirationStartupAlerts } from '@modules/expiration'
 import { Sidebar } from './Sidebar'
 import { Topbar } from './Topbar'
 
 export function AppShell() {
+  useExpirationStartupAlerts()
+
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-background print:h-auto print:w-auto print:overflow-visible">
       <div className="print:hidden">

@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import type { ColumnDef } from '@tanstack/react-table'
+import { Trash2 } from 'lucide-react'
 import { Button } from '@shared/components/ui/button'
 import { Badge } from '@shared/components/ui/badge'
 import { DataTable } from '@shared/components/data-table/DataTable'
@@ -10,7 +11,9 @@ import { formatCurrency, formatDate } from '@shared/lib/format'
 import { useI18n } from '@shared/lib/i18n'
 import type { ApprovedInvoice, PendingInvoice } from '@shared/types/api'
 import { useApprovedInvoices, usePendingInvoices } from '../hooks/useInvoices'
-import { SubmitInvoiceDialog } from '../components/SubmitInvoiceDialog'
+import { useDeleteInvoice } from '../hooks/useInvoiceMutations'
+import { ExtractInvoiceDialog } from '../components/ExtractInvoiceDialog'
+import { ManualInvoiceSheet } from '../components/ManualInvoiceSheet'
 
 type SubTab = 'pending' | 'approved'
 
@@ -21,6 +24,12 @@ export function InvoicesPage() {
 
   const pending = usePendingInvoices()
   const approved = useApprovedInvoices()
+  const deleteInvoice = useDeleteInvoice()
+
+  function handleDeleteInvoice(id: number) {
+    if (!window.confirm('حذف الفاتورة نهائياً بكل أصنافها وصورها؟ لا يمكن التراجع عن هذا.')) return
+    deleteInvoice.mutate(id)
+  }
 
   const pendingColumns: ColumnDef<PendingInvoice, any>[] = [
     {
@@ -60,9 +69,20 @@ export function InvoicesPage() {
       header: '',
       enableHiding: false,
       cell: ({ row }) => (
-        <Button variant="outline" size="sm" onClick={() => navigate(`/invoices/${row.original.id}/review`)}>
-          {t('invoices.review')}
-        </Button>
+        <div className="flex items-center gap-1.5">
+          <Button variant="outline" size="sm" onClick={() => navigate(`/invoices/${row.original.id}/review`)}>
+            {t('invoices.review')}
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            title="حذف الفاتورة"
+            disabled={deleteInvoice.isPending}
+            onClick={() => handleDeleteInvoice(row.original.id)}
+          >
+            <Trash2 className="size-4 text-destructive" />
+          </Button>
+        </div>
       )
     }
   ]
@@ -91,12 +111,31 @@ export function InvoicesPage() {
       id: 'status',
       header: 'الحالة',
       cell: () => <Badge variant="success">معتمدة</Badge>
+    },
+    {
+      id: 'actions',
+      header: '',
+      enableHiding: false,
+      cell: ({ row }) => (
+        <Button variant="outline" size="sm" onClick={() => navigate(`/invoices/${row.original.id}`)}>
+          عرض
+        </Button>
+      )
     }
   ]
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader title={t('invoices.title')} subtitle={t('invoices.subtitle')} actions={<SubmitInvoiceDialog />} />
+      <PageHeader
+        title={t('invoices.title')}
+        subtitle={t('invoices.subtitle')}
+        actions={
+          <div className="flex gap-2">
+            <ManualInvoiceSheet />
+            <ExtractInvoiceDialog />
+          </div>
+        }
+      />
 
       <div className="mb-4 flex gap-2">
         <Button variant={tab === 'pending' ? 'default' : 'ghost'} size="sm" onClick={() => setTab('pending')}>

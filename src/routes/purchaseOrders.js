@@ -53,4 +53,46 @@ router.patch('/:id/status', (req, res) => {
     }
 });
 
+// PATCH /api/purchase-orders/:id — header fields. Draft only.
+router.patch('/:id', (req, res) => {
+    try {
+        const order = purchaseOrderService.updateOrder(parseInt(req.params.id), req.body);
+        res.json(order);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// PATCH /api/purchase-orders/:id/items/:itemId — quantity/price/product. Draft only.
+router.patch('/:id/items/:itemId', (req, res) => {
+    try {
+        const order = purchaseOrderService.updateOrderItem(
+            parseInt(req.params.id), parseInt(req.params.itemId), req.body
+        );
+        res.json(order);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// POST /api/purchase-orders/:id/items — add a missing line. Draft only.
+router.post('/:id/items', (req, res) => {
+    try {
+        const order = purchaseOrderService.addOrderItem(parseInt(req.params.id), req.body);
+        res.json(order);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// DELETE /api/purchase-orders/:id/items/:itemId — Draft only, rejects the last item.
+router.delete('/:id/items/:itemId', (req, res) => {
+    try {
+        const order = purchaseOrderService.deleteOrderItem(parseInt(req.params.id), parseInt(req.params.itemId));
+        res.json(order);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
 module.exports = router;

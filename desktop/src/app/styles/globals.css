@@ -121,3 +121,54 @@
 .tabular-nums {
   font-variant-numeric: tabular-nums;
 }
+
+/*
+  Printed documents (invoices, PO detail, reports) must always read as a
+  plain paper document — light background, dark text — regardless of
+  whichever theme is active on screen. Without this, printing while in
+  dark mode produces a dark-background, light-text page: illegible on
+  paper or, depending on the browser's default background-printing
+  setting, ink-wasting. `:root` and `.dark` are both targeted so this wins
+  no matter which is applied to `<html>` at print time.
+*/
+@media print {
+  :root,
+  .dark {
+    --background: #ffffff;
+    --foreground: #1c1b17;
+    --card: #ffffff;
+    --card-foreground: #1c1b17;
+    --popover: #ffffff;
+    --popover-foreground: #1c1b17;
+    --primary: #0f7a73;
+    --primary-foreground: #ffffff;
+    --secondary: #f0efe9;
+    --secondary-foreground: #1c1b17;
+    --muted: #f0efe9;
+    --muted-foreground: #726f63;
+    --accent: #e7f3f1;
+    --accent-foreground: #0f7a73;
+    --destructive: #b3261e;
+    --destructive-foreground: #ffffff;
+    --success: #1c7c4b;
+    --success-foreground: #ffffff;
+    --warning: #b8720a;
+    --warning-foreground: #ffffff;
+    --border: #d8d6cd;
+    --input: #d8d6cd;
+    --ring: #0f7a73;
+  }
+
+  body {
+    /* Without this, browsers drop background-color/background-image by
+       default when printing — the totals box tint on the invoice would
+       silently disappear. */
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+}
