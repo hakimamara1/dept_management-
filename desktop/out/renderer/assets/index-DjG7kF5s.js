@@ -69571,83 +69571,6 @@ function CustomerDetailPage() {
     )
   ] });
 }
-function SalesInvoiceDetailPage() {
-  const { t: t2 } = useI18n();
-  const { id, invoiceId } = useParams();
-  const navigate = useNavigate();
-  const customerId = Number(id);
-  const salesInvoiceId = Number(invoiceId);
-  const { data, isLoading, error, refetch } = useCustomerInvoice(customerId, salesInvoiceId);
-  if (isLoading) return /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingState, { rows: 6 });
-  if (error || !data) {
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(ErrorState, { message: error?.message ?? "الفاتورة غير موجودة", onRetry: () => refetch() });
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-1 flex-col", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 flex items-center justify-between print:hidden", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { variant: "ghost", size: "sm", className: "w-fit", onClick: () => navigate(`/customers/${customerId}`), children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowRight, { className: "size-4" }),
-        data.customer_name
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { size: "sm", onClick: () => window.print(), children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Printer, { className: "size-4" }),
-        t2("customers.print")
-      ] })
-    ] }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { className: "mx-auto w-full max-w-2xl print:border-none print:shadow-none", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { className: "p-8", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-6 flex items-start justify-between border-b border-border pb-6", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-lg font-semibold text-foreground", children: "فاتورة بيع جملة" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-1 text-sm text-muted-foreground", children: data.invoice_number })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-end text-sm text-muted-foreground", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: formatDate(data.invoice_date) }) })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-6 grid grid-cols-2 gap-4 text-sm", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "العميل" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "font-medium text-foreground", children: data.customer_name })
-        ] }),
-        data.customer_phone && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "الهاتف" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "font-medium text-foreground", children: data.customer_phone })
-        ] })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "overflow-x-auto", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("table", { className: "w-full text-sm", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("thead", { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-border text-start text-xs text-muted-foreground", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "py-2 text-start", children: "الصنف" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "py-2 text-start", children: "الكمية" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "py-2 text-start", children: "الوحدة" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "py-2 text-start", children: "سعر الوحدة" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "py-2 text-start", children: "الإجمالي" })
-        ] }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("tbody", { children: data.items.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-border last:border-0", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "py-2 font-medium text-foreground", children: item.product_name }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "tabular-nums py-2", children: Number(item.quantity).toLocaleString("ar-DZ") }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "py-2", children: item.unit ?? "—" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "tabular-nums py-2", children: formatCurrency(item.unit_price) }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "tabular-nums py-2 font-medium", children: formatCurrency(item.line_total) })
-        ] }, item.id)) })
-      ] }) }),
-      data.notes && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-4 text-sm text-muted-foreground", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium text-foreground", children: "ملاحظات: " }),
-        data.notes
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-6 space-y-1.5 border-t border-border pt-4 text-sm", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-muted-foreground", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t2("customers.previousBalance") }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums", children: formatCurrency(data.previous_balance) })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-muted-foreground", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t2("customers.invoiceAmount") }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums", children: formatCurrency(data.invoice_amount) })
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-between border-t border-border pt-1.5 text-base font-semibold text-foreground", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t2("customers.newBalance") }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums", children: formatCurrency(data.new_balance) })
-        ] })
-      ] })
-    ] }) })
-  ] });
-}
 const settingsApi = {
   getBusinessProfile: () => apiClient.get("/api/settings/business-profile"),
   updateBusinessProfile: (data) => apiClient.patch("/api/settings/business-profile", data),
@@ -69927,6 +69850,119 @@ function SettingsPage() {
     ] }),
     tab === "profile" && /* @__PURE__ */ jsxRuntimeExports.jsx(BusinessProfileTab, {}),
     tab === "backup" && /* @__PURE__ */ jsxRuntimeExports.jsx(DataBackupTab, {})
+  ] });
+}
+function SalesInvoiceDetailPage() {
+  const { t: t2 } = useI18n();
+  const { id, invoiceId } = useParams();
+  const navigate = useNavigate();
+  const customerId = Number(id);
+  const salesInvoiceId = Number(invoiceId);
+  const { data, isLoading, error, refetch } = useCustomerInvoice(customerId, salesInvoiceId);
+  const { data: profile } = useBusinessProfile();
+  if (isLoading) return /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingState, { rows: 6 });
+  if (error || !data) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(ErrorState, { message: error?.message ?? "الفاتورة غير موجودة", onRetry: () => refetch() });
+  }
+  const hasProfile = profile && (profile.business_name || profile.address || profile.phone || profile.tax_number || profile.commercial_register);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-1 flex-col", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 flex items-center justify-between print:hidden", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { variant: "ghost", size: "sm", className: "w-fit", onClick: () => navigate(`/customers/${customerId}`), children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowRight, { className: "size-4" }),
+        data.customer_name
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { size: "sm", onClick: () => window.print(), children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Printer, { className: "size-4" }),
+        t2("customers.print")
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { className: "mx-auto w-full max-w-3xl print:w-full print:max-w-none print:border-none print:shadow-none", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { className: "p-8", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-6 flex items-start justify-between gap-6 border-b border-border pb-6", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-3", children: [
+          profile?.logo_path && /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "img",
+            {
+              src: `${API_BASE_URL}/uploads/${profile.logo_path}`,
+              alt: "شعار الشركة",
+              className: "size-14 shrink-0 rounded-md object-contain"
+            }
+          ),
+          hasProfile ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+            profile?.business_name && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-lg font-bold text-foreground", children: profile.business_name }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-0.5 space-y-0.5 text-xs text-muted-foreground", children: [
+              profile?.address && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: profile.address }),
+              profile?.phone && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: profile.phone }),
+              (profile?.tax_number || profile?.commercial_register) && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+                profile.tax_number && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+                  "الرقم الضريبي: ",
+                  profile.tax_number
+                ] }),
+                profile.tax_number && profile.commercial_register && " — ",
+                profile.commercial_register && /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+                  "السجل التجاري: ",
+                  profile.commercial_register
+                ] })
+              ] })
+            ] })
+          ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-lg font-semibold text-foreground", children: "فاتورة بيع جملة" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-end text-sm", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "font-semibold text-foreground", children: "فاتورة بيع" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-1 text-muted-foreground", children: data.invoice_number }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-muted-foreground", children: formatDate(data.invoice_date) })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-6 grid grid-cols-2 gap-4 text-sm", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "الفاتورة إلى" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "font-medium text-foreground", children: data.customer_name })
+        ] }),
+        data.customer_phone && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "الهاتف" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "font-medium text-foreground", children: data.customer_phone })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "overflow-hidden rounded-md border border-border", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("table", { className: "w-full text-sm", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("thead", { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-border bg-muted/50 text-start text-xs text-muted-foreground", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "py-2 ps-3 text-start", children: "#" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "py-2 text-start", children: "الصنف" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "py-2 text-start", children: "الكمية" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "py-2 text-start", children: "الوحدة" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "py-2 text-start", children: "سعر الوحدة" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "py-2 pe-3 text-start", children: "الإجمالي" })
+        ] }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("tbody", { children: data.items.map((item, index2) => /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-border last:border-0", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "py-2 ps-3 text-muted-foreground", children: index2 + 1 }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "py-2 font-medium text-foreground", children: item.product_name }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "tabular-nums py-2", children: Number(item.quantity).toLocaleString("ar-DZ") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "py-2", children: item.unit ?? "—" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "tabular-nums py-2", children: formatCurrency(item.unit_price) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "tabular-nums py-2 pe-3 font-medium", children: formatCurrency(item.line_total) })
+        ] }, item.id)) })
+      ] }) }),
+      data.notes && /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-4 text-sm text-muted-foreground", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium text-foreground", children: "ملاحظات: " }),
+        data.notes
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-6 flex justify-end", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "w-full max-w-xs space-y-1.5 rounded-md border border-border bg-muted/40 p-4 text-sm", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-muted-foreground", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t2("customers.previousBalance") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums", children: formatCurrency(data.previous_balance) })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-muted-foreground", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t2("customers.invoiceAmount") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums", children: formatCurrency(data.invoice_amount) })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-between border-t border-border pt-1.5 text-base font-bold text-foreground", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t2("customers.newBalance") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums", children: formatCurrency(data.new_balance) })
+        ] })
+      ] }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-16 grid grid-cols-2 gap-8 text-sm text-muted-foreground", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "border-t border-border pt-2 text-center", children: "توقيع المستلم" }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "border-t border-border pt-2 text-center", children: "ختم المؤسسة" }) })
+      ] })
+    ] }) })
   ] });
 }
 function ComingSoonRoute({ item }) {
