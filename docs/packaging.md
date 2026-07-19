@@ -132,16 +132,39 @@ anything — it silently kept the host macOS binary the whole time,
 which was the original bug.** Genuine cross-building only works when
 a matching prebuild happens to exist; it cannot be relied on.
 
-The reliable fix is: **build the Windows installer on Windows** — either
-a real Windows machine, or the `windows-latest` leg of
-`.github/workflows/build-desktop.yml` (added alongside this fix). There,
-`npm run dist:win` rebuilds `better-sqlite3` **natively** (same OS as the
-target, so node-gyp compiles it directly, no prebuild or cross-compiler
-needed) and always produces a working binary. Local `npm run dist:win` on
-this Mac remains available for exactly the cases where a prebuild does
-exist (older Electron versions, or once one is published for the current
-one) — `verify-native-binary.js` will tell you plainly if it didn't work,
-instead of shipping a broken installer.
+**Correction — building natively on Windows CI did not fix this by
+itself.** The `windows-latest` leg of `.github/workflows/build-desktop.yml`
+hit the exact same `"No prebuilt binaries found"` failure, because the gap
+isn't cross-compilation — it's a genuine version mismatch between the two
+pinned dependencies:
+
+- `desktop/package.json` pinned `electron@43.1.1`, whose Node-ABI is **148**
+  (`require('node-abi').getAbi('43.1.1', 'electron')`).
+- The locked `better-sqlite3@12.11.1` (root `package.json`) has never
+  published a prebuilt binary for ABI 148, on **any** platform — confirmed
+  by listing every asset in its `v12.11.1` GitHub release; the highest
+  Electron ABI it ships is 146. (A newer `v12.12.0` release does add ABI
+  148, including win32-x64, but as of this writing it isn't published to
+  the npm registry yet — `npm view better-sqlite3@12.12.0` 404s — so
+  bumping the semver range isn't currently an option.)
+
+So on **any** platform, native or cross-built, `prebuild-install` was
+guaranteed to fail to find a binary and fall through to `node-gyp`
+compiling from source — which is what actually broke, both locally and in
+CI.
+
+**Fix**: pin `desktop/package.json`'s `electron` devDependency to
+`^42.7.0` instead (ABI 146) — a version that `better-sqlite3@12.11.1` *has*
+a prebuilt binary for on every platform, including win32-x64. Verified
+locally: `npm run rebuild:native:win` now logs `installed prebuilt module:
+better-sqlite3` / `✔ Rebuild Complete` (previously: `No prebuilt binaries
+found`), and `verify-native-binary.js` confirms the resulting file is a
+genuine `PE32+ ... for MS Windows` binary. No source compile, no
+toolchain, no cross-compile question involved at all — the prebuilt
+binary is just downloaded. The desktop app itself only uses long-stable
+Electron APIs (`app`, `BrowserWindow`, `shell`, `contextBridge`), so the
+42.x pin has no functional impact. Revisit this pin once `better-sqlite3`
+publishes an npm release with ABI-148 prebuilds.
 
 ### 5. Icon
 
