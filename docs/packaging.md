@@ -195,6 +195,29 @@ since it never depends on shebang support or Windows-specific `.cmd`
 shims. Verified locally that both `rebuild:native:mac` and
 `rebuild:native:win` still work correctly after this change.
 
+#### Incident 3: `restore:native` failing in CI masked a successful build
+
+With Incidents 1 and 2 both fixed, a real `windows-latest` CI run got all
+the way through: native rebuild, `verify-native-binary.js`, and
+`electron-builder` all succeeded, producing a real
+`Spice ERP Setup 0.1.0.exe`. The job still failed, though — on the
+trailing `restore:native` step, which runs `npm rebuild better-sqlite3`
+against plain Node (not Electron) to undo the packaging rebuild's effect
+on the shared root `node_modules`, so a developer's own `npm run dev`
+(system Node) isn't left broken. In CI, that install hit yet another
+version gap (no `better-sqlite3` prebuild for the runner's Node 20.20.2)
+and fell to `node-gyp`, which then couldn't locate a Visual Studio install
+it recognized on the runner.
+
+The fix here isn't another version alignment — it's recognizing this step
+has no purpose in CI at all. A GitHub Actions runner is destroyed right
+after the job ends; there's no local dev backend running in it to restore
+ABI for. `desktop/scripts/restore-native.js` now checks `process.env.CI`
+(set automatically by GitHub Actions) and no-ops there, while still
+running the real restore on a developer's own machine. This was the last
+step in the chain — with it fixed, the CI-produced `.exe` is no longer
+silently discarded by a failed job.
+
 ### 5. Icon
 
 `desktop/build/icon.png` — a placeholder (flat brand-teal rounded square

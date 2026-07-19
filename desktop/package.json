@@ -14,7 +14,7 @@
     "rebuild:native:win": "node scripts/rebuild-native.js win32 x64",
     "verify:native:mac": "node scripts/verify-native-binary.js darwin",
     "verify:native:win": "node scripts/verify-native-binary.js win32",
-    "restore:native": "npm --prefix .. run rebuild:dev",
+    "restore:native": "node scripts/restore-native.js",
     "dist:mac": "npm run build && npm run rebuild:native:mac && npm run verify:native:mac && electron-builder --mac && npm run restore:native",
     "dist:win": "npm run build && npm run rebuild:native:win && npm run verify:native:win && electron-builder --win && npm run restore:native",
     "dist": "npm run dist:mac && npm run dist:win"
