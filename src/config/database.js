@@ -3,10 +3,11 @@ const Database = require('better-sqlite3');
 const path = require('path');
 const QUERIES = require('../models/queries');
 const fs = require('fs');
+const { DB_PATH } = require('./paths');
 
 class DatabaseManager {
     constructor() {
-        const dbPath = path.join(__dirname, '../data/invoices.db');
+        const dbPath = DB_PATH;
         this.dbPath = dbPath; // exposed for settingsService's backup/restore
 
         // Ensure data directory exists

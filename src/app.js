@@ -1,9 +1,29 @@
 // app.js
+const fs = require('fs');
 const path = require('path');
+const { UPLOADS_DIR, ENV_PATH } = require('./config/paths');
+
+// A packaged app's first run has no .env yet at ENV_PATH (userData) — write
+// the same placeholder template that lives at the repo root in dev, so
+// there's one discoverable, editable file for the Replicate token instead
+// of needing to reach into the (read-only) app bundle. Never overwrites an
+// existing file — this only seeds it once.
+if (!fs.existsSync(ENV_PATH)) {
+    fs.mkdirSync(path.dirname(ENV_PATH), { recursive: true });
+    fs.writeFileSync(
+        ENV_PATH,
+        '# Replicate API token — used for AI invoice-photo extraction (google/gemini-3.1-pro).\n' +
+        '# Get yours at https://replicate.com/account/api-tokens\n' +
+        'REPLICATE_API_TOKEN=\n'
+    );
+}
+
 // Explicit path — this process is spawned by Electron's main process with
 // no guarantee its cwd is the repo root, so dotenv's cwd-relative default
-// lookup can silently miss the .env file.
-require('dotenv').config({ path: path.join(__dirname, '../.env') });
+// lookup can silently miss the .env file. In a packaged app ENV_PATH points
+// into userData instead of next to the (read-only) app bundle — see
+// docs/packaging.md.
+require('dotenv').config({ path: ENV_PATH });
 const express = require('express');
 const cors = require('cors');
 
@@ -19,7 +39,7 @@ app.use(express.urlencoded({ extended: true }));
 // Uploaded invoice-attachment photos — private business documents, not
 // committed (see .gitignore). Reference/backup only, never read by
 // business logic.
-app.use('/uploads', express.static(path.join(__dirname, 'data/uploads')));
+app.use('/uploads', express.static(UPLOADS_DIR));
 
 // Routes
 app.use('/api/invoices', require('./routes/invoices'));

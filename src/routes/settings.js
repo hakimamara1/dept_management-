@@ -5,6 +5,7 @@ const path = require('path');
 const fs = require('fs');
 const multer = require('multer');
 const settingsService = require('../services/settingsService');
+const { UPLOADS_DIR } = require('../config/paths');
 
 // GET /api/settings/business-profile
 router.get('/business-profile', (req, res) => {
@@ -25,7 +26,7 @@ router.patch('/business-profile', (req, res) => {
 });
 
 // ── Logo upload ──
-const logoDir = path.join(__dirname, '../data/uploads/business-profile');
+const logoDir = path.join(UPLOADS_DIR, 'business-profile');
 fs.mkdirSync(logoDir, { recursive: true });
 const logoUpload = multer({
     storage: multer.diskStorage({
@@ -52,7 +53,7 @@ router.post('/business-profile/logo', logoUpload.single('logo'), (req, res) => {
 });
 
 // ── Backup / restore ──
-const restoreTmpDir = path.join(__dirname, '../data/uploads/tmp-restore');
+const restoreTmpDir = path.join(UPLOADS_DIR, 'tmp-restore');
 fs.mkdirSync(restoreTmpDir, { recursive: true });
 const restoreUpload = multer({
     storage: multer.diskStorage({

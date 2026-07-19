@@ -1,4 +1,7 @@
 {
+  "scripts": {
+    "rebuild:dev": "npm rebuild better-sqlite3"
+  },
   "dependencies": {
     "better-sqlite3": "^12.11.1",
     "cors": "^2.8.6",

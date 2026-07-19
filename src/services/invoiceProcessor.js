@@ -24,6 +24,7 @@
 const fs = require('fs');
 const path = require('path');
 const db = require('../config/database');
+const { UPLOADS_DIR } = require('../config/paths');
 const productMatcher = require('./productMatcher');
 const supplierMatcher = require('./supplierMatcher');
 const validationService = require('./validationService');
@@ -489,7 +490,7 @@ class InvoiceProcessor {
             const attachments = db.stmts.getInvoiceAttachments.all(invoiceId);
             for (const attachment of attachments) {
                 try {
-                    fs.unlinkSync(path.join(__dirname, '../data/uploads', attachment.file_path));
+                    fs.unlinkSync(path.join(UPLOADS_DIR, attachment.file_path));
                 } catch {
                     // DB row is the source of truth — a missing file shouldn't block deletion.
                 }

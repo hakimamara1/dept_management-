@@ -363,3 +363,114 @@ spec (ADR-014):
   against the live database was **not** tested end-to-end — doing so would
   swap out real working data outside a controlled test, so it's deferred
   until explicitly requested. Typecheck and build verified clean.
+
+## Phase 17 — Package into installable macOS/Windows builds (docs/packaging.md)
+
+- New `src/config/paths.js` centralizes every writable-data path
+  (database, uploads, `.env`) behind a single `APP_DATA_DIR` env var —
+  unset in dev (identical repo-relative paths as always), set to Electron's
+  `userData` directory in a packaged app. `config/database.js`, `app.js`,
+  `routes/invoices.js`, `routes/settings.js`, `services/invoiceProcessor.js`
+  all switched from computing their own `path.join(__dirname, ...)` to
+  importing from it.
+- `app.js` now seeds a placeholder `.env` (commented `REPLICATE_API_TOKEN=`
+  template, no real token) at `ENV_PATH` on first run if none exists yet.
+- `backend-process.ts`: packaged builds launch the backend via
+  `process.execPath` + `ELECTRON_RUN_AS_NODE=1` (Electron's own bundled
+  Node) instead of a system `node` install, resolving the entry point from
+  `process.resourcesPath` instead of a repo-relative path.
+- Added `electron-builder` + `@electron/rebuild`; `desktop/package.json`
+  gained a `build` config (`extraResources` bundles the root-level
+  `src/`/`node_modules`/`package.json` into `resources/backend/`, excluding
+  `src/data/` — a packaged app must never ship the developer's own dev
+  database) and `rebuild:native`/`dist`/`dist:mac`/`dist:win` scripts.
+  `electron-rebuild`'s own `--module-dir` flag proved unreliable at finding
+  a node_modules outside the invoking package's directory in the installed
+  version — worked around with a small `desktop/scripts/rebuild-native.js`
+  that runs it with the root as cwd instead of fighting the flag.
+- Placeholder icon (`desktop/build/icon.png`, generated programmatically —
+  a flat brand-teal rounded square with a plain monogram) — swap for real
+  artwork later, no other config changes needed.
+- Shipped **unsigned** (no Apple Developer/Windows code-signing certificate
+  assumed) and **without auto-update** for this first pass — both
+  explicitly confirmed trade-offs, not oversights.
+- **Verified end-to-end on macOS**: `npm run dist:mac` produced a working
+  `.dmg`/`.zip`. Launched the packaged app fresh, confirmed its backend
+  health check passes, confirmed `.env` and `data/invoices.db` are created
+  under `~/Library/Application Support/spice-erp-desktop` (**not** inside
+  the read-only app bundle) with a clean/empty schema, created a real
+  product through it, quit and relaunched, confirmed the product persisted.
+  Also confirmed the packaged `.app` still works after being moved out of
+  `dist/` (copied to the Desktop) — proper relocatable-bundle behavior.
+- One real mistake caught during this verification: my first attempt at
+  `paths.js` used a single root for both the data directory and `.env`,
+  but they were never actually siblings in dev (`.env` lives at the repo
+  root, `data/` lives inside `src/`) — dotenv silently looked in the wrong
+  place (`src/.env`) until this was caught by checking the dotenv startup
+  log line and fixed with two separate root calculations.
+- `npm run dist:win` produced a `Spice ERP Setup 0.1.0.exe` on the second
+  attempt (first hit a transient NSIS-tooling download timeout, unrelated
+  to the point below). **Correction — this installer was actually broken**;
+  see Phase 18, which found and fixed the real bug the packaging step was
+  silently hiding.
+
+## Phase 18 — Fix broken better-sqlite3 binary in the Windows installer
+
+Installing `Spice ERP Setup 0.1.0.exe` and running the backend manually
+surfaced the real bug: `better_sqlite3.node is not a valid Win32
+application` / `ERR_DLOPEN_FAILED` — the backend crashed before Express
+bound to port 3000, so the renderer showed "Unable to reach server."
+
+- **Root cause, traced in the actual code, not guessed**:
+  `desktop/scripts/rebuild-native.js` called `electron-rebuild` with no
+  `--platform`/`--arch` flags, so it always rebuilt `better-sqlite3` for
+  the **host** (this Mac → macOS/x86_64) — confirmed directly via
+  `file node_modules/better-sqlite3/build/Release/better_sqlite3.node` →
+  `Mach-O 64-bit bundle x86_64`. `desktop/package.json`'s `extraResources`
+  then copies that root `node_modules` **verbatim** into every packaged
+  target, mac and Windows alike — it's a plain file copy, not a rebuild.
+  electron-builder's own "installing native dependencies" pass (visible in
+  its build log) does not catch this either: traced `app-builder-lib`'s
+  `installOrRebuild` (`util/yarn.js`) to confirm its scope is `desktop/`'s
+  own `package.json` dependency tree — `better-sqlite3` is a **root-level**
+  dependency used by `src/`, so electron-builder never touches it.
+- **Attempted fix and what it revealed**: made `rebuild-native.js`
+  target-aware (`node scripts/rebuild-native.js <platform> <arch>`,
+  wired as `rebuild:native:mac`/`rebuild:native:win`), and added
+  `desktop/scripts/verify-native-binary.js` — reads the resulting
+  `.node` file's magic bytes and fails the build loudly if they don't
+  match the target platform, specifically so this bug class can't ship
+  silently again. Running the now-correct `npm run dist:win` on this Mac
+  immediately hit exactly that guard's purpose: forcing a genuine win32
+  target rebuild failed outright —
+  ```
+  prebuild-install warn install No prebuilt binaries found
+    (target=<electron-version> runtime=electron arch=x64 libc= platform=win32)
+  node-gyp does not support cross-compiling native modules from source.
+  ```
+  i.e. **cross-building Windows from macOS for this Electron version was
+  never actually possible** — the earlier "successful" Windows build had
+  simply kept the host macOS binary the whole time (the same bug,
+  invisible until installed and run on real Windows). The stale, broken
+  `Spice ERP Setup 0.1.0.exe` from the prior phase was deleted from
+  `desktop/dist/` so it can't be mistaken for a working build.
+- **Real fix**: build the Windows installer **on Windows**. Added
+  `.github/workflows/build-desktop.yml` — a `macos-latest` +
+  `windows-latest` matrix, each running its own platform's `npm run
+  dist:mac`/`dist:win` natively (no cross-compilation, no dependency on a
+  prebuilt binary existing for the exact Electron version), uploading the
+  resulting installers as build artifacts. This is now the recommended
+  release path; local `dist:win` on macOS remains available only for
+  cases where a matching prebuild does happen to exist, and will fail
+  loudly via `verify-native-binary.js` rather than silently ship a broken
+  `.exe` when it doesn't.
+- Also added `restore:native` (root `npm rebuild better-sqlite3`), run
+  automatically after every `dist:mac`/`dist:win`, since the rebuild step
+  mutates the same root `node_modules` the dev backend (system Node)
+  loads — without this, a packaging run would leave `npm run dev` broken
+  until manually rebuilt.
+- **Not yet verified on a real Windows machine** (none available in this
+  environment) — the fix is architecturally sound and the CI workflow
+  builds natively where the bug can't recur, but an actual install-and-launch
+  test on Windows hardware/VM, or a successful CI run, is the remaining
+  step to fully close this out.

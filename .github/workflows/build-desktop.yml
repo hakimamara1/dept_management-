@@ -1,0 +1,50 @@
+name: Build desktop installers
+
+# Cross-building the Windows installer from macOS works (better-sqlite3
+# ships prebuilt win32/x64 binaries) but depends on that prebuild existing
+# and on network access to fetch it — see docs/packaging.md for the bug
+# that caused. Building each installer on its own native OS removes that
+# fragility entirely: no cross-compilation, no prebuilt-binary dependency.
+on:
+  workflow_dispatch: {}
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: macos-latest
+            dist_script: dist:mac
+          - os: windows-latest
+            dist_script: dist:win
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install backend dependencies
+        run: npm install
+
+      - name: Install desktop dependencies
+        working-directory: desktop
+        run: npm install
+
+      - name: Build installer
+        working-directory: desktop
+        run: npm run ${{ matrix.dist_script }}
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: spice-erp-${{ matrix.os }}
+          path: |
+            desktop/dist/*.dmg
+            desktop/dist/*.zip
+            desktop/dist/*.exe
+            desktop/dist/*.blockmap
+          if-no-files-found: error

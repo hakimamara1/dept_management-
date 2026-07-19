@@ -7,6 +7,7 @@ const multer = require('multer');
 const invoiceProcessor = require('../services/invoiceProcessor');
 const aiExtractionService = require('../services/aiExtractionService');
 const db = require('../config/database');
+const { UPLOADS_DIR } = require('../config/paths');
 
 // ── Shared upload config — the photo-attachment routes below and the AI
 // extraction route further down both write into the same uploads dir.
@@ -14,7 +15,7 @@ const db = require('../config/database');
 // the invoice *after* the upload, so there's no id yet at upload time) —
 // falls back to 'new' in that case; the disk filename is just a label, the
 // real invoice_id link lives in the invoice_attachments row.
-const uploadsDir = path.join(__dirname, '../data/uploads/invoice-attachments');
+const uploadsDir = path.join(UPLOADS_DIR, 'invoice-attachments');
 fs.mkdirSync(uploadsDir, { recursive: true });
 
 const storage = multer.diskStorage({
@@ -112,7 +113,7 @@ router.delete('/:id/attachments/:attachmentId', (req, res) => {
         }
 
         try {
-            fs.unlinkSync(path.join(__dirname, '../data/uploads', attachment.file_path));
+            fs.unlinkSync(path.join(UPLOADS_DIR, attachment.file_path));
         } catch {
             // The DB row is the source of truth — a file already missing on
             // disk shouldn't block removing the record.
