@@ -32,18 +32,12 @@ try {
         stdio: 'inherit'
     });
 } catch (err) {
+    console.error(err.stack || err);
+
     if (targetPlatform !== process.platform) {
-        // node-gyp cannot cross-compile from source, and better-sqlite3 only
-        // has a binary for this exact target if its GitHub release happens to
-        // publish one for this Electron ABI — neither is guaranteed. See the
-        // "Incident" section in docs/packaging.md.
-        console.error(
-            `\nCross-building better-sqlite3 for ${targetPlatform}/${targetArch} from ` +
-            `${process.platform} failed (no prebuilt binary available and node-gyp can't ` +
-            `cross-compile from source). This target must be built on a real ` +
-            `${targetPlatform} machine or via .github/workflows/build-desktop.yml. ` +
-            `See docs/packaging.md.\n`
-        );
+        console.error(`
+Cross-building better-sqlite3 for ${targetPlatform}/${targetArch} failed...
+`);
     }
     process.exit(1);
 }
