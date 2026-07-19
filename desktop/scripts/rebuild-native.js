@@ -18,10 +18,18 @@ const [, , targetPlatform = process.platform, targetArch = process.arch] = proce
 
 const rootDir = path.join(__dirname, '../..');
 const electronVersion = require(path.join(__dirname, '../node_modules/electron/package.json')).version;
-const rebuildBin = path.join(__dirname, '../node_modules/.bin/electron-rebuild');
+// Invoke @electron/rebuild's actual entry point via `node`, not the .bin
+// shim path directly: on macOS/Linux, node_modules/.bin/electron-rebuild
+// is a symlink to a shebang script the OS knows how to exec, but Windows
+// has no shebang support — executing that same extensionless path there
+// throws ENOENT before electron-rebuild's own logic ever runs (proven via
+// a real GitHub Actions Windows run; see docs/packaging.md). Resolving
+// and running the JS entry point directly works identically everywhere.
+const rebuildEntry = path.join(__dirname, '../node_modules/@electron/rebuild/lib/cli.js');
 
 try {
-    execFileSync(rebuildBin, [
+    execFileSync(process.execPath, [
+        rebuildEntry,
         '-v', electronVersion,
         '-f',
         '-w', 'better-sqlite3',

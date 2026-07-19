@@ -166,6 +166,35 @@ Electron APIs (`app`, `BrowserWindow`, `shell`, `contextBridge`), so the
 42.x pin has no functional impact. Revisit this pin once `better-sqlite3`
 publishes an npm release with ABI-148 prebuilds.
 
+#### Incident 2: `electron-rebuild` ENOENT on the real Windows CI runner
+
+The ABI fix above was necessary but **not sufficient** — pushed and
+re-run on an actual `windows-latest` GitHub Actions runner, the build
+failed earlier than expected, before `electron-rebuild` ever got to run:
+
+```
+Error: spawnSync D:\a\...\desktop\node_modules\.bin\electron-rebuild ENOENT
+    at Object.<anonymous> (D:\a\...\desktop\scripts\rebuild-native.js:24:5)
+```
+
+Root cause: `rebuild-native.js` called `execFileSync` directly on
+`node_modules/.bin/electron-rebuild`. On macOS/Linux that path is a
+**symlink to a shebang script** (`@electron/rebuild/lib/cli.js`, starting
+with `#!/usr/bin/env node`) — the OS resolves the symlink and follows the
+shebang to run it under `node`. Windows has no shebang support at all;
+trying to directly execute that same extensionless file throws `ENOENT`
+before any of `electron-rebuild`'s own logic (prebuild-install vs.
+node-gyp) ever runs. This is an entirely different bug from Incident 1 —
+it would have blocked *any* target, ABI-matched or not.
+
+Fixed by resolving `@electron/rebuild`'s actual JS entry point (its
+`package.json` `bin` field: `lib/cli.js`) and invoking it as
+`execFileSync(process.execPath, [entryPath, ...flags])` instead of
+executing the `.bin` shim path — this runs identically on every platform
+since it never depends on shebang support or Windows-specific `.cmd`
+shims. Verified locally that both `rebuild:native:mac` and
+`rebuild:native:win` still work correctly after this change.
+
 ### 5. Icon
 
 `desktop/build/icon.png` — a placeholder (flat brand-teal rounded square
