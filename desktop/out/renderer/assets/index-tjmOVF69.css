@@ -913,10 +913,6 @@
     width: 100vw;
   }
 
-  .max-w-2xl {
-    max-width: var(--container-2xl);
-  }
-
   .max-w-3xl {
     max-width: var(--container-3xl);
   }
@@ -1212,10 +1208,6 @@
 
   .overflow-hidden {
     overflow: hidden;
-  }
-
-  .overflow-x-auto {
-    overflow-x: auto;
   }
 
   .overflow-y-auto {

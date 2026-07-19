@@ -8,7 +8,11 @@
     "dev": "electron-vite dev",
     "build": "electron-vite build",
     "preview": "electron-vite preview",
-    "typecheck": "tsc -b --noEmit"
+    "typecheck": "tsc -b --noEmit",
+    "rebuild:native": "node scripts/rebuild-native.js",
+    "dist:mac": "npm run build && npm run rebuild:native && electron-builder --mac",
+    "dist:win": "npm run build && npm run rebuild:native && electron-builder --win",
+    "dist": "npm run build && npm run rebuild:native && electron-builder --mac --win"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.4.0",
@@ -38,6 +42,7 @@
     "zustand": "^5.0.14"
   },
   "devDependencies": {
+    "@electron/rebuild": "^4.2.0",
     "@tailwindcss/vite": "^4.3.2",
     "@tanstack/react-query-devtools": "^5.101.2",
     "@types/node": "^22.14.0",
@@ -45,10 +50,40 @@
     "@types/react-dom": "^19.2.3",
     "@vitejs/plugin-react": "^5.2.0",
     "electron": "^43.1.1",
+    "electron-builder": "^26.15.3",
     "electron-vite": "^5.0.0",
     "tailwindcss": "^4.3.2",
     "tailwindcss-animate": "^1.0.7",
     "typescript": "^7.0.2",
     "vite": "^7.3.6"
+  },
+  "build": {
+    "appId": "com.spiceerp.desktop",
+    "productName": "Spice ERP",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "out/**/*"
+    ],
+    "extraResources": [
+      { "from": "../src", "to": "backend", "filter": ["**/*", "!data"] },
+      { "from": "../node_modules", "to": "backend/node_modules" },
+      { "from": "../package.json", "to": "backend/package.json" }
+    ],
+    "mac": {
+      "target": ["dmg", "zip"],
+      "category": "public.app-category.business",
+      "icon": "build/icon.png"
+    },
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
   }
 }
