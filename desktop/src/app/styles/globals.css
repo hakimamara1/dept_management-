@@ -39,6 +39,18 @@
   --input: #e4e2d9;
   --ring: #0f7a73;
   --radius: 0.5rem;
+
+  /* Categorical chart series — fixed hue order (never cycled/reassigned),
+     validated for CVD-safe adjacent contrast. Used by dashboard charts
+     (debt-by-supplier bar/pie, etc.) for identity, not by any UI chrome. */
+  --chart-1: #2a78d6;
+  --chart-2: #1baf7a;
+  --chart-3: #eda100;
+  --chart-4: #008300;
+  --chart-5: #4a3aa7;
+  --chart-6: #e34948;
+  --chart-7: #e87ba4;
+  --chart-8: #eb6834;
 }
 
 .dark {
@@ -65,6 +77,15 @@
   --border: #2a2d31;
   --input: #2a2d31;
   --ring: #2fbbaf;
+
+  --chart-1: #3987e5;
+  --chart-2: #199e70;
+  --chart-3: #c98500;
+  --chart-4: #008300;
+  --chart-5: #9085e9;
+  --chart-6: #e66767;
+  --chart-7: #d55181;
+  --chart-8: #d95926;
 }
 
 @theme inline {

@@ -564,3 +564,106 @@ export interface UpdateBusinessProfileInput {
   taxNumber?: string
   commercialRegister?: string
 }
+
+// ── Dashboard analytics ──────────────────────────────────────
+export type DashboardRange = 'today' | 'week' | 'month' | 'last_month' | '3months' | 'year' | 'custom'
+
+export interface KpiComparison {
+  value: number
+  previousValue: number
+  changePercent: number
+  direction: 'up' | 'down' | 'flat'
+}
+
+export interface DashboardKpis {
+  range: { startDate: string; endDate: string }
+  totalDebt: KpiComparison
+  totalPurchases: KpiComparison
+  purchasesThisPeriod: KpiComparison
+  paymentsThisPeriod: KpiComparison
+  totalSuppliers: number
+  suppliersWithOutstandingDebt: number
+  averageInvoiceValue: KpiComparison
+}
+
+export interface DebtEvolutionPoint {
+  date: string
+  totalDebt: number
+}
+
+export interface DebtEvolutionResponse {
+  granularity: 'day' | 'week' | 'month'
+  points: DebtEvolutionPoint[]
+}
+
+export interface DebtBySupplierEntry {
+  supplier: string
+  debt: number
+}
+
+export interface PurchasePeriodEntry {
+  period: string
+  invoiceCount: number
+  total: number
+}
+
+export interface LargestPurchaseInvoice {
+  id: number
+  invoice_number: string
+  invoice_date: string
+  invoice_amount: number
+  supplier: string
+}
+
+export interface PurchaseBySupplierEntry {
+  supplier: string
+  total: number
+  invoiceCount: number
+}
+
+export interface PurchaseAnalytics {
+  granularity: 'day' | 'month'
+  perPeriod: PurchasePeriodEntry[]
+  largestInvoices: LargestPurchaseInvoice[]
+  bySupplier: PurchaseBySupplierEntry[]
+  averageInvoiceAmount: number
+  totalInvoiceCount: number
+  totalAmount: number
+}
+
+export interface PriceChangeEntry {
+  product: string
+  supplier: string
+  oldPrice: number
+  newPrice: number
+  diff: number
+  percent: number
+  date: string
+  invoiceNumber: string
+}
+
+export interface PriceChangesResponse {
+  changes: PriceChangeEntry[]
+  summary: {
+    increasedCount: number
+    decreasedCount: number
+    avgIncreasePercent: number
+    avgDecreasePercent: number
+  }
+}
+
+export interface OutstandingDebtEntry {
+  supplier: string
+  amount: number
+  oldestBucket: string
+  priority: 'high' | 'medium' | 'low'
+}
+
+export type ActivityType = 'invoice_imported' | 'invoice_approved' | 'payment_recorded' | 'supplier_created' | 'price_changed'
+
+export interface ActivityEntry {
+  type: ActivityType
+  ts: string
+  label: string
+  detail: number | null
+}

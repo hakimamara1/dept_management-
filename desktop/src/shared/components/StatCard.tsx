@@ -2,6 +2,7 @@ import type { LucideIcon } from 'lucide-react'
 import { ArrowDown, ArrowUp } from 'lucide-react'
 import { Card, CardContent } from '@shared/components/ui/card'
 import { Skeleton } from '@shared/components/ui/skeleton'
+import { Tooltip, TooltipContent, TooltipTrigger } from '@shared/components/ui/tooltip'
 import { cn } from '@shared/lib/utils'
 
 interface StatCardDelta {
@@ -17,13 +18,14 @@ interface StatCardProps {
   value: string
   delta?: StatCardDelta
   loading?: boolean
+  tooltip?: string
 }
 
 /**
  * The one reusable "number that matters" primitive — every module's
  * dashboard-style summary reuses this instead of hand-rolling stat blocks.
  */
-export function StatCard({ icon: Icon, label, value, delta, loading }: StatCardProps) {
+export function StatCard({ icon: Icon, label, value, delta, loading, tooltip }: StatCardProps) {
   if (loading) {
     return (
       <Card>
@@ -47,7 +49,18 @@ export function StatCard({ icon: Icon, label, value, delta, loading }: StatCardP
           <Icon className="size-5" />
         </div>
         <div className="min-w-0">
-          <div className="text-xs text-muted-foreground">{label}</div>
+          {tooltip ? (
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <div className="w-fit cursor-default text-xs text-muted-foreground underline decoration-dotted underline-offset-2">
+                  {label}
+                </div>
+              </TooltipTrigger>
+              <TooltipContent>{tooltip}</TooltipContent>
+            </Tooltip>
+          ) : (
+            <div className="text-xs text-muted-foreground">{label}</div>
+          )}
           <div className="flex items-baseline gap-2">
             <div className="tabular-nums text-lg font-semibold text-foreground">{value}</div>
             {delta && delta.direction !== 'flat' && (

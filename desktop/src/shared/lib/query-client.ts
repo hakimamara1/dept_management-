@@ -20,8 +20,13 @@ export const queryClient = new QueryClient({
  */
 export const queryKeys = {
   dashboard: {
-    stats: ['dashboard', 'stats'] as const,
-    purchaseTrend: ['dashboard', 'purchase-trend'] as const
+    kpis: (range: string, from?: string, to?: string) => ['dashboard', 'kpis', range, from, to] as const,
+    debtEvolution: (range: string, from?: string, to?: string) => ['dashboard', 'debt-evolution', range, from, to] as const,
+    debtBySupplier: ['dashboard', 'debt-by-supplier'] as const,
+    purchases: (range: string, from?: string, to?: string) => ['dashboard', 'purchases', range, from, to] as const,
+    priceChanges: (range: string, from?: string, to?: string) => ['dashboard', 'price-changes', range, from, to] as const,
+    outstandingDebts: ['dashboard', 'outstanding-debts'] as const,
+    activity: ['dashboard', 'activity'] as const
   },
   products: {
     all: (query: string, sort: string) => ['products', 'all', query, sort] as const,
