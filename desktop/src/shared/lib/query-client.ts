@@ -24,6 +24,7 @@ export const queryKeys = {
     purchaseTrend: ['dashboard', 'purchase-trend'] as const
   },
   products: {
+    all: (query: string, sort: string) => ['products', 'all', query, sort] as const,
     search: (query: string) => ['products', 'search', query] as const,
     priceHistory: (productId: number) => ['products', 'price-history', productId] as const
   },

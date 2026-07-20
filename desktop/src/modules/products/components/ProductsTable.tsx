@@ -3,17 +3,19 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { LineChart, Pencil, Search } from 'lucide-react'
 import { Input } from '@shared/components/ui/input'
 import { Button } from '@shared/components/ui/button'
+import { Checkbox } from '@shared/components/ui/checkbox'
 import { DataTable } from '@shared/components/data-table/DataTable'
 import { DataTableColumnHeader } from '@shared/components/data-table/DataTableColumnHeader'
 import { EmptyState } from '@shared/components/EmptyState'
-import { formatCurrency } from '@shared/lib/format'
+import { formatCurrency, formatDate } from '@shared/lib/format'
 import { useI18n } from '@shared/lib/i18n'
 import { cn } from '@shared/lib/utils'
 import type { Product } from '@shared/types/api'
-import { useProductSearch } from '../hooks/useProductSearch'
+import { useProducts } from '../hooks/useProducts'
 import { PriceHistorySheet } from './PriceHistorySheet'
 import { EditSalePriceDialog } from './EditSalePriceDialog'
 import { EditProductDialog } from './EditProductDialog'
+import { MergeProductsDialog } from './MergeProductsDialog'
 
 const UNIT_LABELS: Record<string, string> = {
   piece: 'قطعة',
@@ -29,10 +31,31 @@ export function ProductsTable() {
   const [priceHistoryProduct, setPriceHistoryProduct] = useState<Product | null>(null)
   const [editPriceProduct, setEditPriceProduct] = useState<Product | null>(null)
   const [editProduct, setEditProduct] = useState<Product | null>(null)
+  const [selectedProducts, setSelectedProducts] = useState<Product[]>([])
+  const [mergeOpen, setMergeOpen] = useState(false)
+  const [tableKey, setTableKey] = useState(0)
 
-  const { data, isLoading, error } = useProductSearch(query)
+  const { data, isLoading, error } = useProducts(query, 'name')
 
   const columns: ColumnDef<Product, any>[] = [
+    {
+      id: 'select',
+      enableHiding: false,
+      header: ({ table }) => (
+        <Checkbox
+          checked={table.getIsAllPageRowsSelected()}
+          onCheckedChange={(v) => table.toggleAllPageRowsSelected(!!v)}
+          aria-label="تحديد الكل"
+        />
+      ),
+      cell: ({ row }) => (
+        <Checkbox
+          checked={row.getIsSelected()}
+          onCheckedChange={(v) => row.toggleSelected(!!v)}
+          aria-label="تحديد المنتج"
+        />
+      )
+    },
     {
       accessorKey: 'name',
       header: ({ column }) => <DataTableColumnHeader column={column} title="اسم المنتج" />,
@@ -78,6 +101,12 @@ export function ProductsTable() {
           </span>
         )
       }
+    },
+    {
+      accessorKey: 'created_at',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="تاريخ الإضافة" />,
+      meta: { exportLabel: 'تاريخ الإضافة' },
+      cell: ({ row }) => <span className="text-xs text-muted-foreground">{formatDate(row.original.created_at)}</span>
     },
     {
       accessorKey: 'average_cost',
@@ -131,21 +160,32 @@ export function ProductsTable() {
   return (
     <>
       <DataTable
+        key={tableKey}
         columns={columns}
         data={data ?? []}
-        isLoading={query.trim().length > 0 && isLoading}
+        isLoading={isLoading}
         exportFileName="products"
-        emptyTitle={query.trim() ? `لا نتائج لـ "${query}"` : t('products.searchPlaceholder')}
-        emptyDescription={query.trim() ? 'حاول بكلمات أخرى أو أضف المنتج يدوياً' : undefined}
+        enableRowSelection
+        getRowId={(product) => String(product.id)}
+        onRowSelectionChange={setSelectedProducts}
+        emptyTitle={query.trim() ? `لا نتائج لـ "${query}"` : 'لا توجد منتجات بعد'}
+        emptyDescription={query.trim() ? 'حاول بكلمات أخرى أو أضف المنتج يدوياً' : 'أضف أول منتج للبدء'}
         toolbar={
-          <div className="relative max-w-sm">
-            <Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-            <Input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder={t('products.searchPlaceholder')}
-              className="ps-9"
-            />
+          <div className="flex items-center gap-2">
+            <div className="relative max-w-sm flex-1">
+              <Search className="absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder={t('products.searchPlaceholder')}
+                className="ps-9"
+              />
+            </div>
+            {selectedProducts.length === 2 && (
+              <Button type="button" variant="outline" size="sm" onClick={() => setMergeOpen(true)}>
+                دمج المنتجين المحددين
+              </Button>
+            )}
           </div>
         }
       />
@@ -164,6 +204,16 @@ export function ProductsTable() {
       />
 
       <EditSalePriceDialog product={editPriceProduct} onOpenChange={(open) => !open && setEditPriceProduct(null)} />
+
+      <MergeProductsDialog
+        products={selectedProducts.length === 2 ? (selectedProducts as [Product, Product]) : null}
+        open={mergeOpen}
+        onOpenChange={setMergeOpen}
+        onMerged={() => {
+          setSelectedProducts([])
+          setTableKey((k) => k + 1)
+        }}
+      />
 
       <EditProductDialog product={editProduct} onOpenChange={(open) => !open && setEditProduct(null)} />
     </>

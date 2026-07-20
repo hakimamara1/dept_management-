@@ -10,13 +10,15 @@ import { ErrorState } from '@shared/components/ErrorState'
 import { formatCurrency, formatDate } from '@shared/lib/format'
 import { API_BASE_URL } from '@shared/lib/api-client'
 import { useI18n } from '@shared/lib/i18n'
+import { SupplierPicker } from '@shared/components/SupplierPicker'
 import { useInvoiceReview } from '../hooks/useInvoiceReview'
 import {
   useAddInvoiceAttachments,
   useApproveInvoice,
   useDeleteInvoice,
   useDeleteInvoiceAttachment,
-  useUpdateInvoiceNotes
+  useUpdateInvoiceNotes,
+  useUpdateInvoiceSupplier
 } from '../hooks/useInvoiceMutations'
 import { InvoiceItemsTable } from '../components/InvoiceItemsTable'
 
@@ -29,6 +31,7 @@ export function InvoiceReviewPage() {
   const { data, isLoading, error, refetch } = useInvoiceReview(invoiceId)
   const approveInvoice = useApproveInvoice(invoiceId)
   const updateNotes = useUpdateInvoiceNotes(invoiceId)
+  const updateSupplier = useUpdateInvoiceSupplier(invoiceId)
   const addAttachments = useAddInvoiceAttachments(invoiceId)
   const deleteAttachment = useDeleteInvoiceAttachment(invoiceId)
   const deleteInvoice = useDeleteInvoice()
@@ -96,9 +99,23 @@ export function InvoiceReviewPage() {
           </div>
           <div>
             <div className="text-xs text-muted-foreground">المورد</div>
-            <Link to={`/suppliers/${invoice.supplier_id}`} className="font-semibold text-primary hover:underline">
-              {invoice.supplier_name}
-            </Link>
+            {isPending ? (
+              <div className="mt-1 w-56">
+                <SupplierPicker
+                  value={invoice.supplier_id ? { id: invoice.supplier_id, name: invoice.supplier_name! } : null}
+                  onChange={(supplier) => supplier && updateSupplier.mutate(supplier.id)}
+                />
+                {!invoice.supplier_id && invoice.ocr_supplier_name && (
+                  <p className="mt-1 text-xs text-muted-foreground">
+                    النص المستخرج: {invoice.ocr_supplier_name}
+                  </p>
+                )}
+              </div>
+            ) : (
+              <Link to={`/suppliers/${invoice.supplier_id}`} className="font-semibold text-primary hover:underline">
+                {invoice.supplier_name}
+              </Link>
+            )}
           </div>
           <div>
             <div className="text-xs text-muted-foreground">التاريخ</div>

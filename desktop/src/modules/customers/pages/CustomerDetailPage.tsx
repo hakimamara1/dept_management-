@@ -20,6 +20,7 @@ import { useCustomerPayments } from '../hooks/useCustomerPayments'
 import { useCustomerStatement } from '../hooks/useCustomerStatement'
 import { CreateSalesInvoiceSheet } from '../components/CreateSalesInvoiceSheet'
 import { RecordCustomerPaymentDialog } from '../components/RecordCustomerPaymentDialog'
+import { AdjustCustomerBalanceDialog } from '../components/AdjustCustomerBalanceDialog'
 
 type SubTab = 'invoices' | 'payments' | 'statement'
 
@@ -107,6 +108,8 @@ export function CustomerDetailPage() {
       cell: ({ row }) =>
         row.original.entry_type === 'invoice' ? (
           <Badge variant="destructive">فاتورة</Badge>
+        ) : row.original.entry_type === 'adjustment' ? (
+          <Badge variant="warning">تسوية</Badge>
         ) : (
           <Badge variant="success">دفعة</Badge>
         )
@@ -158,6 +161,7 @@ export function CustomerDetailPage() {
         subtitle={data.phone ?? undefined}
         actions={
           <>
+            <AdjustCustomerBalanceDialog customerId={customerId} />
             <RecordCustomerPaymentDialog customerId={customerId} />
             <CreateSalesInvoiceSheet customerId={customerId} previousBalance={data.current_balance} />
           </>

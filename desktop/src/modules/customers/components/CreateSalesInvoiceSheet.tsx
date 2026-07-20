@@ -8,6 +8,10 @@ import { Textarea } from '@shared/components/ui/textarea'
 import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@shared/components/ui/sheet'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@shared/components/ui/form'
 import { ProductPicker } from '@shared/components/ProductPicker'
+// Deliberate cross-module import: creating a catalog product from here is an
+// explicit, opt-in action (not implied by free-text line items) — see
+// ProductPicker's onCreateNew and business-rules.md's Sales domain section.
+import { CreateProductDialog } from '@modules/products/components/CreateProductDialog'
 import { formatCurrency } from '@shared/lib/format'
 import { useI18n } from '@shared/lib/i18n'
 import { useCreateSalesInvoice } from '../hooks/useCustomerMutations'
@@ -21,6 +25,8 @@ export function CreateSalesInvoiceSheet({ customerId, previousBalance }: { custo
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const createInvoice = useCreateSalesInvoice(customerId)
+  const [quickCreateIndex, setQuickCreateIndex] = useState<number | null>(null)
+  const [quickCreateName, setQuickCreateName] = useState('')
 
   const form = useForm<CreateSalesInvoiceFormValues>({
     resolver: zodResolver(createSalesInvoiceSchema),
@@ -116,6 +122,10 @@ export function CreateSalesInvoiceSheet({ customerId, previousBalance }: { custo
                               onQueryChange={(text) => {
                                 nameField.onChange(text)
                                 form.setValue(`items.${index}.productId`, null, { shouldDirty: true })
+                              }}
+                              onCreateNew={(query) => {
+                                setQuickCreateIndex(index)
+                                setQuickCreateName(query)
                               }}
                               onChange={(product) => {
                                 if (!product) return
@@ -249,6 +259,28 @@ export function CreateSalesInvoiceSheet({ customerId, previousBalance }: { custo
           </form>
         </Form>
       </SheetContent>
+
+      <CreateProductDialog
+        open={quickCreateIndex !== null}
+        onOpenChange={(next) => !next && setQuickCreateIndex(null)}
+        defaultName={quickCreateName}
+        trigger={false}
+        onCreated={(product) => {
+          if (quickCreateIndex === null) return
+          form.setValue(`items.${quickCreateIndex}.productId`, product.id, { shouldDirty: true })
+          form.setValue(`items.${quickCreateIndex}.productName`, product.name, { shouldDirty: true })
+          if (product.unit) {
+            form.setValue(`items.${quickCreateIndex}.unit`, product.unit, { shouldDirty: true })
+          }
+          if (product.defaultSalePrice != null) {
+            form.setValue(`items.${quickCreateIndex}.unitPrice`, product.defaultSalePrice, {
+              shouldDirty: true,
+              shouldValidate: true
+            })
+          }
+          setQuickCreateIndex(null)
+        }}
+      />
     </Sheet>
   )
 }

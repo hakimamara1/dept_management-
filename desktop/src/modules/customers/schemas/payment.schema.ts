@@ -21,3 +21,15 @@ export const recordCustomerPaymentDefaults: RecordCustomerPaymentFormValues = {
   paymentMethod: 'cash',
   notes: ''
 }
+
+export const adjustCustomerBalanceSchema = z.object({
+  amount: z.number().refine((v) => v !== 0, 'قيمة التسوية لا يمكن أن تكون صفراً'),
+  reason: z.string().trim().min(1, 'سبب التسوية مطلوب').max(300)
+})
+
+export type AdjustCustomerBalanceFormValues = z.infer<typeof adjustCustomerBalanceSchema>
+
+export const adjustCustomerBalanceDefaults: AdjustCustomerBalanceFormValues = {
+  amount: 0,
+  reason: ''
+}

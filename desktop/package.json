@@ -73,12 +73,28 @@
       "out/**/*"
     ],
     "extraResources": [
-      { "from": "../src", "to": "backend", "filter": ["**/*", "!data"] },
-      { "from": "../node_modules", "to": "backend/node_modules" },
-      { "from": "../package.json", "to": "backend/package.json" }
+      {
+        "from": "../src",
+        "to": "backend",
+        "filter": [
+          "**/*",
+          "!data"
+        ]
+      },
+      {
+        "from": "../node_modules",
+        "to": "backend/node_modules"
+      },
+      {
+        "from": "../package.json",
+        "to": "backend/package.json"
+      }
     ],
     "mac": {
-      "target": ["dmg", "zip"],
+      "target": [
+        "dmg",
+        "zip"
+      ],
       "category": "public.app-category.business",
       "icon": "build/icon.png"
     },

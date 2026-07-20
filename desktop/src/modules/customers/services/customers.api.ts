@@ -1,5 +1,6 @@
 import { apiClient } from '@shared/lib/api-client'
 import type {
+  AdjustBalanceInput,
   Customer,
   CustomerPayment,
   CustomerReportsSummary,
@@ -30,5 +31,8 @@ export const customersApi = {
     apiClient.post<CustomerPayment>(`/api/customers/${customerId}/payments`, data),
 
   getStatement: (customerId: number) =>
-    apiClient.get<CustomerStatementEntry[]>(`/api/customers/${customerId}/statement`)
+    apiClient.get<CustomerStatementEntry[]>(`/api/customers/${customerId}/statement`),
+
+  adjustBalance: (customerId: number, data: AdjustBalanceInput) =>
+    apiClient.post(`/api/customers/${customerId}/adjust`, data)
 }

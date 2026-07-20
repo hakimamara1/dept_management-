@@ -3,6 +3,9 @@ import { Plus } from 'lucide-react'
 import { Button } from '@shared/components/ui/button'
 import { Input } from '@shared/components/ui/input'
 import { ProductPicker, type PickedProduct } from '@shared/components/ProductPicker'
+// Deliberate cross-module import: creating a catalog product from here is an
+// explicit, opt-in action — see ProductPicker's onCreateNew.
+import { CreateProductDialog } from '@modules/products/components/CreateProductDialog'
 import type { PurchaseOrderItem } from '@shared/types/api'
 import { useAddPurchaseOrderItem } from '../hooks/usePurchaseOrderMutations'
 import { PurchaseOrderItemRow } from './PurchaseOrderItemRow'
@@ -18,6 +21,8 @@ export function PurchaseOrderItemsTable({ orderId, items, readOnly }: PurchaseOr
   const [newProduct, setNewProduct] = useState<PickedProduct | null>(null)
   const [newQuantity, setNewQuantity] = useState<number | undefined>(1)
   const [newPrice, setNewPrice] = useState<number | undefined>(undefined)
+  const [quickCreateOpen, setQuickCreateOpen] = useState(false)
+  const [quickCreateName, setQuickCreateName] = useState('')
   const addItem = useAddPurchaseOrderItem(orderId)
 
   function handleAdd() {
@@ -54,7 +59,15 @@ export function PurchaseOrderItemsTable({ orderId, items, readOnly }: PurchaseOr
             {!readOnly && (
               <tr className="align-top">
                 <td className="min-w-48 px-1.5 py-2">
-                  <ProductPicker value={newProduct} onChange={setNewProduct} placeholder="إضافة صنف..." />
+                  <ProductPicker
+                    value={newProduct}
+                    onChange={setNewProduct}
+                    placeholder="إضافة صنف..."
+                    onCreateNew={(query) => {
+                      setQuickCreateName(query)
+                      setQuickCreateOpen(true)
+                    }}
+                  />
                 </td>
                 <td className="w-28 px-1.5 py-2">
                   <Input
@@ -94,6 +107,17 @@ export function PurchaseOrderItemsTable({ orderId, items, readOnly }: PurchaseOr
           </tbody>
         </table>
       </div>
+
+      <CreateProductDialog
+        open={quickCreateOpen}
+        onOpenChange={setQuickCreateOpen}
+        defaultName={quickCreateName}
+        trigger={false}
+        onCreated={(product) => {
+          setNewProduct(product)
+          setQuickCreateOpen(false)
+        }}
+      />
     </div>
   )
 }

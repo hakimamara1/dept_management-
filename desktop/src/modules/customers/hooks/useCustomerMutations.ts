@@ -4,7 +4,7 @@ import { queryKeys } from '@shared/lib/query-client'
 import { customersApi } from '../services/customers.api'
 import type { CreateCustomerFormValues } from '../schemas/customer.schema'
 import type { CreateSalesInvoiceFormValues } from '../schemas/salesInvoice.schema'
-import type { RecordCustomerPaymentFormValues } from '../schemas/payment.schema'
+import type { AdjustCustomerBalanceFormValues, RecordCustomerPaymentFormValues } from '../schemas/payment.schema'
 
 export function useCreateCustomer() {
   const queryClient = useQueryClient()
@@ -55,6 +55,24 @@ export function useRecordCustomerPayment(customerId: number) {
     },
     onError: (error: Error) => {
       toast.error('فشل تسجيل الدفعة', { description: error.message })
+    }
+  })
+}
+
+export function useAdjustCustomerBalance(customerId: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: AdjustCustomerBalanceFormValues) => customersApi.adjustBalance(customerId, data),
+    onSuccess: () => {
+      toast.success('تم تسوية الرصيد بنجاح')
+      queryClient.invalidateQueries({ queryKey: queryKeys.customers.detail(customerId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.customers.statement(customerId) })
+      queryClient.invalidateQueries({ queryKey: ['customers', 'list'] })
+      queryClient.invalidateQueries({ queryKey: queryKeys.customers.reports })
+    },
+    onError: (error: Error) => {
+      toast.error('فشل تسوية الرصيد', { description: error.message })
     }
   })
 }

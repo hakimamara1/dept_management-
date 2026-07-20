@@ -159,3 +159,19 @@ export function useUpdateInvoiceNotes(invoiceId: number) {
     }
   })
 }
+
+export function useUpdateInvoiceSupplier(invoiceId: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (supplierId: number) => invoicesApi.updateSupplier(invoiceId, supplierId),
+    onSuccess: () => {
+      toast.success('تم تحديد المورد')
+      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.review(invoiceId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.invoices.pending })
+    },
+    onError: (error: Error) => {
+      toast.error('فشل تحديد المورد', { description: error.message })
+    }
+  })
+}

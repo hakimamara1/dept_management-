@@ -16,11 +16,16 @@ import {
 } from '@shared/components/ui/dialog'
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@shared/components/ui/form'
 import { ProductPicker } from '@shared/components/ProductPicker'
+// Deliberate cross-module import: creating a catalog product from here is an
+// explicit, opt-in action — see ProductPicker's onCreateNew.
+import { CreateProductDialog } from '@modules/products/components/CreateProductDialog'
 import { useCreateExpirationBatch } from '../hooks/useExpirationMutations'
 import { createBatchDefaults, createBatchSchema, type CreateBatchFormValues } from '../schemas/batch.schema'
 
 export function CreateBatchDialog() {
   const [open, setOpen] = useState(false)
+  const [quickCreateOpen, setQuickCreateOpen] = useState(false)
+  const [quickCreateName, setQuickCreateName] = useState('')
   const createBatch = useCreateExpirationBatch()
 
   const form = useForm<CreateBatchFormValues>({
@@ -73,7 +78,14 @@ export function CreateBatchDialog() {
                 <FormItem>
                   <FormLabel>المنتج *</FormLabel>
                   <FormControl>
-                    <ProductPicker value={field.value} onChange={field.onChange} />
+                    <ProductPicker
+                      value={field.value}
+                      onChange={field.onChange}
+                      onCreateNew={(query) => {
+                        setQuickCreateName(query)
+                        setQuickCreateOpen(true)
+                      }}
+                    />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -199,6 +211,17 @@ export function CreateBatchDialog() {
           </form>
         </Form>
       </DialogContent>
+
+      <CreateProductDialog
+        open={quickCreateOpen}
+        onOpenChange={setQuickCreateOpen}
+        defaultName={quickCreateName}
+        trigger={false}
+        onCreated={(product) => {
+          form.setValue('product', product, { shouldValidate: true })
+          setQuickCreateOpen(false)
+        }}
+      />
     </Dialog>
   )
 }

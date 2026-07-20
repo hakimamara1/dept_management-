@@ -11,6 +11,9 @@ import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTr
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@shared/components/ui/form'
 import { ProductPicker } from '@shared/components/ProductPicker'
 import { SupplierPicker } from '@shared/components/SupplierPicker'
+// Deliberate cross-module import: creating a catalog product from here is an
+// explicit, opt-in action — see ProductPicker's onCreateNew.
+import { CreateProductDialog } from '@modules/products/components/CreateProductDialog'
 import { queryKeys } from '@shared/lib/query-client'
 import { useI18n } from '@shared/lib/i18n'
 import { useCreateManualInvoice } from '../hooks/useInvoiceMutations'
@@ -27,6 +30,8 @@ export function ManualInvoiceSheet() {
   const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [photos, setPhotos] = useState<File[]>([])
+  const [quickCreateIndex, setQuickCreateIndex] = useState<number | null>(null)
+  const [quickCreateName, setQuickCreateName] = useState('')
   const createInvoice = useCreateManualInvoice()
   const queryClient = useQueryClient()
 
@@ -254,6 +259,10 @@ export function ManualInvoiceSheet() {
                                   form.setValue(priceFieldName, lastCost, { shouldDirty: true, shouldValidate: true })
                                 }
                               }}
+                              onCreateNew={(query) => {
+                                setQuickCreateIndex(index)
+                                setQuickCreateName(query)
+                              }}
                             />
                           </FormControl>
                           <FormMessage />
@@ -330,6 +339,18 @@ export function ManualInvoiceSheet() {
           </form>
         </Form>
       </SheetContent>
+
+      <CreateProductDialog
+        open={quickCreateIndex !== null}
+        onOpenChange={(next) => !next && setQuickCreateIndex(null)}
+        defaultName={quickCreateName}
+        trigger={false}
+        onCreated={(product) => {
+          if (quickCreateIndex === null) return
+          form.setValue(`items.${quickCreateIndex}.product`, product, { shouldDirty: true, shouldValidate: true })
+          setQuickCreateIndex(null)
+        }}
+      />
     </Sheet>
   )
 }

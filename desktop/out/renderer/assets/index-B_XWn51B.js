@@ -15220,6 +15220,7 @@ const queryKeys = {
     purchaseTrend: ["dashboard", "purchase-trend"]
   },
   products: {
+    all: (query, sort) => ["products", "all", query, sort],
     search: (query) => ["products", "search", query],
     priceHistory: (productId) => ["products", "price-history", productId]
   },
@@ -15597,6 +15598,7 @@ const resources = {
       currentBalance: "الرصيد الحالي",
       newInvoice: "فاتورة جديدة",
       recordPayment: "تسجيل دفعة",
+      adjustBalance: "تسوية الرصيد",
       invoicesTab: "الفواتير",
       paymentsTab: "المدفوعات",
       statementTab: "كشف الحساب",
@@ -15688,6 +15690,7 @@ const resources = {
       currentBalance: "Solde actuel",
       newInvoice: "Nouvelle facture",
       recordPayment: "Enregistrer un paiement",
+      adjustBalance: "Ajuster le solde",
       invoicesTab: "Factures",
       paymentsTab: "Paiements",
       statementTab: "Relevé de compte",
@@ -15779,6 +15782,7 @@ const resources = {
       currentBalance: "Current balance",
       newInvoice: "New invoice",
       recordPayment: "Record payment",
+      adjustBalance: "Adjust balance",
       invoicesTab: "Invoices",
       paymentsTab: "Payments",
       statementTab: "Account statement",
@@ -33569,7 +33573,7 @@ function useDebouncedValue(value, delayMs = 300) {
   }, [value, delayMs]);
   return debounced;
 }
-function ProductPicker({ value, onChange, placeholder = "ابحث عن منتج...", disabled, onQueryChange }) {
+function ProductPicker({ value, onChange, placeholder = "ابحث عن منتج...", disabled, onQueryChange, onCreateNew }) {
   const [query, setQuery] = reactExports.useState(value?.name ?? "");
   const [open, setOpen] = reactExports.useState(false);
   const debouncedQuery = useDebouncedValue(query.trim(), 250);
@@ -33606,7 +33610,24 @@ function ProductPicker({ value, onChange, placeholder = "ابحث عن منتج.
     open && debouncedQuery.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-border bg-popover shadow-md", children: isFetching ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "px-3 py-2 text-xs text-muted-foreground", children: "جاري البحث..." }) : results.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-3 py-2 text-xs text-muted-foreground", children: [
       'لا نتائج لـ "',
       debouncedQuery,
-      '"'
+      '"',
+      onCreateNew && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        "button",
+        {
+          type: "button",
+          onMouseDown: (e) => {
+            e.preventDefault();
+            onCreateNew(debouncedQuery);
+            setOpen(false);
+          },
+          className: "mt-1 block font-medium text-primary hover:underline",
+          children: [
+            '+ إنشاء "',
+            debouncedQuery,
+            '" كمنتج جديد'
+          ]
+        }
+      )
     ] }) : results.map((product) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
       "button",
       {
@@ -40408,6 +40429,39 @@ const FormMessage = reactExports.forwardRef(
   }
 );
 FormMessage.displayName = "FormMessage";
+const productsApi = {
+  getAll: (query, sort) => {
+    const params = new URLSearchParams({ sort });
+    if (query) params.set("query", query);
+    return apiClient.get(`/api/products?${params.toString()}`);
+  },
+  search: (query) => apiClient.get(`/api/products/search?query=${encodeURIComponent(query)}`),
+  create: (data) => apiClient.post("/api/products", {
+    ...data,
+    barcode: data.barcode || null,
+    category: data.category || null,
+    defaultSalePrice: data.defaultSalePrice ?? null
+  }),
+  update: (productId, data) => apiClient.patch(`/api/products/${productId}`, data),
+  getPriceHistory: (productId) => apiClient.get(`/api/products/${productId}/price-history`),
+  updateSalePrice: (productId, defaultSalePrice) => apiClient.patch(`/api/products/${productId}/price`, { defaultSalePrice }),
+  merge: (keepId, mergeId) => apiClient.post("/api/products/merge", { keepId, mergeId })
+};
+function useCreateProduct() {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => productsApi.create(data),
+    onSuccess: (result, variables) => {
+      toast.success(`تم إضافة المنتج "${variables.name}" بنجاح`, {
+        description: `رقم المنتج: ${result.id}`
+      });
+      queryClient2.invalidateQueries({ queryKey: ["products", "search"] });
+    },
+    onError: (error) => {
+      toast.error("فشل إنشاء المنتج", { description: error.message });
+    }
+  });
+}
 const ZodISODateTime = /* @__PURE__ */ $constructor("ZodISODateTime", (inst, def) => {
   $ZodISODateTime.init(inst, def);
   ZodStringFormat.init(inst, def);
@@ -41255,6 +41309,160 @@ function superRefine(fn, params) {
 const ZodIssueCode = {
   custom: "custom"
 };
+const PRODUCT_UNITS = [
+  { value: "piece", label: "قطعة" },
+  { value: "kg", label: "كيلو" },
+  { value: "box", label: "علبة" },
+  { value: "liter", label: "لتر" },
+  { value: "g", label: "غرام" }
+];
+const productSchema = object$1({
+  name: string$1().trim().min(1, "اسم المنتج مطلوب").max(200, "الاسم طويل جداً"),
+  barcode: string$1().trim().max(64).optional().or(literal("")),
+  category: string$1().trim().max(100).optional().or(literal("")),
+  unit: _enum(["piece", "kg", "box", "liter", "g"]),
+  // Suggested selling price — separate from purchase cost, used to autofill
+  // wholesale sales-invoice line prices. Optional: many products won't have
+  // one set until someone in Sales needs it.
+  defaultSalePrice: number$3().min(0, "السعر لا يمكن أن يكون سالباً").nullable().optional()
+});
+const productFormDefaults = {
+  name: "",
+  barcode: "",
+  category: "",
+  unit: "piece",
+  defaultSalePrice: null
+};
+const editProductSchema = productSchema.omit({ defaultSalePrice: true });
+function editProductDefaults(product) {
+  return {
+    name: product.name,
+    barcode: product.barcode ?? "",
+    category: product.category ?? "",
+    unit: product.unit ?? "piece"
+  };
+}
+function CreateProductDialog({
+  open: controlledOpen,
+  onOpenChange: setControlledOpen,
+  defaultName,
+  onCreated,
+  trigger = true
+} = {}) {
+  const { t: t2 } = useI18n();
+  const [uncontrolledOpen, setUncontrolledOpen] = reactExports.useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = setControlledOpen ?? setUncontrolledOpen;
+  const createProduct = useCreateProduct();
+  const form = useForm({
+    resolver: u(productSchema),
+    defaultValues: productFormDefaults
+  });
+  reactExports.useEffect(() => {
+    if (open) form.reset({ ...productFormDefaults, name: defaultName ?? "" });
+  }, [open, defaultName, form]);
+  function onSubmit(values) {
+    createProduct.mutate(values, {
+      onSuccess: (result) => {
+        setOpen(false);
+        onCreated?.({ id: result.id, name: values.name, unit: values.unit, defaultSalePrice: values.defaultSalePrice });
+      }
+    });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Dialog, { open, onOpenChange: setOpen, children: [
+    trigger && /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTrigger, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { size: "sm", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { className: "size-4" }),
+      t2("products.addProduct")
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogContent, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: t2("products.addProduct") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: "سيتم إضافة المنتج إلى الكتالوج ليصبح متاحاً للمطابقة التلقائية." })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Form, { ...form, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: form.handleSubmit(onSubmit), className: "grid gap-4", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          FormField,
+          {
+            control: form.control,
+            name: "name",
+            render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "اسم المنتج *" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "مثال: زيت الكابتن 250ml", ...field }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
+            ] })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-4", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            FormField,
+            {
+              control: form.control,
+              name: "barcode",
+              render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "الباركود" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "اختياري", ...field }) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
+              ] })
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            FormField,
+            {
+              control: form.control,
+              name: "category",
+              render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "الفئة" }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "مثال: زيوت، توابل...", ...field }) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
+              ] })
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          FormField,
+          {
+            control: form.control,
+            name: "unit",
+            render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "الوحدة" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsxs(Select, { value: field.value, onValueChange: field.onChange, children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectTrigger, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, {}) }) }),
+                /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: PRODUCT_UNITS.map((u2) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: u2.value, children: u2.label }, u2.value)) })
+              ] }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
+            ] })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          FormField,
+          {
+            control: form.control,
+            name: "defaultSalePrice",
+            render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "سعر البيع المقترح" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                Input,
+                {
+                  type: "number",
+                  step: "0.01",
+                  min: "0",
+                  placeholder: "اختياري",
+                  value: field.value ?? "",
+                  onChange: (e) => field.onChange(e.target.value === "" ? null : e.target.valueAsNumber)
+                }
+              ) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
+            ] })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogFooter, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "ghost", onClick: () => setOpen(false), children: t2("common.cancel") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", disabled: createProduct.isPending || !form.formState.isDirty, children: createProduct.isPending ? t2("common.loading") : t2("common.save") })
+        ] })
+      ] }) })
+    ] })
+  ] });
+}
 const pickedRef$2 = object$1({ id: number$3(), name: string$1() });
 const baseBatchFields = {
   batchNumber: string$1().trim().min(1, "رقم الدفعة مطلوب").max(100),
@@ -41293,6 +41501,8 @@ const createBatchDefaults = {
 const editBatchSchema = object$1(baseBatchFields).superRefine(checkDates);
 function CreateBatchDialog() {
   const [open, setOpen] = reactExports.useState(false);
+  const [quickCreateOpen, setQuickCreateOpen] = reactExports.useState(false);
+  const [quickCreateName, setQuickCreateName] = reactExports.useState("");
   const createBatch = useCreateExpirationBatch();
   const form = useForm({
     resolver: u(createBatchSchema),
@@ -41334,7 +41544,17 @@ function CreateBatchDialog() {
             name: "product",
             render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
               /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "المنتج *" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(ProductPicker, { value: field.value, onChange: field.onChange }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                ProductPicker,
+                {
+                  value: field.value,
+                  onChange: field.onChange,
+                  onCreateNew: (query) => {
+                    setQuickCreateName(query);
+                    setQuickCreateOpen(true);
+                  }
+                }
+              ) }),
               /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
             ] })
           }
@@ -41444,7 +41664,20 @@ function CreateBatchDialog() {
           /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", disabled: createBatch.isPending, children: createBatch.isPending ? "جاري الحفظ..." : "حفظ" })
         ] })
       ] }) })
-    ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      CreateProductDialog,
+      {
+        open: quickCreateOpen,
+        onOpenChange: setQuickCreateOpen,
+        defaultName: quickCreateName,
+        trigger: false,
+        onCreated: (product) => {
+          form.setValue("product", product, { shouldValidate: true });
+          setQuickCreateOpen(false);
+        }
+      }
+    )
   ] });
 }
 const badgeVariants = cva(
@@ -64809,24 +65042,284 @@ function DashboardPage() {
     ] })
   ] });
 }
-const productsApi = {
-  search: (query) => apiClient.get(`/api/products/search?query=${encodeURIComponent(query)}`),
-  create: (data) => apiClient.post("/api/products", {
-    ...data,
-    barcode: data.barcode || null,
-    category: data.category || null,
-    defaultSalePrice: data.defaultSalePrice ?? null
-  }),
-  update: (productId, data) => apiClient.patch(`/api/products/${productId}`, data),
-  getPriceHistory: (productId) => apiClient.get(`/api/products/${productId}/price-history`),
-  updateSalePrice: (productId, defaultSalePrice) => apiClient.patch(`/api/products/${productId}/price`, { defaultSalePrice })
-};
-function useProductSearch(rawQuery) {
+var CHECKBOX_NAME = "Checkbox";
+var [createCheckboxContext] = createContextScope(CHECKBOX_NAME);
+var [CheckboxProviderImpl, useCheckboxContext] = createCheckboxContext(CHECKBOX_NAME);
+function CheckboxProvider(props) {
+  const {
+    __scopeCheckbox,
+    checked: checkedProp,
+    children,
+    defaultChecked,
+    disabled,
+    form,
+    name,
+    onCheckedChange,
+    required: required2,
+    value = "on",
+    // @ts-expect-error
+    internal_do_not_use_render
+  } = props;
+  const [checked, setChecked] = useControllableState({
+    prop: checkedProp,
+    defaultProp: defaultChecked ?? false,
+    onChange: onCheckedChange,
+    caller: CHECKBOX_NAME
+  });
+  const [control, setControl] = reactExports.useState(null);
+  const [bubbleInput, setBubbleInput] = reactExports.useState(null);
+  const hasConsumerStoppedPropagationRef = reactExports.useRef(false);
+  const isFormControl = control ? !!form || !!control.closest("form") : (
+    // We set this to true by default so that events bubble to forms without JS (SSR)
+    true
+  );
+  const context = {
+    checked,
+    disabled,
+    setChecked,
+    control,
+    setControl,
+    name,
+    form,
+    value,
+    hasConsumerStoppedPropagationRef,
+    required: required2,
+    defaultChecked: isIndeterminate(defaultChecked) ? false : defaultChecked,
+    isFormControl,
+    bubbleInput,
+    setBubbleInput
+  };
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(
+    CheckboxProviderImpl,
+    {
+      scope: __scopeCheckbox,
+      ...context,
+      children: isFunction(internal_do_not_use_render) ? internal_do_not_use_render(context) : children
+    }
+  );
+}
+var TRIGGER_NAME = "CheckboxTrigger";
+var CheckboxTrigger = reactExports.forwardRef(
+  ({ __scopeCheckbox, onKeyDown, onClick, ...checkboxProps }, forwardedRef) => {
+    const {
+      control,
+      value,
+      disabled,
+      checked,
+      required: required2,
+      setControl,
+      setChecked,
+      hasConsumerStoppedPropagationRef,
+      isFormControl,
+      bubbleInput
+    } = useCheckboxContext(TRIGGER_NAME, __scopeCheckbox);
+    const composedRefs = useComposedRefs(forwardedRef, setControl);
+    const initialCheckedStateRef = reactExports.useRef(checked);
+    reactExports.useEffect(() => {
+      const form = control?.form;
+      if (form) {
+        const reset = () => setChecked(initialCheckedStateRef.current);
+        form.addEventListener("reset", reset);
+        return () => form.removeEventListener("reset", reset);
+      }
+    }, [control, setChecked]);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Primitive.button,
+      {
+        type: "button",
+        role: "checkbox",
+        "aria-checked": isIndeterminate(checked) ? "mixed" : checked,
+        "aria-required": required2,
+        "data-state": getState(checked),
+        "data-disabled": disabled ? "" : void 0,
+        disabled,
+        value,
+        ...checkboxProps,
+        ref: composedRefs,
+        onKeyDown: composeEventHandlers$1(onKeyDown, (event) => {
+          if (event.key === "Enter") event.preventDefault();
+        }),
+        onClick: composeEventHandlers$1(onClick, (event) => {
+          setChecked((prevChecked) => isIndeterminate(prevChecked) ? true : !prevChecked);
+          if (bubbleInput && isFormControl) {
+            hasConsumerStoppedPropagationRef.current = event.isPropagationStopped();
+            if (!hasConsumerStoppedPropagationRef.current) event.stopPropagation();
+          }
+        })
+      }
+    );
+  }
+);
+CheckboxTrigger.displayName = TRIGGER_NAME;
+var Checkbox$1 = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const {
+      __scopeCheckbox,
+      name,
+      checked,
+      defaultChecked,
+      required: required2,
+      disabled,
+      value,
+      onCheckedChange,
+      form,
+      ...checkboxProps
+    } = props;
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      CheckboxProvider,
+      {
+        __scopeCheckbox,
+        checked,
+        defaultChecked,
+        disabled,
+        required: required2,
+        onCheckedChange,
+        name,
+        form,
+        value,
+        internal_do_not_use_render: ({ isFormControl }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            CheckboxTrigger,
+            {
+              ...checkboxProps,
+              ref: forwardedRef,
+              __scopeCheckbox
+            }
+          ),
+          isFormControl && /* @__PURE__ */ jsxRuntimeExports.jsx(
+            CheckboxBubbleInput,
+            {
+              __scopeCheckbox
+            }
+          )
+        ] })
+      }
+    );
+  }
+);
+Checkbox$1.displayName = CHECKBOX_NAME;
+var INDICATOR_NAME = "CheckboxIndicator";
+var CheckboxIndicator = reactExports.forwardRef(
+  (props, forwardedRef) => {
+    const { __scopeCheckbox, forceMount, ...indicatorProps } = props;
+    const context = useCheckboxContext(INDICATOR_NAME, __scopeCheckbox);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Presence,
+      {
+        present: forceMount || isIndeterminate(context.checked) || context.checked === true,
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Primitive.span,
+          {
+            "data-state": getState(context.checked),
+            "data-disabled": context.disabled ? "" : void 0,
+            ...indicatorProps,
+            ref: forwardedRef,
+            style: { pointerEvents: "none", ...props.style }
+          }
+        )
+      }
+    );
+  }
+);
+CheckboxIndicator.displayName = INDICATOR_NAME;
+var BUBBLE_INPUT_NAME = "CheckboxBubbleInput";
+var CheckboxBubbleInput = reactExports.forwardRef(
+  ({ __scopeCheckbox, ...props }, forwardedRef) => {
+    const {
+      control,
+      hasConsumerStoppedPropagationRef,
+      checked,
+      defaultChecked,
+      required: required2,
+      disabled,
+      name,
+      value,
+      form,
+      bubbleInput,
+      setBubbleInput
+    } = useCheckboxContext(BUBBLE_INPUT_NAME, __scopeCheckbox);
+    const composedRefs = useComposedRefs(forwardedRef, setBubbleInput);
+    const prevChecked = usePrevious(checked);
+    const controlSize = useSize(control);
+    reactExports.useEffect(() => {
+      const input = bubbleInput;
+      if (!input) return;
+      const inputProto = window.HTMLInputElement.prototype;
+      const descriptor = Object.getOwnPropertyDescriptor(
+        inputProto,
+        "checked"
+      );
+      const setChecked = descriptor.set;
+      const bubbles = !hasConsumerStoppedPropagationRef.current;
+      if (prevChecked !== checked && setChecked) {
+        const event = new Event("click", { bubbles });
+        input.indeterminate = isIndeterminate(checked);
+        setChecked.call(input, isIndeterminate(checked) ? false : checked);
+        input.dispatchEvent(event);
+      }
+    }, [bubbleInput, prevChecked, checked, hasConsumerStoppedPropagationRef]);
+    const defaultCheckedRef = reactExports.useRef(isIndeterminate(checked) ? false : checked);
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Primitive.input,
+      {
+        type: "checkbox",
+        "aria-hidden": true,
+        defaultChecked: defaultChecked ?? defaultCheckedRef.current,
+        required: required2,
+        disabled,
+        name,
+        value,
+        form,
+        ...props,
+        tabIndex: -1,
+        ref: composedRefs,
+        style: {
+          ...props.style,
+          ...controlSize,
+          position: "absolute",
+          pointerEvents: "none",
+          opacity: 0,
+          margin: 0,
+          // We transform because the input is absolutely positioned but we have
+          // rendered it **after** the button. This pulls it back to sit on top
+          // of the button.
+          transform: "translateX(-100%)"
+        }
+      }
+    );
+  }
+);
+CheckboxBubbleInput.displayName = BUBBLE_INPUT_NAME;
+function isFunction(value) {
+  return typeof value === "function";
+}
+function isIndeterminate(checked) {
+  return checked === "indeterminate";
+}
+function getState(checked) {
+  return isIndeterminate(checked) ? "indeterminate" : checked ? "checked" : "unchecked";
+}
+const Checkbox = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+  Checkbox$1,
+  {
+    ref,
+    className: cn$1(
+      "peer size-4 shrink-0 rounded-sm border border-input shadow-xs",
+      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+      "disabled:cursor-not-allowed disabled:opacity-50",
+      "data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary",
+      className
+    ),
+    ...props,
+    children: /* @__PURE__ */ jsxRuntimeExports.jsx(CheckboxIndicator, { className: "flex items-center justify-center text-current", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { className: "size-3.5" }) })
+  }
+));
+Checkbox.displayName = Checkbox$1.displayName;
+function useProducts(rawQuery, sort) {
   const query = useDebouncedValue(rawQuery.trim(), 300);
   return useQuery({
-    queryKey: queryKeys.products.search(query),
-    queryFn: () => productsApi.search(query),
-    enabled: query.length > 0
+    queryKey: queryKeys.products.all(query, sort),
+    queryFn: () => productsApi.getAll(query, sort)
   });
 }
 const Sheet = Dialog$1;
@@ -65098,39 +65591,6 @@ function useUpdateProduct() {
     }
   });
 }
-const PRODUCT_UNITS = [
-  { value: "piece", label: "قطعة" },
-  { value: "kg", label: "كيلو" },
-  { value: "box", label: "علبة" },
-  { value: "liter", label: "لتر" },
-  { value: "g", label: "غرام" }
-];
-const productSchema = object$1({
-  name: string$1().trim().min(1, "اسم المنتج مطلوب").max(200, "الاسم طويل جداً"),
-  barcode: string$1().trim().max(64).optional().or(literal("")),
-  category: string$1().trim().max(100).optional().or(literal("")),
-  unit: _enum(["piece", "kg", "box", "liter", "g"]),
-  // Suggested selling price — separate from purchase cost, used to autofill
-  // wholesale sales-invoice line prices. Optional: many products won't have
-  // one set until someone in Sales needs it.
-  defaultSalePrice: number$3().min(0, "السعر لا يمكن أن يكون سالباً").nullable().optional()
-});
-const productFormDefaults = {
-  name: "",
-  barcode: "",
-  category: "",
-  unit: "piece",
-  defaultSalePrice: null
-};
-const editProductSchema = productSchema.omit({ defaultSalePrice: true });
-function editProductDefaults(product) {
-  return {
-    name: product.name,
-    barcode: product.barcode ?? "",
-    category: product.category ?? "",
-    unit: product.unit ?? "piece"
-  };
-}
 function EditProductDialog({ product, onOpenChange }) {
   const { t: t2 } = useI18n();
   const updateProduct = useUpdateProduct();
@@ -65214,6 +65674,82 @@ function EditProductDialog({ product, onOpenChange }) {
     ] }) })
   ] }) });
 }
+function useMergeProducts() {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: ({ keepId, mergeId }) => productsApi.merge(keepId, mergeId),
+    onSuccess: () => {
+      toast.success("تم دمج المنتجين");
+      queryClient2.invalidateQueries({ queryKey: ["products"] });
+    },
+    onError: (error) => {
+      toast.error("فشل دمج المنتجين", { description: error.message });
+    }
+  });
+}
+function MergeProductsDialog({ products, open, onOpenChange, onMerged }) {
+  const [keepId, setKeepId] = reactExports.useState(null);
+  const mergeProducts = useMergeProducts();
+  reactExports.useEffect(() => {
+    if (products) setKeepId(products[0].id);
+  }, [products]);
+  if (!products) return null;
+  const [a2, b] = products;
+  const mergeAway = keepId === a2.id ? b : a2;
+  function handleConfirm() {
+    if (keepId == null) return;
+    mergeProducts.mutate(
+      { keepId, mergeId: mergeAway.id },
+      { onSuccess: () => {
+        onOpenChange(false);
+        onMerged();
+      } }
+    );
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Dialog, { open, onOpenChange, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogContent, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: "دمج منتجين مكررين" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: "اختر المنتج الذي سيبقى — سيتم نقل كل تاريخ الشراء والمخزون إليه وحذف الآخر نهائياً." })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "grid grid-cols-2 gap-3", children: [a2, b].map((product) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "button",
+      {
+        type: "button",
+        onClick: () => setKeepId(product.id),
+        className: cn$1(
+          "rounded-lg border p-3 text-start transition-colors",
+          keepId === product.id ? "border-primary bg-primary/5" : "border-border hover:bg-muted/50"
+        ),
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "font-semibold", children: product.name }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-1 text-xs text-muted-foreground", children: [
+            product.category ?? "—",
+            " · ",
+            product.unit ?? "—"
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-2 text-xs", children: keepId === product.id ? /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium text-primary", children: "سيبقى هذا المنتج" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-destructive", children: "سيُحذف هذا المنتج" }) })
+        ]
+      },
+      product.id
+    )) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-2 rounded-lg bg-warning/10 p-3 text-xs text-warning", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(TriangleAlert, { className: "mt-0.5 size-4 shrink-0" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+        "سيتم نقل كل حركات المخزون وفواتير الشراء والأسماء البديلة الخاصة بـ «",
+        mergeAway.name,
+        "» إلى «",
+        keepId === a2.id ? a2.name : b.name,
+        "»، ثم حذف «",
+        mergeAway.name,
+        "» نهائياً. لا يمكن التراجع عن هذا الإجراء."
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogFooter, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "ghost", onClick: () => onOpenChange(false), children: "إلغاء" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "destructive", onClick: handleConfirm, disabled: mergeProducts.isPending, children: mergeProducts.isPending ? "جاري الدمج..." : "تأكيد الدمج" })
+    ] })
+  ] }) });
+}
 const UNIT_LABELS = {
   piece: "قطعة",
   kg: "كيلو",
@@ -65227,8 +65763,31 @@ function ProductsTable() {
   const [priceHistoryProduct, setPriceHistoryProduct] = reactExports.useState(null);
   const [editPriceProduct, setEditPriceProduct] = reactExports.useState(null);
   const [editProduct, setEditProduct] = reactExports.useState(null);
-  const { data, isLoading, error } = useProductSearch(query);
+  const [selectedProducts, setSelectedProducts] = reactExports.useState([]);
+  const [mergeOpen, setMergeOpen] = reactExports.useState(false);
+  const [tableKey, setTableKey] = reactExports.useState(0);
+  const { data, isLoading, error } = useProducts(query, "name");
   const columns2 = [
+    {
+      id: "select",
+      enableHiding: false,
+      header: ({ table }) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Checkbox,
+        {
+          checked: table.getIsAllPageRowsSelected(),
+          onCheckedChange: (v) => table.toggleAllPageRowsSelected(!!v),
+          "aria-label": "تحديد الكل"
+        }
+      ),
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Checkbox,
+        {
+          checked: row.getIsSelected(),
+          onCheckedChange: (v) => row.toggleSelected(!!v),
+          "aria-label": "تحديد المنتج"
+        }
+      )
+    },
     {
       accessorKey: "name",
       header: ({ column }) => /* @__PURE__ */ jsxRuntimeExports.jsx(DataTableColumnHeader, { column, title: "اسم المنتج" }),
@@ -65272,6 +65831,12 @@ function ProductsTable() {
         const stock = Number(row.original.current_stock ?? 0);
         return /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: cn$1("tabular-nums font-semibold", stock > 0 ? "text-success" : "text-destructive"), children: stock.toLocaleString("ar-DZ") });
       }
+    },
+    {
+      accessorKey: "created_at",
+      header: ({ column }) => /* @__PURE__ */ jsxRuntimeExports.jsx(DataTableColumnHeader, { column, title: "تاريخ الإضافة" }),
+      meta: { exportLabel: "تاريخ الإضافة" },
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: formatDate(row.original.created_at) })
     },
     {
       accessorKey: "average_cost",
@@ -65321,23 +65886,30 @@ function ProductsTable() {
       {
         columns: columns2,
         data: data ?? [],
-        isLoading: query.trim().length > 0 && isLoading,
+        isLoading,
         exportFileName: "products",
-        emptyTitle: query.trim() ? `لا نتائج لـ "${query}"` : t2("products.searchPlaceholder"),
-        emptyDescription: query.trim() ? "حاول بكلمات أخرى أو أضف المنتج يدوياً" : void 0,
-        toolbar: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative max-w-sm", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Search, { className: "absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            Input,
-            {
-              value: query,
-              onChange: (e) => setQuery(e.target.value),
-              placeholder: t2("products.searchPlaceholder"),
-              className: "ps-9"
-            }
-          )
+        enableRowSelection: true,
+        getRowId: (product) => String(product.id),
+        onRowSelectionChange: setSelectedProducts,
+        emptyTitle: query.trim() ? `لا نتائج لـ "${query}"` : "لا توجد منتجات بعد",
+        emptyDescription: query.trim() ? "حاول بكلمات أخرى أو أضف المنتج يدوياً" : "أضف أول منتج للبدء",
+        toolbar: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative max-w-sm flex-1", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Search, { className: "absolute start-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(
+              Input,
+              {
+                value: query,
+                onChange: (e) => setQuery(e.target.value),
+                placeholder: t2("products.searchPlaceholder"),
+                className: "ps-9"
+              }
+            )
+          ] }),
+          selectedProducts.length === 2 && /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "outline", size: "sm", onClick: () => setMergeOpen(true), children: "دمج المنتجين المحددين" })
         ] })
-      }
+      },
+      tableKey
     ),
     error && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mt-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(EmptyState, { icon: Search, title: "فشل البحث", description: error.message }) }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -65350,134 +65922,19 @@ function ProductsTable() {
       }
     ),
     /* @__PURE__ */ jsxRuntimeExports.jsx(EditSalePriceDialog, { product: editPriceProduct, onOpenChange: (open) => !open && setEditPriceProduct(null) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx(EditProductDialog, { product: editProduct, onOpenChange: (open) => !open && setEditProduct(null) })
-  ] });
-}
-function useCreateProduct() {
-  const queryClient2 = useQueryClient();
-  return useMutation({
-    mutationFn: (data) => productsApi.create(data),
-    onSuccess: (result, variables) => {
-      toast.success(`تم إضافة المنتج "${variables.name}" بنجاح`, {
-        description: `رقم المنتج: ${result.id}`
-      });
-      queryClient2.invalidateQueries({ queryKey: ["products", "search"] });
-    },
-    onError: (error) => {
-      toast.error("فشل إنشاء المنتج", { description: error.message });
-    }
-  });
-}
-function CreateProductDialog() {
-  const { t: t2 } = useI18n();
-  const [open, setOpen] = reactExports.useState(false);
-  const createProduct = useCreateProduct();
-  const form = useForm({
-    resolver: u(productSchema),
-    defaultValues: productFormDefaults
-  });
-  reactExports.useEffect(() => {
-    if (open) form.reset(productFormDefaults);
-  }, [open, form]);
-  function onSubmit(values) {
-    createProduct.mutate(values, {
-      onSuccess: () => {
-        setOpen(false);
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      MergeProductsDialog,
+      {
+        products: selectedProducts.length === 2 ? selectedProducts : null,
+        open: mergeOpen,
+        onOpenChange: setMergeOpen,
+        onMerged: () => {
+          setSelectedProducts([]);
+          setTableKey((k) => k + 1);
+        }
       }
-    });
-  }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Dialog, { open, onOpenChange: setOpen, children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTrigger, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { size: "sm", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { className: "size-4" }),
-      t2("products.addProduct")
-    ] }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogContent, { children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: t2("products.addProduct") }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: "سيتم إضافة المنتج إلى الكتالوج ليصبح متاحاً للمطابقة التلقائية." })
-      ] }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Form, { ...form, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: form.handleSubmit(onSubmit), className: "grid gap-4", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          FormField,
-          {
-            control: form.control,
-            name: "name",
-            render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "اسم المنتج *" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "مثال: زيت الكابتن 250ml", ...field }) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
-            ] })
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-4", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            FormField,
-            {
-              control: form.control,
-              name: "barcode",
-              render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "الباركود" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "اختياري", ...field }) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
-              ] })
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            FormField,
-            {
-              control: form.control,
-              name: "category",
-              render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "الفئة" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "مثال: زيوت، توابل...", ...field }) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
-              ] })
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          FormField,
-          {
-            control: form.control,
-            name: "unit",
-            render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "الوحدة" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsxs(Select, { value: field.value, onValueChange: field.onChange, children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectTrigger, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(SelectValue, {}) }) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(SelectContent, { children: PRODUCT_UNITS.map((u2) => /* @__PURE__ */ jsxRuntimeExports.jsx(SelectItem, { value: u2.value, children: u2.label }, u2.value)) })
-              ] }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
-            ] })
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          FormField,
-          {
-            control: form.control,
-            name: "defaultSalePrice",
-            render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "سعر البيع المقترح" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-                Input,
-                {
-                  type: "number",
-                  step: "0.01",
-                  min: "0",
-                  placeholder: "اختياري",
-                  value: field.value ?? "",
-                  onChange: (e) => field.onChange(e.target.value === "" ? null : e.target.valueAsNumber)
-                }
-              ) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
-            ] })
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogFooter, { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "ghost", onClick: () => setOpen(false), children: t2("common.cancel") }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", disabled: createProduct.isPending || !form.formState.isDirty, children: createProduct.isPending ? t2("common.loading") : t2("common.save") })
-        ] })
-      ] }) })
-    ] })
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(EditProductDialog, { product: editProduct, onOpenChange: (open) => !open && setEditProduct(null) })
   ] });
 }
 function ProductsPage() {
@@ -66118,6 +66575,7 @@ const invoicesApi = {
   addItem: (invoiceId, data) => apiClient.post(`/api/invoices/${invoiceId}/items`, data),
   deleteItem: (invoiceId, itemId) => apiClient.delete(`/api/invoices/${invoiceId}/items/${itemId}`),
   updateNotes: (invoiceId, notes) => apiClient.patch(`/api/invoices/${invoiceId}/notes`, { notes }),
+  updateSupplier: (invoiceId, supplierId) => apiClient.patch(`/api/invoices/${invoiceId}/supplier`, { supplierId }),
   // Whole-invoice delete — for one created by mistake. Pending Review only.
   deleteInvoice: (invoiceId) => apiClient.delete(`/api/invoices/${invoiceId}`)
 };
@@ -66265,6 +66723,20 @@ function useUpdateInvoiceNotes(invoiceId) {
     }
   });
 }
+function useUpdateInvoiceSupplier(invoiceId) {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: (supplierId) => invoicesApi.updateSupplier(invoiceId, supplierId),
+    onSuccess: () => {
+      toast.success("تم تحديد المورد");
+      queryClient2.invalidateQueries({ queryKey: queryKeys.invoices.review(invoiceId) });
+      queryClient2.invalidateQueries({ queryKey: queryKeys.invoices.pending });
+    },
+    onError: (error) => {
+      toast.error("فشل تحديد المورد", { description: error.message });
+    }
+  });
+}
 function ExtractInvoiceDialog() {
   const { t: t2 } = useI18n();
   const [open, setOpen] = reactExports.useState(false);
@@ -66408,6 +66880,8 @@ function ManualInvoiceSheet() {
   const { t: t2 } = useI18n();
   const [open, setOpen] = reactExports.useState(false);
   const [photos, setPhotos] = reactExports.useState([]);
+  const [quickCreateIndex, setQuickCreateIndex] = reactExports.useState(null);
+  const [quickCreateName, setQuickCreateName] = reactExports.useState("");
   const createInvoice = useCreateManualInvoice();
   const queryClient2 = useQueryClient();
   const form = useForm({
@@ -66618,6 +67092,10 @@ function ManualInvoiceSheet() {
                       if (product && lastCost != null && !currentPrice) {
                         form.setValue(priceFieldName, lastCost, { shouldDirty: true, shouldValidate: true });
                       }
+                    },
+                    onCreateNew: (query) => {
+                      setQuickCreateIndex(index2);
+                      setQuickCreateName(query);
                     }
                   }
                 ) }),
@@ -66685,7 +67163,21 @@ function ManualInvoiceSheet() {
           /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", disabled: createInvoice.isPending || uploadPhotos.isPending, children: createInvoice.isPending || uploadPhotos.isPending ? "جاري الحفظ..." : "حفظ" })
         ] })
       ] }) })
-    ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      CreateProductDialog,
+      {
+        open: quickCreateIndex !== null,
+        onOpenChange: (next) => !next && setQuickCreateIndex(null),
+        defaultName: quickCreateName,
+        trigger: false,
+        onCreated: (product) => {
+          if (quickCreateIndex === null) return;
+          form.setValue(`items.${quickCreateIndex}.product`, product, { shouldDirty: true, shouldValidate: true });
+          setQuickCreateIndex(null);
+        }
+      }
+    )
   ] });
 }
 function InvoicesPage() {
@@ -66837,279 +67329,6 @@ function useInvoiceReview(id) {
     queryFn: () => invoicesApi.getReview(id)
   });
 }
-var CHECKBOX_NAME = "Checkbox";
-var [createCheckboxContext] = createContextScope(CHECKBOX_NAME);
-var [CheckboxProviderImpl, useCheckboxContext] = createCheckboxContext(CHECKBOX_NAME);
-function CheckboxProvider(props) {
-  const {
-    __scopeCheckbox,
-    checked: checkedProp,
-    children,
-    defaultChecked,
-    disabled,
-    form,
-    name,
-    onCheckedChange,
-    required: required2,
-    value = "on",
-    // @ts-expect-error
-    internal_do_not_use_render
-  } = props;
-  const [checked, setChecked] = useControllableState({
-    prop: checkedProp,
-    defaultProp: defaultChecked ?? false,
-    onChange: onCheckedChange,
-    caller: CHECKBOX_NAME
-  });
-  const [control, setControl] = reactExports.useState(null);
-  const [bubbleInput, setBubbleInput] = reactExports.useState(null);
-  const hasConsumerStoppedPropagationRef = reactExports.useRef(false);
-  const isFormControl = control ? !!form || !!control.closest("form") : (
-    // We set this to true by default so that events bubble to forms without JS (SSR)
-    true
-  );
-  const context = {
-    checked,
-    disabled,
-    setChecked,
-    control,
-    setControl,
-    name,
-    form,
-    value,
-    hasConsumerStoppedPropagationRef,
-    required: required2,
-    defaultChecked: isIndeterminate(defaultChecked) ? false : defaultChecked,
-    isFormControl,
-    bubbleInput,
-    setBubbleInput
-  };
-  return /* @__PURE__ */ jsxRuntimeExports.jsx(
-    CheckboxProviderImpl,
-    {
-      scope: __scopeCheckbox,
-      ...context,
-      children: isFunction(internal_do_not_use_render) ? internal_do_not_use_render(context) : children
-    }
-  );
-}
-var TRIGGER_NAME = "CheckboxTrigger";
-var CheckboxTrigger = reactExports.forwardRef(
-  ({ __scopeCheckbox, onKeyDown, onClick, ...checkboxProps }, forwardedRef) => {
-    const {
-      control,
-      value,
-      disabled,
-      checked,
-      required: required2,
-      setControl,
-      setChecked,
-      hasConsumerStoppedPropagationRef,
-      isFormControl,
-      bubbleInput
-    } = useCheckboxContext(TRIGGER_NAME, __scopeCheckbox);
-    const composedRefs = useComposedRefs(forwardedRef, setControl);
-    const initialCheckedStateRef = reactExports.useRef(checked);
-    reactExports.useEffect(() => {
-      const form = control?.form;
-      if (form) {
-        const reset = () => setChecked(initialCheckedStateRef.current);
-        form.addEventListener("reset", reset);
-        return () => form.removeEventListener("reset", reset);
-      }
-    }, [control, setChecked]);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Primitive.button,
-      {
-        type: "button",
-        role: "checkbox",
-        "aria-checked": isIndeterminate(checked) ? "mixed" : checked,
-        "aria-required": required2,
-        "data-state": getState(checked),
-        "data-disabled": disabled ? "" : void 0,
-        disabled,
-        value,
-        ...checkboxProps,
-        ref: composedRefs,
-        onKeyDown: composeEventHandlers$1(onKeyDown, (event) => {
-          if (event.key === "Enter") event.preventDefault();
-        }),
-        onClick: composeEventHandlers$1(onClick, (event) => {
-          setChecked((prevChecked) => isIndeterminate(prevChecked) ? true : !prevChecked);
-          if (bubbleInput && isFormControl) {
-            hasConsumerStoppedPropagationRef.current = event.isPropagationStopped();
-            if (!hasConsumerStoppedPropagationRef.current) event.stopPropagation();
-          }
-        })
-      }
-    );
-  }
-);
-CheckboxTrigger.displayName = TRIGGER_NAME;
-var Checkbox$1 = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const {
-      __scopeCheckbox,
-      name,
-      checked,
-      defaultChecked,
-      required: required2,
-      disabled,
-      value,
-      onCheckedChange,
-      form,
-      ...checkboxProps
-    } = props;
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      CheckboxProvider,
-      {
-        __scopeCheckbox,
-        checked,
-        defaultChecked,
-        disabled,
-        required: required2,
-        onCheckedChange,
-        name,
-        form,
-        value,
-        internal_do_not_use_render: ({ isFormControl }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            CheckboxTrigger,
-            {
-              ...checkboxProps,
-              ref: forwardedRef,
-              __scopeCheckbox
-            }
-          ),
-          isFormControl && /* @__PURE__ */ jsxRuntimeExports.jsx(
-            CheckboxBubbleInput,
-            {
-              __scopeCheckbox
-            }
-          )
-        ] })
-      }
-    );
-  }
-);
-Checkbox$1.displayName = CHECKBOX_NAME;
-var INDICATOR_NAME = "CheckboxIndicator";
-var CheckboxIndicator = reactExports.forwardRef(
-  (props, forwardedRef) => {
-    const { __scopeCheckbox, forceMount, ...indicatorProps } = props;
-    const context = useCheckboxContext(INDICATOR_NAME, __scopeCheckbox);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Presence,
-      {
-        present: forceMount || isIndeterminate(context.checked) || context.checked === true,
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Primitive.span,
-          {
-            "data-state": getState(context.checked),
-            "data-disabled": context.disabled ? "" : void 0,
-            ...indicatorProps,
-            ref: forwardedRef,
-            style: { pointerEvents: "none", ...props.style }
-          }
-        )
-      }
-    );
-  }
-);
-CheckboxIndicator.displayName = INDICATOR_NAME;
-var BUBBLE_INPUT_NAME = "CheckboxBubbleInput";
-var CheckboxBubbleInput = reactExports.forwardRef(
-  ({ __scopeCheckbox, ...props }, forwardedRef) => {
-    const {
-      control,
-      hasConsumerStoppedPropagationRef,
-      checked,
-      defaultChecked,
-      required: required2,
-      disabled,
-      name,
-      value,
-      form,
-      bubbleInput,
-      setBubbleInput
-    } = useCheckboxContext(BUBBLE_INPUT_NAME, __scopeCheckbox);
-    const composedRefs = useComposedRefs(forwardedRef, setBubbleInput);
-    const prevChecked = usePrevious(checked);
-    const controlSize = useSize(control);
-    reactExports.useEffect(() => {
-      const input = bubbleInput;
-      if (!input) return;
-      const inputProto = window.HTMLInputElement.prototype;
-      const descriptor = Object.getOwnPropertyDescriptor(
-        inputProto,
-        "checked"
-      );
-      const setChecked = descriptor.set;
-      const bubbles = !hasConsumerStoppedPropagationRef.current;
-      if (prevChecked !== checked && setChecked) {
-        const event = new Event("click", { bubbles });
-        input.indeterminate = isIndeterminate(checked);
-        setChecked.call(input, isIndeterminate(checked) ? false : checked);
-        input.dispatchEvent(event);
-      }
-    }, [bubbleInput, prevChecked, checked, hasConsumerStoppedPropagationRef]);
-    const defaultCheckedRef = reactExports.useRef(isIndeterminate(checked) ? false : checked);
-    return /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Primitive.input,
-      {
-        type: "checkbox",
-        "aria-hidden": true,
-        defaultChecked: defaultChecked ?? defaultCheckedRef.current,
-        required: required2,
-        disabled,
-        name,
-        value,
-        form,
-        ...props,
-        tabIndex: -1,
-        ref: composedRefs,
-        style: {
-          ...props.style,
-          ...controlSize,
-          position: "absolute",
-          pointerEvents: "none",
-          opacity: 0,
-          margin: 0,
-          // We transform because the input is absolutely positioned but we have
-          // rendered it **after** the button. This pulls it back to sit on top
-          // of the button.
-          transform: "translateX(-100%)"
-        }
-      }
-    );
-  }
-);
-CheckboxBubbleInput.displayName = BUBBLE_INPUT_NAME;
-function isFunction(value) {
-  return typeof value === "function";
-}
-function isIndeterminate(checked) {
-  return checked === "indeterminate";
-}
-function getState(checked) {
-  return isIndeterminate(checked) ? "indeterminate" : checked ? "checked" : "unchecked";
-}
-const Checkbox = reactExports.forwardRef(({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx(
-  Checkbox$1,
-  {
-    ref,
-    className: cn$1(
-      "peer size-4 shrink-0 rounded-sm border border-input shadow-xs",
-      "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-      "disabled:cursor-not-allowed disabled:opacity-50",
-      "data-[state=checked]:bg-primary data-[state=checked]:text-primary-foreground data-[state=checked]:border-primary",
-      className
-    ),
-    ...props,
-    children: /* @__PURE__ */ jsxRuntimeExports.jsx(CheckboxIndicator, { className: "flex items-center justify-center text-current", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { className: "size-3.5" }) })
-  }
-));
-Checkbox.displayName = Checkbox$1.displayName;
 const UNIT_OPTIONS = [
   { value: "piece", label: "قطعة" },
   { value: "kg", label: "كيلو" },
@@ -67331,6 +67550,7 @@ function InvoiceReviewPage() {
   const { data, isLoading, error, refetch } = useInvoiceReview(invoiceId);
   const approveInvoice = useApproveInvoice(invoiceId);
   const updateNotes = useUpdateInvoiceNotes(invoiceId);
+  const updateSupplier = useUpdateInvoiceSupplier(invoiceId);
   const addAttachments = useAddInvoiceAttachments(invoiceId);
   const deleteAttachment = useDeleteInvoiceAttachment(invoiceId);
   const deleteInvoice = useDeleteInvoice();
@@ -67384,7 +67604,19 @@ function InvoiceReviewPage() {
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "المورد" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(Link, { to: `/suppliers/${invoice.supplier_id}`, className: "font-semibold text-primary hover:underline", children: invoice.supplier_name })
+        isPending ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mt-1 w-56", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            SupplierPicker,
+            {
+              value: invoice.supplier_id ? { id: invoice.supplier_id, name: invoice.supplier_name } : null,
+              onChange: (supplier) => supplier && updateSupplier.mutate(supplier.id)
+            }
+          ),
+          !invoice.supplier_id && invoice.ocr_supplier_name && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "mt-1 text-xs text-muted-foreground", children: [
+            "النص المستخرج: ",
+            invoice.ocr_supplier_name
+          ] })
+        ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Link, { to: `/suppliers/${invoice.supplier_id}`, className: "font-semibold text-primary hover:underline", children: invoice.supplier_name })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: "التاريخ" }),
@@ -67861,6 +68093,8 @@ const createPurchaseOrderDefaults = {
 function CreatePOSheet() {
   const { t: t2 } = useI18n();
   const [open, setOpen] = reactExports.useState(false);
+  const [quickCreateIndex, setQuickCreateIndex] = reactExports.useState(null);
+  const [quickCreateName, setQuickCreateName] = reactExports.useState("");
   const createOrder = useCreatePurchaseOrder();
   const form = useForm({
     resolver: u(createPurchaseOrderSchema),
@@ -67983,6 +68217,10 @@ function CreatePOSheet() {
                       if (product && lastCost != null && (currentPrice == null || Number.isNaN(currentPrice))) {
                         form.setValue(priceFieldName, lastCost, { shouldDirty: true, shouldValidate: true });
                       }
+                    },
+                    onCreateNew: (query) => {
+                      setQuickCreateIndex(index2);
+                      setQuickCreateName(query);
                     }
                   }
                 ) }),
@@ -68051,7 +68289,21 @@ function CreatePOSheet() {
           /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", disabled: createOrder.isPending, children: createOrder.isPending ? t2("common.loading") : t2("common.create") })
         ] })
       ] }) })
-    ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      CreateProductDialog,
+      {
+        open: quickCreateIndex !== null,
+        onOpenChange: (next) => !next && setQuickCreateIndex(null),
+        defaultName: quickCreateName,
+        trigger: false,
+        onCreated: (product) => {
+          if (quickCreateIndex === null) return;
+          form.setValue(`items.${quickCreateIndex}.product`, product, { shouldDirty: true, shouldValidate: true });
+          setQuickCreateIndex(null);
+        }
+      }
+    )
   ] });
 }
 const STATUS_BADGE$1 = {
@@ -68132,6 +68384,8 @@ function PurchaseOrdersPage() {
 function PurchaseOrderItemRow({ orderId, item, readOnly, canDelete }) {
   const [quantity, setQuantity] = reactExports.useState(item.quantity);
   const [expectedUnitPrice, setExpectedUnitPrice] = reactExports.useState(item.expected_unit_price ?? void 0);
+  const [quickCreateOpen, setQuickCreateOpen] = reactExports.useState(false);
+  const [quickCreateName, setQuickCreateName] = reactExports.useState("");
   const updateItem = useUpdatePurchaseOrderItem(orderId);
   const deleteItem = useDeletePurchaseOrderItem(orderId);
   const total = Number(quantity || 0) * Number(expectedUnitPrice || 0);
@@ -68156,52 +68410,79 @@ function PurchaseOrderItemRow({ orderId, item, readOnly, canDelete }) {
       /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "px-3 py-2.5 align-middle tabular-nums font-semibold", children: formatCurrency(Number(item.quantity) * Number(item.expected_unit_price ?? 0)) })
     ] });
   }
-  return /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-border last:border-0 align-top", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "min-w-48 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ProductPicker, { value: { id: item.product_id, name: item.product_name, unit: item.unit }, onChange: handleProductChange }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-28 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Input,
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-border last:border-0 align-top", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "min-w-48 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        ProductPicker,
+        {
+          value: { id: item.product_id, name: item.product_name, unit: item.unit },
+          onChange: handleProductChange,
+          onCreateNew: (query) => {
+            setQuickCreateName(query);
+            setQuickCreateOpen(true);
+          }
+        }
+      ) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-28 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Input,
+        {
+          type: "number",
+          step: "0.01",
+          min: "0",
+          value: quantity,
+          onChange: (e) => setQuantity(e.target.valueAsNumber),
+          onBlur: saveFields,
+          className: "h-8 text-xs"
+        }
+      ) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-28 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Input,
+        {
+          type: "number",
+          step: "0.01",
+          min: "0",
+          value: expectedUnitPrice ?? "",
+          onChange: (e) => setExpectedUnitPrice(e.target.value === "" ? void 0 : e.target.valueAsNumber),
+          onBlur: saveFields,
+          className: "h-8 text-xs"
+        }
+      ) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-28 px-1.5 py-2 tabular-nums text-sm font-semibold", children: formatCurrency(total) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-12 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Button,
+        {
+          type: "button",
+          size: "icon",
+          variant: "ghost",
+          className: "size-7",
+          title: "حذف الصنف",
+          disabled: !canDelete || deleteItem.isPending,
+          onClick: () => deleteItem.mutate(item.id),
+          children: /* @__PURE__ */ jsxRuntimeExports.jsx(Trash2, { className: "size-3.5 text-destructive" })
+        }
+      ) })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      CreateProductDialog,
       {
-        type: "number",
-        step: "0.01",
-        min: "0",
-        value: quantity,
-        onChange: (e) => setQuantity(e.target.valueAsNumber),
-        onBlur: saveFields,
-        className: "h-8 text-xs"
+        open: quickCreateOpen,
+        onOpenChange: setQuickCreateOpen,
+        defaultName: quickCreateName,
+        trigger: false,
+        onCreated: (product) => {
+          handleProductChange(product);
+          setQuickCreateOpen(false);
+        }
       }
-    ) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-28 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Input,
-      {
-        type: "number",
-        step: "0.01",
-        min: "0",
-        value: expectedUnitPrice ?? "",
-        onChange: (e) => setExpectedUnitPrice(e.target.value === "" ? void 0 : e.target.valueAsNumber),
-        onBlur: saveFields,
-        className: "h-8 text-xs"
-      }
-    ) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-28 px-1.5 py-2 tabular-nums text-sm font-semibold", children: formatCurrency(total) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-12 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-      Button,
-      {
-        type: "button",
-        size: "icon",
-        variant: "ghost",
-        className: "size-7",
-        title: "حذف الصنف",
-        disabled: !canDelete || deleteItem.isPending,
-        onClick: () => deleteItem.mutate(item.id),
-        children: /* @__PURE__ */ jsxRuntimeExports.jsx(Trash2, { className: "size-3.5 text-destructive" })
-      }
-    ) })
+    )
   ] });
 }
 function PurchaseOrderItemsTable({ orderId, items, readOnly }) {
   const [newProduct, setNewProduct] = reactExports.useState(null);
   const [newQuantity, setNewQuantity] = reactExports.useState(1);
   const [newPrice, setNewPrice] = reactExports.useState(void 0);
+  const [quickCreateOpen, setQuickCreateOpen] = reactExports.useState(false);
+  const [quickCreateName, setQuickCreateName] = reactExports.useState("");
   const addItem = useAddPurchaseOrderItem(orderId);
   function handleAdd() {
     if (!newProduct || !newQuantity) return;
@@ -68216,56 +68497,82 @@ function PurchaseOrderItemsTable({ orderId, items, readOnly }) {
       }
     );
   }
-  return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "space-y-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "overflow-auto rounded-lg border border-border", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("table", { className: "w-full text-sm", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx("thead", { className: "bg-muted/40", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-border", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium", children: "المنتج" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium", children: "الكمية" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium", children: "السعر المتوقع" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium", children: "الإجمالي المتوقع" }),
-      !readOnly && /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium" })
-    ] }) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsxs("tbody", { children: [
-      items.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsx(PurchaseOrderItemRow, { orderId, item, readOnly, canDelete: items.length > 1 }, item.id)),
-      !readOnly && /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "align-top", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "min-w-48 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ProductPicker, { value: newProduct, onChange: setNewProduct, placeholder: "إضافة صنف..." }) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-28 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Input,
-          {
-            type: "number",
-            step: "0.01",
-            min: "0",
-            value: newQuantity ?? "",
-            onChange: (e) => setNewQuantity(e.target.value === "" ? void 0 : e.target.valueAsNumber),
-            className: "h-8 text-xs"
-          }
-        ) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-28 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Input,
-          {
-            type: "number",
-            step: "0.01",
-            min: "0",
-            value: newPrice ?? "",
-            onChange: (e) => setNewPrice(e.target.value === "" ? void 0 : e.target.valueAsNumber),
-            className: "h-8 text-xs"
-          }
-        ) }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-28 px-1.5 py-2" }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-12 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
-          Button,
-          {
-            type: "button",
-            size: "icon",
-            variant: "ghost",
-            className: "size-7",
-            disabled: !newProduct || !newQuantity || addItem.isPending,
-            onClick: handleAdd,
-            children: /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { className: "size-3.5" })
-          }
-        ) })
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-3", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "overflow-auto rounded-lg border border-border", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("table", { className: "w-full text-sm", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("thead", { className: "bg-muted/40", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-border", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium", children: "المنتج" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium", children: "الكمية" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium", children: "السعر المتوقع" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium", children: "الإجمالي المتوقع" }),
+        !readOnly && /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "px-3 py-2 text-start font-medium" })
+      ] }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("tbody", { children: [
+        items.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsx(PurchaseOrderItemRow, { orderId, item, readOnly, canDelete: items.length > 1 }, item.id)),
+        !readOnly && /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "align-top", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "min-w-48 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+            ProductPicker,
+            {
+              value: newProduct,
+              onChange: setNewProduct,
+              placeholder: "إضافة صنف...",
+              onCreateNew: (query) => {
+                setQuickCreateName(query);
+                setQuickCreateOpen(true);
+              }
+            }
+          ) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-28 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Input,
+            {
+              type: "number",
+              step: "0.01",
+              min: "0",
+              value: newQuantity ?? "",
+              onChange: (e) => setNewQuantity(e.target.value === "" ? void 0 : e.target.valueAsNumber),
+              className: "h-8 text-xs"
+            }
+          ) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-28 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Input,
+            {
+              type: "number",
+              step: "0.01",
+              min: "0",
+              value: newPrice ?? "",
+              onChange: (e) => setNewPrice(e.target.value === "" ? void 0 : e.target.valueAsNumber),
+              className: "h-8 text-xs"
+            }
+          ) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-28 px-1.5 py-2" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "w-12 px-1.5 py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Button,
+            {
+              type: "button",
+              size: "icon",
+              variant: "ghost",
+              className: "size-7",
+              disabled: !newProduct || !newQuantity || addItem.isPending,
+              onClick: handleAdd,
+              children: /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { className: "size-3.5" })
+            }
+          ) })
+        ] })
       ] })
-    ] })
-  ] }) }) });
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      CreateProductDialog,
+      {
+        open: quickCreateOpen,
+        onOpenChange: setQuickCreateOpen,
+        defaultName: quickCreateName,
+        trigger: false,
+        onCreated: (product) => {
+          setNewProduct(product);
+          setQuickCreateOpen(false);
+        }
+      }
+    )
+  ] });
 }
 const STATUS_BADGE = {
   Draft: { label: "مسودة", variant: "secondary" },
@@ -68775,7 +69082,8 @@ const customersApi = {
   createInvoice: (customerId, data) => apiClient.post(`/api/customers/${customerId}/invoices`, data),
   getPayments: (customerId) => apiClient.get(`/api/customers/${customerId}/payments`),
   recordPayment: (customerId, data) => apiClient.post(`/api/customers/${customerId}/payments`, data),
-  getStatement: (customerId) => apiClient.get(`/api/customers/${customerId}/statement`)
+  getStatement: (customerId) => apiClient.get(`/api/customers/${customerId}/statement`),
+  adjustBalance: (customerId, data) => apiClient.post(`/api/customers/${customerId}/adjust`, data)
 };
 function useCustomers(rawQuery) {
   const query = useDebouncedValue(rawQuery.trim(), 300);
@@ -68834,6 +69142,22 @@ function useRecordCustomerPayment(customerId) {
     },
     onError: (error) => {
       toast.error("فشل تسجيل الدفعة", { description: error.message });
+    }
+  });
+}
+function useAdjustCustomerBalance(customerId) {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => customersApi.adjustBalance(customerId, data),
+    onSuccess: () => {
+      toast.success("تم تسوية الرصيد بنجاح");
+      queryClient2.invalidateQueries({ queryKey: queryKeys.customers.detail(customerId) });
+      queryClient2.invalidateQueries({ queryKey: queryKeys.customers.statement(customerId) });
+      queryClient2.invalidateQueries({ queryKey: ["customers", "list"] });
+      queryClient2.invalidateQueries({ queryKey: queryKeys.customers.reports });
+    },
+    onError: (error) => {
+      toast.error("فشل تسوية الرصيد", { description: error.message });
     }
   });
 }
@@ -69097,6 +69421,8 @@ function CreateSalesInvoiceSheet({ customerId, previousBalance }) {
   const { t: t2 } = useI18n();
   const [open, setOpen] = reactExports.useState(false);
   const createInvoice = useCreateSalesInvoice(customerId);
+  const [quickCreateIndex, setQuickCreateIndex] = reactExports.useState(null);
+  const [quickCreateName, setQuickCreateName] = reactExports.useState("");
   const form = useForm({
     resolver: u(createSalesInvoiceSchema),
     defaultValues: createSalesInvoiceDefaults
@@ -69180,6 +69506,10 @@ function CreateSalesInvoiceSheet({ customerId, previousBalance }) {
                     onQueryChange: (text2) => {
                       nameField.onChange(text2);
                       form.setValue(`items.${index2}.productId`, null, { shouldDirty: true });
+                    },
+                    onCreateNew: (query) => {
+                      setQuickCreateIndex(index2);
+                      setQuickCreateName(query);
                     },
                     onChange: (product) => {
                       if (!product) return;
@@ -69290,7 +69620,31 @@ function CreateSalesInvoiceSheet({ customerId, previousBalance }) {
           /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", disabled: createInvoice.isPending, children: createInvoice.isPending ? t2("common.loading") : t2("common.create") })
         ] })
       ] }) })
-    ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      CreateProductDialog,
+      {
+        open: quickCreateIndex !== null,
+        onOpenChange: (next) => !next && setQuickCreateIndex(null),
+        defaultName: quickCreateName,
+        trigger: false,
+        onCreated: (product) => {
+          if (quickCreateIndex === null) return;
+          form.setValue(`items.${quickCreateIndex}.productId`, product.id, { shouldDirty: true });
+          form.setValue(`items.${quickCreateIndex}.productName`, product.name, { shouldDirty: true });
+          if (product.unit) {
+            form.setValue(`items.${quickCreateIndex}.unit`, product.unit, { shouldDirty: true });
+          }
+          if (product.defaultSalePrice != null) {
+            form.setValue(`items.${quickCreateIndex}.unitPrice`, product.defaultSalePrice, {
+              shouldDirty: true,
+              shouldValidate: true
+            });
+          }
+          setQuickCreateIndex(null);
+        }
+      }
+    )
   ] });
 }
 const PAYMENT_METHODS = [
@@ -69309,6 +69663,14 @@ const recordCustomerPaymentDefaults = {
   amount: 0,
   paymentMethod: "cash",
   notes: ""
+};
+const adjustCustomerBalanceSchema = object$1({
+  amount: number$3().refine((v) => v !== 0, "قيمة التسوية لا يمكن أن تكون صفراً"),
+  reason: string$1().trim().min(1, "سبب التسوية مطلوب").max(300)
+});
+const adjustCustomerBalanceDefaults = {
+  amount: 0,
+  reason: ""
 };
 function RecordCustomerPaymentDialog({ customerId }) {
   const { t: t2 } = useI18n();
@@ -69405,6 +69767,72 @@ function RecordCustomerPaymentDialog({ customerId }) {
     ] })
   ] });
 }
+function AdjustCustomerBalanceDialog({ customerId }) {
+  const { t: t2 } = useI18n();
+  const [open, setOpen] = reactExports.useState(false);
+  const adjustBalance = useAdjustCustomerBalance(customerId);
+  const form = useForm({
+    resolver: u(adjustCustomerBalanceSchema),
+    defaultValues: adjustCustomerBalanceDefaults
+  });
+  reactExports.useEffect(() => {
+    if (open) form.reset(adjustCustomerBalanceDefaults);
+  }, [open, form]);
+  function onSubmit(values) {
+    adjustBalance.mutate(values, { onSuccess: () => setOpen(false) });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Dialog, { open, onOpenChange: setOpen, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTrigger, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { size: "sm", variant: "outline", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Scale, { className: "size-4" }),
+      t2("customers.adjustBalance")
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogContent, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: t2("customers.adjustBalance") }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: "لتصحيح الأخطاء أو تسجيل خصومات لا ترتبط بفاتورة أو دفعة. قيمة موجبة تزيد ما يدين به العميل، وقيمة سالبة تنقصه." })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Form, { ...form, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: form.handleSubmit(onSubmit), className: "grid gap-4", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          FormField,
+          {
+            control: form.control,
+            name: "amount",
+            render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "قيمة التسوية *" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+                Input,
+                {
+                  type: "number",
+                  step: "0.01",
+                  placeholder: "مثال: -500 أو 500",
+                  ...field,
+                  onChange: (e) => field.onChange(e.target.valueAsNumber)
+                }
+              ) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
+            ] })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          FormField,
+          {
+            control: form.control,
+            name: "reason",
+            render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "السبب *" }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "مثال: تصحيح خطأ إدخال، خصم متفق عليه...", ...field }) }),
+              /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
+            ] })
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogFooter, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "ghost", onClick: () => setOpen(false), children: t2("common.cancel") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", disabled: adjustBalance.isPending || !form.formState.isDirty, children: adjustBalance.isPending ? t2("common.loading") : t2("common.save") })
+        ] })
+      ] }) })
+    ] })
+  ] });
+}
 function CustomerDetailPage() {
   const { t: t2 } = useI18n();
   const { id } = useParams();
@@ -69478,7 +69906,7 @@ function CustomerDetailPage() {
       accessorKey: "entry_type",
       header: "النوع",
       meta: { exportLabel: "النوع" },
-      cell: ({ row }) => row.original.entry_type === "invoice" ? /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: "destructive", children: "فاتورة" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: "success", children: "دفعة" })
+      cell: ({ row }) => row.original.entry_type === "invoice" ? /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: "destructive", children: "فاتورة" }) : row.original.entry_type === "adjustment" ? /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: "warning", children: "تسوية" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: "success", children: "دفعة" })
     },
     {
       accessorKey: "reference",
@@ -69521,6 +69949,7 @@ function CustomerDetailPage() {
         title: data.full_name,
         subtitle: data.phone ?? void 0,
         actions: /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(AdjustCustomerBalanceDialog, { customerId }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(RecordCustomerPaymentDialog, { customerId }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(CreateSalesInvoiceSheet, { customerId, previousBalance: data.current_balance })
         ] })

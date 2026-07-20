@@ -1372,7 +1372,7 @@
     border-color: var(--input);
   }
 
-  .border-primary\/30 {
+  .border-primary, .border-primary\/30 {
     border-color: var(--primary);
   }
 

@@ -164,9 +164,13 @@ export interface InvoiceReviewHeader {
   id: number
   invoice_number: string
   invoice_date: string
-  supplier_id: number
-  supplier_name: string
-  current_balance: number
+  // Scanned invoices always start with no supplier set — the AI-extracted
+  // name (ocr_supplier_name) is a hint only; the user must pick a real
+  // supplier via SupplierPicker before the invoice can be approved.
+  supplier_id: number | null
+  supplier_name: string | null
+  ocr_supplier_name: string | null
+  current_balance: number | null
   currency: string
   previous_balance: number | null
   invoice_amount: number
@@ -453,7 +457,7 @@ export interface RecordCustomerPaymentInput {
 }
 
 export interface CustomerStatementEntry {
-  entry_type: 'invoice' | 'payment'
+  entry_type: 'invoice' | 'payment' | 'adjustment'
   entry_id: number
   entry_date: string
   reference: string | null

@@ -3,6 +3,9 @@ import { Trash2 } from 'lucide-react'
 import { Button } from '@shared/components/ui/button'
 import { Input } from '@shared/components/ui/input'
 import { ProductPicker, type PickedProduct } from '@shared/components/ProductPicker'
+// Deliberate cross-module import: creating a catalog product from here is an
+// explicit, opt-in action — see ProductPicker's onCreateNew.
+import { CreateProductDialog } from '@modules/products/components/CreateProductDialog'
 import { formatCurrency } from '@shared/lib/format'
 import type { PurchaseOrderItem } from '@shared/types/api'
 import { useDeletePurchaseOrderItem, useUpdatePurchaseOrderItem } from '../hooks/usePurchaseOrderMutations'
@@ -18,6 +21,8 @@ interface PurchaseOrderItemRowProps {
 export function PurchaseOrderItemRow({ orderId, item, readOnly, canDelete }: PurchaseOrderItemRowProps) {
   const [quantity, setQuantity] = useState(item.quantity)
   const [expectedUnitPrice, setExpectedUnitPrice] = useState(item.expected_unit_price ?? undefined)
+  const [quickCreateOpen, setQuickCreateOpen] = useState(false)
+  const [quickCreateName, setQuickCreateName] = useState('')
 
   const updateItem = useUpdatePurchaseOrderItem(orderId)
   const deleteItem = useDeletePurchaseOrderItem(orderId)
@@ -50,9 +55,17 @@ export function PurchaseOrderItemRow({ orderId, item, readOnly, canDelete }: Pur
   }
 
   return (
+    <>
     <tr className="border-b border-border last:border-0 align-top">
       <td className="min-w-48 px-1.5 py-2">
-        <ProductPicker value={{ id: item.product_id, name: item.product_name, unit: item.unit }} onChange={handleProductChange} />
+        <ProductPicker
+          value={{ id: item.product_id, name: item.product_name, unit: item.unit }}
+          onChange={handleProductChange}
+          onCreateNew={(query) => {
+            setQuickCreateName(query)
+            setQuickCreateOpen(true)
+          }}
+        />
       </td>
       <td className="w-28 px-1.5 py-2">
         <Input
@@ -91,5 +104,17 @@ export function PurchaseOrderItemRow({ orderId, item, readOnly, canDelete }: Pur
         </Button>
       </td>
     </tr>
+
+    <CreateProductDialog
+      open={quickCreateOpen}
+      onOpenChange={setQuickCreateOpen}
+      defaultName={quickCreateName}
+      trigger={false}
+      onCreated={(product) => {
+        handleProductChange(product)
+        setQuickCreateOpen(false)
+      }}
+    />
+    </>
   )
 }

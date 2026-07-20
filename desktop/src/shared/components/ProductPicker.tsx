@@ -32,6 +32,13 @@ interface ProductPickerProps {
    * Purchase Orders doesn't pass this and its behavior is unchanged.
    */
   onQueryChange?: (text: string) => void
+  /**
+   * Optional: when provided, a "create as new product" action is shown
+   * alongside the "no results" message, firing with the raw typed text.
+   * The caller owns what "create" actually means (e.g. opening
+   * CreateProductDialog) — this component only offers the entry point.
+   */
+  onCreateNew?: (query: string) => void
 }
 
 /**
@@ -40,7 +47,7 @@ interface ProductPickerProps {
  * Invoices (line-item match) and Purchase Orders (line items) need it —
  * feature modules stay decoupled from each other, this is the shared piece.
  */
-export function ProductPicker({ value, onChange, placeholder = 'ابحث عن منتج...', disabled, onQueryChange }: ProductPickerProps) {
+export function ProductPicker({ value, onChange, placeholder = 'ابحث عن منتج...', disabled, onQueryChange, onCreateNew }: ProductPickerProps) {
   const [query, setQuery] = useState(value?.name ?? '')
   const [open, setOpen] = useState(false)
   const debouncedQuery = useDebouncedValue(query.trim(), 250)
@@ -82,7 +89,22 @@ export function ProductPicker({ value, onChange, placeholder = 'ابحث عن م
           {isFetching ? (
             <div className="px-3 py-2 text-xs text-muted-foreground">جاري البحث...</div>
           ) : results.length === 0 ? (
-            <div className="px-3 py-2 text-xs text-muted-foreground">لا نتائج لـ "{debouncedQuery}"</div>
+            <div className="px-3 py-2 text-xs text-muted-foreground">
+              لا نتائج لـ "{debouncedQuery}"
+              {onCreateNew && (
+                <button
+                  type="button"
+                  onMouseDown={(e) => {
+                    e.preventDefault()
+                    onCreateNew(debouncedQuery)
+                    setOpen(false)
+                  }}
+                  className="mt-1 block font-medium text-primary hover:underline"
+                >
+                  + إنشاء "{debouncedQuery}" كمنتج جديد
+                </button>
+              )}
+            </div>
           ) : (
             results.map((product) => (
               <button
