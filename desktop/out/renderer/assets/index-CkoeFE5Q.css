@@ -1051,10 +1051,6 @@
     flex-direction: column-reverse;
   }
 
-  .flex-row {
-    flex-direction: row;
-  }
-
   .flex-wrap {
     flex-wrap: wrap;
   }
@@ -1125,11 +1121,6 @@
 
   .gap-8 {
     gap: calc(var(--spacing) * 8);
-  }
-
-  :where(.space-y-0 > :not(:last-child)) {
-    --tw-space-y-reverse: 0;
-    margin-block: 0;
   }
 
   :where(.space-y-0\.5 > :not(:last-child)) {
