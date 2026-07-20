@@ -2,7 +2,39 @@
 const express = require('express');
 const router = express.Router();
 const db = require('../config/database');
+const productService = require('../services/productService');
 const { normalizeArabic } = require('../utils/arabicNormalizer');
+
+// GET /api/products?query=&sort=name|newest — full browsable list (no LIMIT),
+// unlike /search below which stays capped/fast for picker use. `sort`
+// is whitelisted (never interpolated from the request) since ORDER BY
+// can't be parameterized as a bound value.
+router.get('/', (req, res) => {
+    try {
+        const { query, sort } = req.query;
+        const orderBy = sort === 'newest' ? 'p.created_at DESC' : 'p.name ASC';
+
+        const params = [];
+        let where = '';
+        if (query) {
+            const normalized = normalizeArabic(query);
+            where = 'WHERE p.name LIKE ? OR pa.normalized_alias LIKE ?';
+            params.push(`%${query}%`, `%${normalized}%`);
+        }
+
+        const products = db.prepare(
+            `SELECT DISTINCT p.*
+             FROM products p
+             LEFT JOIN product_aliases pa ON p.id = pa.product_id
+             ${where}
+             ORDER BY ${orderBy}`
+        ).all(...params);
+
+        res.json(products);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
 
 // GET /api/products/search?query=زيت الكابتن
 router.get('/search', (req, res) => {
@@ -129,6 +161,21 @@ router.patch('/:id/price', (req, res) => {
 
         db.stmts.products.updateSalePrice.run(Number(defaultSalePrice), productId);
         res.json(db.stmts.getProductById.get(productId));
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// POST /api/products/merge — merges `mergeId` into `keepId` (accidental
+// duplicate cleanup). See productService.mergeProducts for what moves over.
+router.post('/merge', (req, res) => {
+    try {
+        const { keepId, mergeId } = req.body;
+        if (!keepId || !mergeId) {
+            return res.status(400).json({ error: 'يجب تحديد المنتج المُبقى والمنتج المدمج' });
+        }
+        const result = productService.mergeProducts(Number(keepId), Number(mergeId));
+        res.json(result);
     } catch (err) {
         res.status(400).json({ error: err.message });
     }

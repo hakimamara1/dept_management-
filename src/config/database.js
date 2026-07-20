@@ -76,6 +76,8 @@ class DatabaseManager {
         this._addColumnIfMissing('purchase_invoices', 'ocr_header_total', 'DECIMAL(15,2)');
         this._addColumnIfMissing('products', 'default_sale_price', 'DECIMAL(10,2)');
         this._addColumnIfMissing('purchase_invoices', 'source', "TEXT DEFAULT 'ocr'");
+        this._addColumnIfMissing('purchase_invoices', 'ocr_supplier_name', 'TEXT');
+        this._addColumnIfMissing('customer_payments', 'transaction_type', "TEXT DEFAULT 'payment'");
 
         // Seed the settings singleton row once — GET never has to special-case "no row yet".
         this.db.prepare('INSERT OR IGNORE INTO business_profile (id) VALUES (1)').run();
@@ -163,7 +165,8 @@ class DatabaseManager {
             // Customer Payments
             customerPayments: {
                 getByCustomer: this.db.prepare(QUERIES.customerPayments.getByCustomer),
-                insert: this.db.prepare(QUERIES.customerPayments.insert)
+                insert: this.db.prepare(QUERIES.customerPayments.insert),
+                insertAdjustment: this.db.prepare(QUERIES.customerPayments.insertAdjustment)
             },
 
             // Suppliers
@@ -234,8 +237,8 @@ class DatabaseManager {
                 `INSERT INTO purchase_invoices
                  (invoice_number, invoice_date, invoice_time, supplier_id, currency,
                   previous_balance, invoice_amount, ocr_header_total, discount, tax, new_balance,
-                  payment_method, notes, status, validation_errors, source)
-                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                  payment_method, notes, status, validation_errors, source, ocr_supplier_name)
+                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
             ),
             insertInvoiceItem: this.db.prepare(
                 `INSERT INTO purchase_invoice_items
@@ -265,6 +268,7 @@ class DatabaseManager {
                  WHERE id = ?`
             ),
             updateInvoiceNotes: this.db.prepare('UPDATE purchase_invoices SET notes = ? WHERE id = ?'),
+            updateInvoiceSupplier: this.db.prepare('UPDATE purchase_invoices SET supplier_id = ? WHERE id = ?'),
             updateInvoiceStatus: this.db.prepare(
                 'UPDATE purchase_invoices SET status = ? WHERE id = ?'
             ),
@@ -337,7 +341,7 @@ class DatabaseManager {
                         COUNT(pii.id) as total_items,
                         SUM(CASE WHEN pii.match_status = 'Pending' THEN 1 ELSE 0 END) as pending_items
                  FROM purchase_invoices pi
-                 JOIN suppliers s ON pi.supplier_id = s.id
+                 LEFT JOIN suppliers s ON pi.supplier_id = s.id
                  LEFT JOIN purchase_invoice_items pii ON pi.id = pii.invoice_id
                  WHERE pi.status = 'Pending Review'
                  GROUP BY pi.id`

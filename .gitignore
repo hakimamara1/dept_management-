@@ -1,3 +1,6 @@
 node_modules
 src/data/uploads/
 .env
+src/data/*.db
+src/data/*.db-shm
+src/data/*.db-wal

@@ -209,6 +209,19 @@ router.patch('/:id/notes', (req, res) => {
     }
 });
 
+// PATCH /api/invoices/:id/supplier — picks the real supplier for a scanned
+// invoice (these always land with no supplier set — see processOcrResult).
+// Pending Review only, same as the other item/notes edits above.
+router.patch('/:id/supplier', (req, res) => {
+    try {
+        const invoiceId = parseInt(req.params.id);
+        const result = invoiceProcessor.updateInvoiceSupplier(invoiceId, req.body.supplierId);
+        res.json(result);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
 // GET /api/invoices/approved
 router.get('/approved', (req, res) => {
     try {
@@ -238,7 +251,7 @@ router.get('/:id/review', (req, res) => {
         const invoice = db.prepare(
             `SELECT pi.*, s.name as supplier_name, s.current_balance
              FROM purchase_invoices pi
-             JOIN suppliers s ON pi.supplier_id = s.id
+             LEFT JOIN suppliers s ON pi.supplier_id = s.id
              WHERE pi.id = ?`
         ).get(req.params.id);
 

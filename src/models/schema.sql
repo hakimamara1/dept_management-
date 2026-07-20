@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS purchase_invoices (
     previous_balance DECIMAL(15,2),
     invoice_amount DECIMAL(15,2) NOT NULL,  -- ALWAYS = SUM(purchase_invoice_items.total_price), kept live — see business-rules.md
     ocr_header_total DECIMAL(15,2),        -- raw OCR-extracted header total, reference/validation only — never used in business logic
+    ocr_supplier_name TEXT,                -- raw OCR-extracted supplier name, a hint shown on the review page only — never used to match/create a supplier (see business-rules.md)
     discount DECIMAL(15,2) DEFAULT 0,
     tax DECIMAL(15,2) DEFAULT 0,
     new_balance DECIMAL(15,2),
@@ -236,6 +237,11 @@ CREATE TABLE IF NOT EXISTS customer_payments (
     amount DECIMAL(15,2) NOT NULL,
     payment_method TEXT,
     notes TEXT,
+    -- 'payment' (real payment, always positive, subtracts from balance) or
+    -- 'adjustment' (manual correction, signed, added to balance — positive
+    -- increases what the customer owes, negative decreases it). See
+    -- customerService.adjustBalance and business-rules.md.
+    transaction_type TEXT DEFAULT 'payment',
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(id)
 );

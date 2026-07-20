@@ -345,12 +345,13 @@ const QUERIES = {
     getSummary: `SELECT c.*,
                     COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id), 0) as total_invoice_amount,
                     COALESCE((SELECT COUNT(*) FROM sales_invoices WHERE customer_id = c.id), 0) as total_invoices,
-                    COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id), 0) as total_payment_amount,
-                    COALESCE((SELECT COUNT(*) FROM customer_payments WHERE customer_id = c.id), 0) as total_payments,
+                    COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id AND transaction_type != 'adjustment'), 0) as total_payment_amount,
+                    COALESCE((SELECT COUNT(*) FROM customer_payments WHERE customer_id = c.id AND transaction_type != 'adjustment'), 0) as total_payments,
                     (SELECT MAX(invoice_date) FROM sales_invoices WHERE customer_id = c.id) as last_invoice_date,
-                    (SELECT MAX(payment_date) FROM customer_payments WHERE customer_id = c.id) as last_payment_date,
+                    (SELECT MAX(payment_date) FROM customer_payments WHERE customer_id = c.id AND transaction_type != 'adjustment') as last_payment_date,
                     (COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id), 0)
-                     - COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id), 0)) as current_balance
+                     - COALESCE((SELECT SUM(CASE WHEN transaction_type = 'adjustment' THEN -amount ELSE amount END)
+                                 FROM customer_payments WHERE customer_id = c.id), 0)) as current_balance
                   FROM customers c
                   WHERE c.id = ?`,
     insert: `INSERT INTO customers (full_name, phone, address, notes) VALUES (?, ?, ?, ?)`,
@@ -358,13 +359,14 @@ const QUERIES = {
       getSummary: `SELECT
                     (SELECT COUNT(*) FROM customers) as total_customers,
                     (SELECT COALESCE(SUM(invoice_amount), 0) FROM sales_invoices) as total_invoice_value,
-                    (SELECT COALESCE(SUM(amount), 0) FROM customer_payments) as total_payment_value,
+                    (SELECT COALESCE(SUM(amount), 0) FROM customer_payments WHERE transaction_type != 'adjustment') as total_payment_value,
                     ((SELECT COALESCE(SUM(invoice_amount), 0) FROM sales_invoices)
-                     - (SELECT COALESCE(SUM(amount), 0) FROM customer_payments)) as total_customer_debt,
+                     - (SELECT COALESCE(SUM(CASE WHEN transaction_type = 'adjustment' THEN -amount ELSE amount END), 0) FROM customer_payments)) as total_customer_debt,
                     (SELECT CASE WHEN COUNT(*) = 0 THEN 0 ELSE AVG(invoice_amount) END FROM sales_invoices) as average_invoice_value`,
       getLargestDebtors: `SELECT c.id, c.full_name,
                     (COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id), 0)
-                     - COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id), 0)) as balance
+                     - COALESCE((SELECT SUM(CASE WHEN transaction_type = 'adjustment' THEN -amount ELSE amount END)
+                                 FROM customer_payments WHERE customer_id = c.id), 0)) as balance
                   FROM customers c
                   ORDER BY balance DESC
                   LIMIT 10`,
@@ -392,9 +394,14 @@ const QUERIES = {
     insertItem: `INSERT INTO sales_invoice_items
                         (invoice_id, product_name, unit, quantity, unit_price, line_total)
                       VALUES (?, ?, ?, ?, ?, ?)`,
+    // Real payments subtract from balance as always. Adjustment rows add
+    // their (signed) amount instead — a positive adjustment increases what
+    // the customer owes, negative decreases it, same convention as the
+    // supplier side's adjustBalance. See customerService.adjustBalance.
     getCustomerBalance: `SELECT
                     (COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = ?), 0)
-                     - COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = ?), 0)) as balance`,
+                     - COALESCE((SELECT SUM(CASE WHEN transaction_type = 'adjustment' THEN -amount ELSE amount END)
+                                 FROM customer_payments WHERE customer_id = ?), 0)) as balance`,
     // UNION ALL of both ledger sources + a running-total window function —
     // nothing here is stored, the whole statement is regenerated on read.
     getStatement: `SELECT entry_type, entry_id, entry_date, reference, amount,
@@ -407,8 +414,10 @@ const QUERIES = {
                            invoice_number as reference, invoice_amount as amount
                     FROM sales_invoices WHERE customer_id = ?
                     UNION ALL
-                    SELECT 'payment' as entry_type, id as entry_id, payment_date as entry_date, created_at as entry_created_at,
-                           payment_method as reference, -amount as amount
+                    SELECT CASE WHEN transaction_type = 'adjustment' THEN 'adjustment' ELSE 'payment' END as entry_type,
+                           id as entry_id, payment_date as entry_date, created_at as entry_created_at,
+                           COALESCE(notes, payment_method) as reference,
+                           CASE WHEN transaction_type = 'adjustment' THEN amount ELSE -amount END as amount
                     FROM customer_payments WHERE customer_id = ?
                   )
                   ORDER BY entry_date, entry_created_at, entry_type, entry_id`
@@ -418,9 +427,13 @@ const QUERIES = {
   // Deliberately never tied to an invoice_id — payments reduce the
   // account balance as a whole, never a specific invoice.
   customerPayments: {
-    getByCustomer: `SELECT * FROM customer_payments WHERE customer_id = ? ORDER BY payment_date DESC, id DESC`,
+    // Real payments only — adjustments are corrections, not payments, and
+    // appear instead (clearly labeled) in the combined statement view.
+    getByCustomer: `SELECT * FROM customer_payments WHERE customer_id = ? AND transaction_type != 'adjustment' ORDER BY payment_date DESC, id DESC`,
     insert: `INSERT INTO customer_payments (customer_id, payment_date, amount, payment_method, notes)
-                  VALUES (?, ?, ?, ?, ?)`
+                  VALUES (?, ?, ?, ?, ?)`,
+    insertAdjustment: `INSERT INTO customer_payments (customer_id, payment_date, amount, notes, transaction_type)
+                  VALUES (?, ?, ?, ?, 'adjustment')`
   },
 
   // ─── EXPIRATION TRACKING ───

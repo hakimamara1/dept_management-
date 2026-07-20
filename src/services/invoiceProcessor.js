@@ -26,7 +26,6 @@ const path = require('path');
 const db = require('../config/database');
 const { UPLOADS_DIR } = require('../config/paths');
 const productMatcher = require('./productMatcher');
-const supplierMatcher = require('./supplierMatcher');
 const validationService = require('./validationService');
 const { normalizeArabic } = require('../utils/arabicNormalizer');
 const { parseNumber } = require('../utils/parseNumber');
@@ -59,9 +58,15 @@ class InvoiceProcessor {
                 throw new Error(`Duplicate invoice: ${duplicateCheck.existingInvoice.id}`);
             }
 
-            // ── Phase 3: Match Supplier ──
-            const supplierResult = supplierMatcher.findOrCreateSupplier(ocrJson.supplier || {});
-            const supplierId = supplierResult.supplier.id;
+            // ── Phase 3: Supplier — always requires manual confirmation ──
+            // No automatic matching or creation here (see business-rules.md):
+            // an OCR misread supplier name used to silently create a
+            // duplicate supplier record. The invoice lands with no supplier
+            // set; the raw extracted name is kept only as a hint for the
+            // user on the review page (updateInvoiceSupplier), and
+            // approveInvoice refuses to post until a real supplier is picked.
+            const supplierId = null;
+            const ocrSupplierName = ocrJson.supplier?.name || null;
 
             // Sanitize every OCR-supplied numeric field up front. OCR
             // extraction sometimes returns a formatted string ("99,220.00")
@@ -107,7 +112,8 @@ class InvoiceProcessor {
                 ocrJson.notes || null,
                 'Pending Review',
                 JSON.stringify(validation.errors),
-                'ocr'
+                'ocr',
+                ocrSupplierName
             );
 
             const invoiceId = invoiceResult.lastInsertRowid;
@@ -150,7 +156,6 @@ class InvoiceProcessor {
             return {
                 invoiceId,
                 status: 'Pending Review',
-                supplier: supplierResult,
                 pendingItems,
                 validationErrors: validation.errors,
                 validationWarnings: validation.warnings
@@ -206,7 +211,8 @@ class InvoiceProcessor {
                     notes || null,
                     'Pending Review',
                     '[]',
-                    'manual'
+                    'manual',
+                    null // ocr_supplier_name — not applicable, supplier is already picked directly
                 );
             } catch (err) {
                 if (err.code === 'SQLITE_CONSTRAINT_UNIQUE' || /UNIQUE constraint failed/.test(err.message)) {
@@ -515,6 +521,23 @@ class InvoiceProcessor {
         return { success: true };
     }
 
+    // Picks the real supplier for an OCR-scanned invoice — these always
+    // land with supplier_id NULL (see processOcrResult) since automatic
+    // matching/creation was removed; this is the one place that fills it
+    // in, from an explicit user choice on the review page.
+    updateInvoiceSupplier(invoiceId, supplierId) {
+        this._requirePendingInvoice(invoiceId);
+        if (!supplierId) {
+            throw new Error('المورد مطلوب');
+        }
+        const supplier = db.stmts.suppliers.getById.get(supplierId);
+        if (!supplier) {
+            throw new Error('المورد غير موجود');
+        }
+        db.stmts.updateInvoiceSupplier.run(supplierId, invoiceId);
+        return { success: true };
+    }
+
     // ═══════════════════════════════════════════════════════════════
     // STEP 3: Approve Invoice — the one and only posting step. Requires
     // every item to already carry a real product_id (fully matched via the
@@ -524,6 +547,10 @@ class InvoiceProcessor {
     approveInvoice(invoiceId) {
         const transaction = db.transaction(() => {
             const invoice = this._requirePendingInvoice(invoiceId);
+
+            if (!invoice.supplier_id) {
+                throw new Error('لا يمكن اعتماد الفاتورة — لم يتم تحديد المورد');
+            }
 
             const items = db.stmts.getInvoiceItems.all(invoiceId);
             if (!items.length) {

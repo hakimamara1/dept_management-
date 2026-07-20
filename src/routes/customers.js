@@ -106,6 +106,19 @@ router.post('/:id/payments', (req, res) => {
     }
 });
 
+// POST /api/customers/:id/adjust — manual balance correction, mirrors
+// POST /api/suppliers/:id/adjust.
+router.post('/:id/adjust', (req, res) => {
+    try {
+        const customerId = parseInt(req.params.id);
+        const { amount, reason } = req.body;
+        const result = customerService.adjustBalance(customerId, amount, reason);
+        res.json(result);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
 // GET /api/customers/:id/statement
 router.get('/:id/statement', (req, res) => {
     try {

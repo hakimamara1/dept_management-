@@ -157,6 +157,43 @@ class CustomerService {
         return db.stmts.salesInvoices.getStatement.all(customerId, customerId);
     }
 
+    // Manual correction for a wrong balance (data-entry mistakes, agreed
+    // write-offs) — mirrors debtService.adjustBalance on the supplier side.
+    // Positive amount increases what the customer owes, negative decreases
+    // it. Stored as a 'adjustment'-typed customer_payments row rather than a
+    // stored balance column, since customers never have one (see class
+    // docblock) — getCustomerBalance/getStatement both know how to fold
+    // this row type in with the opposite sign of a real payment.
+    adjustBalance(customerId, amount, reason) {
+        const customer = db.stmts.customers.getById.get(customerId);
+        if (!customer) {
+            throw new Error('العميل غير موجود');
+        }
+        const sanitizedAmount = Number(amount);
+        if (!sanitizedAmount) {
+            throw new Error('قيمة التسوية يجب أن تكون مختلفة عن الصفر');
+        }
+        if (!reason || !reason.trim()) {
+            throw new Error('سبب التسوية مطلوب');
+        }
+
+        const previousBalance = this.getCurrentBalance(customerId);
+        const today = new Date().toISOString().slice(0, 10);
+        const result = db.stmts.customerPayments.insertAdjustment.run(
+            customerId,
+            today,
+            sanitizedAmount,
+            reason.trim()
+        );
+
+        return {
+            transactionId: result.lastInsertRowid,
+            previousBalance,
+            adjustment: sanitizedAmount,
+            newBalance: previousBalance + sanitizedAmount
+        };
+    }
+
     getReportsSummary() {
         const summary = db.stmts.customers.reports.getSummary.get();
         const largestDebtors = db.stmts.customers.reports.getLargestDebtors.all();
