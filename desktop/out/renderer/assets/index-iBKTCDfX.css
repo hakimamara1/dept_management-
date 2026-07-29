@@ -586,6 +586,10 @@
     margin-inline-start: calc(var(--spacing) * 6);
   }
 
+  .me-1 {
+    margin-inline-end: var(--spacing);
+  }
+
   .mt-0\.5 {
     margin-top: calc(var(--spacing) * .5);
   }

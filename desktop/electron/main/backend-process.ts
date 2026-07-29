@@ -28,6 +28,9 @@ const BACKEND_PORT = 3000
 const HEALTH_URL = `http://127.0.0.1:${BACKEND_PORT}/health`
 const HEALTH_TIMEOUT_MS = 15_000
 const HEALTH_POLL_INTERVAL_MS = 250
+// Must exceed src/app.js's own 5s forced-exit timeout, or we'd SIGKILL the
+// backend mid-checkpoint instead of letting its own safety net finish first.
+const SHUTDOWN_TIMEOUT_MS = 8_000
 
 let backendProcess: ChildProcess | null = null
 
@@ -62,9 +65,32 @@ export function startBackend(): ChildProcess {
   return backendProcess
 }
 
-export function stopBackend(): void {
-  backendProcess?.kill()
-  backendProcess = null
+/**
+ * Sends SIGTERM and waits for the child to actually exit before resolving.
+ * `ChildProcess.kill()` is fire-and-forget — the original code called it and
+ * moved on immediately, so Electron's own quit sequence could finish (and on
+ * Windows, an auto-updater could start rewriting files) before the backend's
+ * SIGTERM handler had even run, let alone finished its WAL checkpoint. This
+ * turns shutdown into a real handshake: wait for 'exit', and escalate to
+ * SIGKILL only if the graceful path hangs past SHUTDOWN_TIMEOUT_MS.
+ */
+export function stopBackend(): Promise<void> {
+  const proc = backendProcess
+  if (!proc) return Promise.resolve()
+
+  return new Promise((resolve) => {
+    const killTimer = setTimeout(() => {
+      console.warn('[backend] did not exit within timeout, sending SIGKILL')
+      proc.kill('SIGKILL')
+    }, SHUTDOWN_TIMEOUT_MS)
+
+    proc.once('exit', () => {
+      clearTimeout(killTimer)
+      resolve()
+    })
+
+    proc.kill('SIGTERM')
+  })
 }
 
 export async function waitForBackendHealth(): Promise<void> {

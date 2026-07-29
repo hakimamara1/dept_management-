@@ -37,6 +37,24 @@ export function useRecordPayment(supplierId: number) {
   })
 }
 
+export function useDeleteSupplier(supplierId: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: () => suppliersApi.remove(supplierId),
+    onSuccess: () => {
+      toast.success('تم حذف المورد بنجاح')
+      queryClient.invalidateQueries({ queryKey: queryKeys.suppliers.detail(supplierId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.suppliers.ledger(supplierId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.suppliers.aging })
+      queryClient.invalidateQueries({ queryKey: ['suppliers', 'list'] })
+    },
+    onError: (error: Error) => {
+      toast.error('فشل حذف المورد', { description: error.message })
+    }
+  })
+}
+
 export function useAdjustBalance(supplierId: number) {
   const queryClient = useQueryClient()
 

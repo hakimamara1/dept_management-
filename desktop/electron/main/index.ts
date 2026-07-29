@@ -2,6 +2,17 @@ import { app, BrowserWindow, shell } from 'electron'
 import { join } from 'node:path'
 import { startBackend, stopBackend, waitForBackendHealth } from './backend-process'
 
+// Two Electron instances would each spawn their own backend child process
+// against the exact same invoices.db — WAL mode tolerates multiple writers,
+// but a backup taken from outside has no way to know a second, invisible
+// instance is mid-write, which reproduces the "copied all three files, still
+// got wrong data" symptom independent of the shutdown-checkpoint bug fixed
+// below. Refuse to launch a second instance instead of allowing that.
+const gotSingleInstanceLock = app.requestSingleInstanceLock()
+if (!gotSingleInstanceLock) {
+  app.quit()
+}
+
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
     width: 1440,
@@ -35,27 +46,56 @@ function createWindow(): BrowserWindow {
   return win
 }
 
-app.whenReady().then(async () => {
-  startBackend()
+if (gotSingleInstanceLock) {
+  app.on('second-instance', () => {
+    const [win] = BrowserWindow.getAllWindows()
+    if (win) {
+      if (win.isMinimized()) win.restore()
+      win.focus()
+    }
+  })
 
-  try {
-    await waitForBackendHealth()
-  } catch (err) {
-    console.error('[main] backend failed to start:', err)
+  async function launch(): Promise<void> {
+    startBackend()
+    try {
+      await waitForBackendHealth()
+    } catch (err) {
+      console.error('[main] backend failed to start:', err)
+    }
+    createWindow()
   }
 
-  createWindow()
+  app.whenReady().then(async () => {
+    await launch()
 
-  app.on('activate', () => {
-    if (BrowserWindow.getAllWindows().length === 0) createWindow()
+    app.on('activate', () => {
+      // On macOS, window-all-closed below stops the backend but keeps the
+      // app alive — reactivating via the dock previously only recreated the
+      // window and left it talking to a dead backend. startBackend() is a
+      // no-op if a process is already running, so re-launching here is safe
+      // in every case, not just this one.
+      if (BrowserWindow.getAllWindows().length === 0) launch()
+    })
   })
-})
 
-app.on('window-all-closed', () => {
-  stopBackend()
-  if (process.platform !== 'darwin') app.quit()
-})
+  app.on('window-all-closed', () => {
+    if (process.platform !== 'darwin') {
+      app.quit()
+    } else {
+      stopBackend()
+    }
+  })
 
-app.on('before-quit', () => {
-  stopBackend()
-})
+  // before-quit fires synchronously, but stopping the backend is now an
+  // awaited handshake (see stopBackend) — preventDefault() to hold the quit,
+  // run the async stop, then quit again. The second app.quit() re-enters
+  // this same handler, so isQuitting guards against re-preventing it and
+  // looping forever.
+  let isQuitting = false
+  app.on('before-quit', (event) => {
+    if (isQuitting) return
+    event.preventDefault()
+    isQuitting = true
+    stopBackend().finally(() => app.quit())
+  })
+}

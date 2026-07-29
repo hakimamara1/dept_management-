@@ -17,5 +17,6 @@ export const suppliersApi = {
   recordPayment: (id: number, data: RecordPaymentInput) =>
     apiClient.post(`/api/suppliers/${id}/payments`, data),
   adjustBalance: (id: number, data: AdjustBalanceInput) =>
-    apiClient.post(`/api/suppliers/${id}/adjust`, data)
+    apiClient.post(`/api/suppliers/${id}/adjust`, data),
+  remove: (id: number) => apiClient.delete<{ success: boolean }>(`/api/suppliers/${id}`)
 }

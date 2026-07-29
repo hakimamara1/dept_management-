@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import type { ColumnDef } from '@tanstack/react-table'
-import { ArrowRight, FileText, Scale, Wallet } from 'lucide-react'
+import { ArrowRight, FileText, Receipt, Scale, Wallet } from 'lucide-react'
 import { Button } from '@shared/components/ui/button'
 import { Badge } from '@shared/components/ui/badge'
 import { DataTable } from '@shared/components/data-table/DataTable'
@@ -18,6 +18,7 @@ import { useSupplierAging } from '../hooks/useSuppliers'
 import { useSupplier, useSupplierLedger } from '../hooks/useSupplierDetail'
 import { RecordPaymentDialog } from '../components/RecordPaymentDialog'
 import { AdjustBalanceDialog } from '../components/AdjustBalanceDialog'
+import { DeleteSupplierDialog } from '../components/DeleteSupplierDialog'
 
 const TYPE_BADGE: Record<SupplierTransactionType, { label: string; variant: 'destructive' | 'success' | 'secondary' }> = {
   invoice: { label: 'فاتورة', variant: 'destructive' },
@@ -25,7 +26,8 @@ const TYPE_BADGE: Record<SupplierTransactionType, { label: string; variant: 'des
   adjustment: { label: 'تسوية', variant: 'secondary' }
 }
 
-const ledgerColumns: ColumnDef<SupplierTransaction, any>[] = [
+function buildLedgerColumns(navigate: ReturnType<typeof useNavigate>): ColumnDef<SupplierTransaction, any>[] {
+  return [
   {
     accessorKey: 'created_at',
     header: ({ column }) => <DataTableColumnHeader column={column} title="التاريخ" />,
@@ -67,12 +69,23 @@ const ledgerColumns: ColumnDef<SupplierTransaction, any>[] = [
     meta: { exportLabel: 'البيان' },
     cell: ({ row }) => (
       <span className="text-muted-foreground">
-        {row.original.invoice_number ? `فاتورة #${row.original.invoice_number} — ` : ''}
+        {row.original.invoice_id != null && (
+          <button
+            type="button"
+            onClick={() => navigate(`/invoices/${row.original.invoice_id}`)}
+            className="me-1 inline-flex items-center gap-1 text-primary hover:underline"
+          >
+            <Receipt className="size-3" />
+            فاتورة #{row.original.invoice_number}
+          </button>
+        )}
+        {row.original.invoice_id != null ? ' — ' : ''}
         {row.original.description ?? '—'}
       </span>
     )
   }
-]
+  ]
+}
 
 export function SupplierDetailPage() {
   const { t } = useI18n()
@@ -92,6 +105,7 @@ export function SupplierDetailPage() {
   }
 
   const balance = Number(supplier.data.current_balance)
+  const ledgerColumns = buildLedgerColumns(navigate)
 
   return (
     <div className="flex flex-1 flex-col">
@@ -105,6 +119,7 @@ export function SupplierDetailPage() {
         subtitle={supplier.data.phone ?? undefined}
         actions={
           <>
+            <DeleteSupplierDialog supplierId={supplierId} supplierName={supplier.data.name} balance={balance} />
             <AdjustBalanceDialog supplierId={supplierId} />
             <RecordPaymentDialog supplierId={supplierId} currentBalance={balance} />
           </>

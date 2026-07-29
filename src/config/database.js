@@ -33,6 +33,7 @@ class DatabaseManager {
         this.runMigrations();
         this.initIndexes();
         this.initStatements();
+        console.log("Database:", dbPath);
     }
 
     /**
@@ -396,6 +397,34 @@ class DatabaseManager {
 
     close() {
         this.db.close();
+    }
+
+    // Graceful-shutdown path only. A plain close() does not force a
+    // checkpoint — WAL frames stay in invoices.db-wal until SQLite's default
+    // passive autocheckpoint (every ~1000 pages) happens to run, which never
+    // truncates the WAL file back down. TRUNCATE both merges every WAL frame
+    // into the main file AND shrinks the WAL to 0 bytes, so invoices.db alone
+    // is a complete, restorable snapshot the moment this returns.
+    checkpointAndClose() {
+        try {
+            this.db.pragma('wal_checkpoint(TRUNCATE)');
+        } catch (err) {
+            // Still close even if the checkpoint itself fails (e.g. another
+            // connection briefly holds a read lock) — an unmerged WAL is
+            // recoverable on next open; a connection left dangling is worse.
+            console.error('[database] WAL checkpoint before close failed:', err.message);
+        }
+        this.db.close();
+    }
+
+    // SQLite's online backup API (sqlite3_backup_*) — takes a consistent
+    // snapshot of a live database regardless of WAL state or concurrent
+    // writers, without blocking them. This is the correct primitive for "back
+    // up while the app might still be running," as opposed to checkpoint +
+    // raw file copy, which is only safe when nothing else can write during
+    // the gap between the two steps.
+    backupTo(destPath) {
+        return this.db.backup(destPath);
     }
 
     // For routes that need raw access

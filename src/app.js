@@ -26,6 +26,7 @@ if (!fs.existsSync(ENV_PATH)) {
 require('dotenv').config({ path: ENV_PATH });
 const express = require('express');
 const cors = require('cors');
+const db = require('./config/database');
 
 BigInt.prototype.toJSON = function () {
     return Number(this);
@@ -68,6 +69,43 @@ app.use((err, req, res, next) => {
 });
 
 
-app.listen(3000, () => {
+const server = app.listen(3000, '127.0.0.1', () => {
     console.log('Server started on port 3000');
 });
+
+// Electron's stopBackend() sends SIGTERM to this process on quit. Node has
+// no default handler for that signal — without one registered here, the
+// process is torn down immediately by the OS and none of our JS ever runs,
+// so db.close()/checkpoint never happen and recent writes are stranded in
+// invoices.db-wal indefinitely. SIGINT is handled the same way for Ctrl+C
+// during `node src/app.js` in dev.
+let shuttingDown = false;
+function shutdown(signal) {
+    if (shuttingDown) return;
+    shuttingDown = true;
+    console.log(`[server] received ${signal}, shutting down gracefully...`);
+
+    // Stop accepting new connections first, then checkpoint+close once
+    // in-flight requests have finished — closing the DB out from under a
+    // request that's still mid-query would surface as a 500, not a clean
+    // shutdown.
+    server.close(() => {
+        db.checkpointAndClose();
+        console.log('[server] database checkpointed and closed');
+        process.exit(0);
+    });
+
+    // A stuck request (or a client that opened a connection and never sent
+    // a body) can keep server.close()'s callback from ever firing. Force
+    // the same checkpoint+close after a bounded wait rather than hanging
+    // forever and having Electron/the OS eventually SIGKILL us with the WAL
+    // never checkpointed at all.
+    setTimeout(() => {
+        console.error('[server] shutdown timed out, forcing exit');
+        db.checkpointAndClose();
+        process.exit(1);
+    }, 5000).unref();
+}
+
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));

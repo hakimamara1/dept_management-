@@ -150,4 +150,40 @@ router.post('/:id/adjust', (req, res) => {
     }
 });
 
+// DELETE /api/suppliers/:id — only for a supplier that was truly never
+// used. A nonzero balance blocks it outright; a zero balance from full
+// repayment does not, since purchase_invoices/supplier_transactions still
+// have no ON DELETE clause on supplier_id (foreign_keys=ON in database.js)
+// — deleting a supplier with real history would either throw a raw FK
+// error or (if it didn't) destroy invoice/payment provenance.
+router.delete('/:id', (req, res) => {
+    try {
+        const supplierId = parseInt(req.params.id);
+        const supplier = db.stmts.suppliers.getById.get(supplierId);
+        if (!supplier) {
+            return res.status(404).json({ error: 'المورد غير موجود' });
+        }
+
+        if (Number(supplier.current_balance) !== 0) {
+            return res.status(400).json({ error: 'لا يمكن حذف مورد رصيده ليس صفراً' });
+        }
+
+        const invoiceCount = db.prepare(
+            'SELECT COUNT(*) as count FROM purchase_invoices WHERE supplier_id = ?'
+        ).get(supplierId).count;
+        const transactionCount = db.prepare(
+            'SELECT COUNT(*) as count FROM supplier_transactions WHERE supplier_id = ?'
+        ).get(supplierId).count;
+
+        if (invoiceCount > 0 || transactionCount > 0) {
+            return res.status(400).json({ error: 'لا يمكن حذف مورد لديه فواتير أو حركات مسجلة' });
+        }
+
+        db.prepare('DELETE FROM suppliers WHERE id = ?').run(supplierId);
+        res.json({ success: true });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

@@ -6,6 +6,7 @@ const BACKEND_PORT = 3e3;
 const HEALTH_URL = `http://127.0.0.1:${BACKEND_PORT}/health`;
 const HEALTH_TIMEOUT_MS = 15e3;
 const HEALTH_POLL_INTERVAL_MS = 250;
+const SHUTDOWN_TIMEOUT_MS = 8e3;
 let backendProcess = null;
 function backendEntryPath() {
   if (electron.app.isPackaged) {
@@ -32,8 +33,19 @@ function startBackend() {
   return backendProcess;
 }
 function stopBackend() {
-  backendProcess?.kill();
-  backendProcess = null;
+  const proc = backendProcess;
+  if (!proc) return Promise.resolve();
+  return new Promise((resolve) => {
+    const killTimer = setTimeout(() => {
+      console.warn("[backend] did not exit within timeout, sending SIGKILL");
+      proc.kill("SIGKILL");
+    }, SHUTDOWN_TIMEOUT_MS);
+    proc.once("exit", () => {
+      clearTimeout(killTimer);
+      resolve();
+    });
+    proc.kill("SIGTERM");
+  });
 }
 async function waitForBackendHealth() {
   const deadline = Date.now() + HEALTH_TIMEOUT_MS;
@@ -46,6 +58,10 @@ async function waitForBackendHealth() {
     await new Promise((r) => setTimeout(r, HEALTH_POLL_INTERVAL_MS));
   }
   throw new Error(`Backend did not become healthy within ${HEALTH_TIMEOUT_MS}ms`);
+}
+const gotSingleInstanceLock = electron.app.requestSingleInstanceLock();
+if (!gotSingleInstanceLock) {
+  electron.app.quit();
 }
 function createWindow() {
   const win = new electron.BrowserWindow({
@@ -75,22 +91,41 @@ function createWindow() {
   }
   return win;
 }
-electron.app.whenReady().then(async () => {
-  startBackend();
-  try {
-    await waitForBackendHealth();
-  } catch (err) {
-    console.error("[main] backend failed to start:", err);
-  }
-  createWindow();
-  electron.app.on("activate", () => {
-    if (electron.BrowserWindow.getAllWindows().length === 0) createWindow();
+if (gotSingleInstanceLock) {
+  electron.app.on("second-instance", () => {
+    const [win] = electron.BrowserWindow.getAllWindows();
+    if (win) {
+      if (win.isMinimized()) win.restore();
+      win.focus();
+    }
   });
-});
-electron.app.on("window-all-closed", () => {
-  stopBackend();
-  if (process.platform !== "darwin") electron.app.quit();
-});
-electron.app.on("before-quit", () => {
-  stopBackend();
-});
+  async function launch() {
+    startBackend();
+    try {
+      await waitForBackendHealth();
+    } catch (err) {
+      console.error("[main] backend failed to start:", err);
+    }
+    createWindow();
+  }
+  electron.app.whenReady().then(async () => {
+    await launch();
+    electron.app.on("activate", () => {
+      if (electron.BrowserWindow.getAllWindows().length === 0) launch();
+    });
+  });
+  electron.app.on("window-all-closed", () => {
+    if (process.platform !== "darwin") {
+      electron.app.quit();
+    } else {
+      stopBackend();
+    }
+  });
+  let isQuitting = false;
+  electron.app.on("before-quit", (event) => {
+    if (isQuitting) return;
+    event.preventDefault();
+    isQuitting = true;
+    stopBackend().finally(() => electron.app.quit());
+  });
+}

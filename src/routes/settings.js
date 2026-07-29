@@ -64,24 +64,37 @@ const restoreUpload = multer({
 });
 
 // GET /api/settings/backup
-router.get('/backup', (req, res) => {
+router.get('/backup', async (req, res) => {
     try {
-        const dbPath = settingsService.createBackup();
+        const backupPath = await settingsService.createBackup();
         const dateStamp = new Date().toISOString().slice(0, 10);
-        res.download(dbPath, `spice-erp-backup-${dateStamp}.db`);
+        res.download(backupPath, `spice-erp-backup-${dateStamp}.db`, (err) => {
+            // res.download's callback fires after the response finishes (or
+            // fails) either way — always clean up the temp file, and only
+            // log the download error since headers may already be sent.
+            fs.unlink(backupPath, () => {});
+            if (err) console.error('[settings] backup download error:', err.message);
+        });
     } catch (err) {
         res.status(500).json({ error: err.message });
     }
 });
 
 // POST /api/settings/restore — requires an app restart afterward, see business-rules.md.
-router.post('/restore', restoreUpload.single('backup'), (req, res) => {
+router.post('/restore', restoreUpload.single('backup'), async (req, res) => {
     try {
         if (!req.file) {
             return res.status(400).json({ error: 'ملف النسخة الاحتياطية مطلوب' });
         }
-        const result = settingsService.restoreBackup(req.file.path);
+        const result = await settingsService.restoreBackup(req.file.path);
         res.json(result);
+        // restoreBackup() already closed the live db connection and swapped
+        // the file out from under it — nothing left in this process can
+        // serve another database request correctly. Exit deliberately so
+        // Electron's health check fails fast and the user is forced through
+        // the restart the response just told them to do, instead of the
+        // backend limping along until they get around to it.
+        setImmediate(() => process.exit(0));
     } catch (err) {
         res.status(400).json({ error: err.message });
     }

@@ -69702,7 +69702,8 @@ const suppliersApi = {
   getLedger: (id) => apiClient.get(`/api/suppliers/${id}/ledger`),
   create: (data) => apiClient.post("/api/suppliers", data),
   recordPayment: (id, data) => apiClient.post(`/api/suppliers/${id}/payments`, data),
-  adjustBalance: (id, data) => apiClient.post(`/api/suppliers/${id}/adjust`, data)
+  adjustBalance: (id, data) => apiClient.post(`/api/suppliers/${id}/adjust`, data),
+  remove: (id) => apiClient.delete(`/api/suppliers/${id}`)
 };
 function useSuppliers(rawQuery) {
   const query = useDebouncedValue(rawQuery.trim(), 300);
@@ -69743,6 +69744,22 @@ function useRecordPayment$1(supplierId) {
     },
     onError: (error) => {
       toast.error("فشل تسجيل الدفعة", { description: error.message });
+    }
+  });
+}
+function useDeleteSupplier(supplierId) {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: () => suppliersApi.remove(supplierId),
+    onSuccess: () => {
+      toast.success("تم حذف المورد بنجاح");
+      queryClient2.invalidateQueries({ queryKey: queryKeys.suppliers.detail(supplierId) });
+      queryClient2.invalidateQueries({ queryKey: queryKeys.suppliers.ledger(supplierId) });
+      queryClient2.invalidateQueries({ queryKey: queryKeys.suppliers.aging });
+      queryClient2.invalidateQueries({ queryKey: ["suppliers", "list"] });
+    },
+    onError: (error) => {
+      toast.error("فشل حذف المورد", { description: error.message });
     }
   });
 }
@@ -70194,55 +70211,122 @@ function AdjustBalanceDialog({ supplierId }) {
     ] })
   ] });
 }
+function DeleteSupplierDialog({ supplierId, supplierName, balance }) {
+  const navigate = useNavigate();
+  const [open, setOpen] = reactExports.useState(false);
+  const deleteSupplier = useDeleteSupplier(supplierId);
+  const disabled = balance !== 0;
+  function handleConfirm() {
+    deleteSupplier.mutate(void 0, {
+      onSuccess: () => {
+        setOpen(false);
+        navigate("/suppliers");
+      }
+    });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Dialog, { open, onOpenChange: setOpen, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTrigger, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      Button,
+      {
+        size: "sm",
+        variant: "outline",
+        className: "text-destructive hover:text-destructive",
+        disabled,
+        title: disabled ? "لا يمكن حذف مورد رصيده ليس صفراً" : void 0,
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Trash2, { className: "size-4" }),
+          "حذف المورد"
+        ]
+      }
+    ) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogContent, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogTitle, { children: [
+          "حذف المورد «",
+          supplierName,
+          "»"
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: "هذا الإجراء نهائي ولا يمكن التراجع عنه." })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-start gap-2 rounded-lg bg-warning/10 p-3 text-xs text-warning", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(TriangleAlert, { className: "mt-0.5 size-4 shrink-0" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+          "سيتم حذف المورد «",
+          supplierName,
+          "» نهائياً. هذا متاح فقط لمورد لم يُستخدم إطلاقاً — بلا فواتير أو دفعات أو تسويات مسجلة. إذا كان لدى هذا المورد أي سجل، ستفشل عملية الحذف."
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogFooter, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "ghost", onClick: () => setOpen(false), children: "إلغاء" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "destructive", onClick: handleConfirm, disabled: deleteSupplier.isPending, children: deleteSupplier.isPending ? "جاري الحذف..." : "تأكيد الحذف" })
+      ] })
+    ] })
+  ] });
+}
 const TYPE_BADGE = {
   invoice: { label: "فاتورة", variant: "destructive" },
   payment: { label: "دفعة", variant: "success" },
   adjustment: { label: "تسوية", variant: "secondary" }
 };
-const ledgerColumns = [
-  {
-    accessorKey: "created_at",
-    header: ({ column }) => /* @__PURE__ */ jsxRuntimeExports.jsx(DataTableColumnHeader, { column, title: "التاريخ" }),
-    meta: { exportLabel: "التاريخ" },
-    cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: formatDate(row.original.created_at) })
-  },
-  {
-    accessorKey: "transaction_type",
-    header: "النوع",
-    meta: { exportLabel: "النوع" },
-    cell: ({ row }) => {
-      const badge = TYPE_BADGE[row.original.transaction_type];
-      return /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: badge.variant, children: badge.label });
+function buildLedgerColumns(navigate) {
+  return [
+    {
+      accessorKey: "created_at",
+      header: ({ column }) => /* @__PURE__ */ jsxRuntimeExports.jsx(DataTableColumnHeader, { column, title: "التاريخ" }),
+      meta: { exportLabel: "التاريخ" },
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: formatDate(row.original.created_at) })
+    },
+    {
+      accessorKey: "transaction_type",
+      header: "النوع",
+      meta: { exportLabel: "النوع" },
+      cell: ({ row }) => {
+        const badge = TYPE_BADGE[row.original.transaction_type];
+        return /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: badge.variant, children: badge.label });
+      }
+    },
+    {
+      accessorKey: "amount",
+      header: ({ column }) => /* @__PURE__ */ jsxRuntimeExports.jsx(DataTableColumnHeader, { column, title: "المبلغ" }),
+      meta: { exportLabel: "المبلغ" },
+      cell: ({ row }) => {
+        const amount = Number(row.original.amount);
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: cn$1("tabular-nums font-medium", amount > 0 ? "text-destructive" : "text-success"), children: [
+          amount > 0 ? "+" : "",
+          formatCurrency(amount)
+        ] });
+      }
+    },
+    {
+      accessorKey: "balance_after",
+      header: "الرصيد بعد العملية",
+      meta: { exportLabel: "الرصيد بعد العملية" },
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums", children: formatCurrency(row.original.balance_after) })
+    },
+    {
+      accessorKey: "description",
+      header: "البيان",
+      meta: { exportLabel: "البيان" },
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-muted-foreground", children: [
+        row.original.invoice_id != null && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          "button",
+          {
+            type: "button",
+            onClick: () => navigate(`/invoices/${row.original.invoice_id}`),
+            className: "me-1 inline-flex items-center gap-1 text-primary hover:underline",
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Receipt, { className: "size-3" }),
+              "فاتورة #",
+              row.original.invoice_number
+            ]
+          }
+        ),
+        row.original.invoice_id != null ? " — " : "",
+        row.original.description ?? "—"
+      ] })
     }
-  },
-  {
-    accessorKey: "amount",
-    header: ({ column }) => /* @__PURE__ */ jsxRuntimeExports.jsx(DataTableColumnHeader, { column, title: "المبلغ" }),
-    meta: { exportLabel: "المبلغ" },
-    cell: ({ row }) => {
-      const amount = Number(row.original.amount);
-      return /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: cn$1("tabular-nums font-medium", amount > 0 ? "text-destructive" : "text-success"), children: [
-        amount > 0 ? "+" : "",
-        formatCurrency(amount)
-      ] });
-    }
-  },
-  {
-    accessorKey: "balance_after",
-    header: "الرصيد بعد العملية",
-    meta: { exportLabel: "الرصيد بعد العملية" },
-    cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums", children: formatCurrency(row.original.balance_after) })
-  },
-  {
-    accessorKey: "description",
-    header: "البيان",
-    meta: { exportLabel: "البيان" },
-    cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-muted-foreground", children: [
-      row.original.invoice_number ? `فاتورة #${row.original.invoice_number} — ` : "",
-      row.original.description ?? "—"
-    ] })
-  }
-];
+  ];
+}
 function SupplierDetailPage() {
   const { t: t2 } = useI18n();
   const { id } = useParams();
@@ -70257,6 +70341,7 @@ function SupplierDetailPage() {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(ErrorState, { message: supplier.error?.message ?? "المورد غير موجود", onRetry: () => supplier.refetch() });
   }
   const balance = Number(supplier.data.current_balance);
+  const ledgerColumns = buildLedgerColumns(navigate);
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-1 flex-col", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { variant: "ghost", size: "sm", className: "mb-2 w-fit", onClick: () => navigate("/suppliers"), children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowRight, { className: "size-4" }),
@@ -70268,6 +70353,7 @@ function SupplierDetailPage() {
         title: supplier.data.name,
         subtitle: supplier.data.phone ?? void 0,
         actions: /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(DeleteSupplierDialog, { supplierId, supplierName: supplier.data.name, balance }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(AdjustBalanceDialog, { supplierId }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(RecordPaymentDialog$1, { supplierId, currentBalance: balance })
         ] })
