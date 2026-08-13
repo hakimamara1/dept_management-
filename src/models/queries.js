@@ -318,24 +318,24 @@ const QUERIES = {
   // the same query multiplies rows and overcounts both sums.
   customers: {
     getAll: `SELECT c.*,
-                    COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id), 0) as total_invoice_amount,
-                    COALESCE((SELECT COUNT(*) FROM sales_invoices WHERE customer_id = c.id), 0) as total_invoices,
+                    COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft'), 0) as total_invoice_amount,
+                    COALESCE((SELECT COUNT(*) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft'), 0) as total_invoices,
                     COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id), 0) as total_payment_amount,
                     COALESCE((SELECT COUNT(*) FROM customer_payments WHERE customer_id = c.id), 0) as total_payments,
-                    (SELECT MAX(invoice_date) FROM sales_invoices WHERE customer_id = c.id) as last_invoice_date,
+                    (SELECT MAX(invoice_date) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft') as last_invoice_date,
                     (SELECT MAX(payment_date) FROM customer_payments WHERE customer_id = c.id) as last_payment_date,
-                    (COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id), 0)
+                    (COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft'), 0)
                      - COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id), 0)) as current_balance
                   FROM customers c
                   ORDER BY c.full_name`,
     search: `SELECT c.*,
-                    COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id), 0) as total_invoice_amount,
-                    COALESCE((SELECT COUNT(*) FROM sales_invoices WHERE customer_id = c.id), 0) as total_invoices,
+                    COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft'), 0) as total_invoice_amount,
+                    COALESCE((SELECT COUNT(*) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft'), 0) as total_invoices,
                     COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id), 0) as total_payment_amount,
                     COALESCE((SELECT COUNT(*) FROM customer_payments WHERE customer_id = c.id), 0) as total_payments,
-                    (SELECT MAX(invoice_date) FROM sales_invoices WHERE customer_id = c.id) as last_invoice_date,
+                    (SELECT MAX(invoice_date) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft') as last_invoice_date,
                     (SELECT MAX(payment_date) FROM customer_payments WHERE customer_id = c.id) as last_payment_date,
-                    (COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id), 0)
+                    (COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft'), 0)
                      - COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id), 0)) as current_balance
                   FROM customers c
                   WHERE c.full_name LIKE ?
@@ -343,13 +343,13 @@ const QUERIES = {
                   LIMIT 20`,
     getById: `SELECT * FROM customers WHERE id = ?`,
     getSummary: `SELECT c.*,
-                    COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id), 0) as total_invoice_amount,
-                    COALESCE((SELECT COUNT(*) FROM sales_invoices WHERE customer_id = c.id), 0) as total_invoices,
+                    COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft'), 0) as total_invoice_amount,
+                    COALESCE((SELECT COUNT(*) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft'), 0) as total_invoices,
                     COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id AND transaction_type != 'adjustment'), 0) as total_payment_amount,
                     COALESCE((SELECT COUNT(*) FROM customer_payments WHERE customer_id = c.id AND transaction_type != 'adjustment'), 0) as total_payments,
-                    (SELECT MAX(invoice_date) FROM sales_invoices WHERE customer_id = c.id) as last_invoice_date,
+                    (SELECT MAX(invoice_date) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft') as last_invoice_date,
                     (SELECT MAX(payment_date) FROM customer_payments WHERE customer_id = c.id AND transaction_type != 'adjustment') as last_payment_date,
-                    (COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id), 0)
+                    (COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft'), 0)
                      - COALESCE((SELECT SUM(CASE WHEN transaction_type = 'adjustment' THEN -amount ELSE amount END)
                                  FROM customer_payments WHERE customer_id = c.id), 0)) as current_balance
                   FROM customers c
@@ -358,13 +358,13 @@ const QUERIES = {
     reports: {
       getSummary: `SELECT
                     (SELECT COUNT(*) FROM customers) as total_customers,
-                    (SELECT COALESCE(SUM(invoice_amount), 0) FROM sales_invoices) as total_invoice_value,
+                    (SELECT COALESCE(SUM(invoice_amount), 0) FROM sales_invoices WHERE status != 'Draft') as total_invoice_value,
                     (SELECT COALESCE(SUM(amount), 0) FROM customer_payments WHERE transaction_type != 'adjustment') as total_payment_value,
-                    ((SELECT COALESCE(SUM(invoice_amount), 0) FROM sales_invoices)
+                    ((SELECT COALESCE(SUM(invoice_amount), 0) FROM sales_invoices WHERE status != 'Draft')
                      - (SELECT COALESCE(SUM(CASE WHEN transaction_type = 'adjustment' THEN -amount ELSE amount END), 0) FROM customer_payments)) as total_customer_debt,
-                    (SELECT CASE WHEN COUNT(*) = 0 THEN 0 ELSE AVG(invoice_amount) END FROM sales_invoices) as average_invoice_value`,
+                    (SELECT CASE WHEN COUNT(*) = 0 THEN 0 ELSE AVG(invoice_amount) END FROM sales_invoices WHERE status != 'Draft') as average_invoice_value`,
       getLargestDebtors: `SELECT c.id, c.full_name,
-                    (COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id), 0)
+                    (COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft'), 0)
                      - COALESCE((SELECT SUM(CASE WHEN transaction_type = 'adjustment' THEN -amount ELSE amount END)
                                  FROM customer_payments WHERE customer_id = c.id), 0)) as balance
                   FROM customers c
@@ -388,22 +388,41 @@ const QUERIES = {
                    WHERE si.id = ? AND si.customer_id = ?`,
     getItemsByInvoice: `SELECT * FROM sales_invoice_items WHERE invoice_id = ?`,
     insert: `INSERT INTO sales_invoices
-                    (invoice_number, customer_id, invoice_date, invoice_amount, previous_balance, new_balance, notes)
-                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                    (invoice_number, customer_id, invoice_date, invoice_amount, previous_balance, new_balance, notes, status)
+                  VALUES (?, ?, ?, ?, ?, ?, ?, ?)`,
     updateInvoiceNumber: `UPDATE sales_invoices SET invoice_number = ? WHERE id = ?`,
     insertItem: `INSERT INTO sales_invoice_items
                         (invoice_id, product_name, unit, quantity, unit_price, line_total)
                       VALUES (?, ?, ?, ?, ?, ?)`,
+    updateItem: `UPDATE sales_invoice_items
+                    SET product_name = ?, unit = ?, quantity = ?, unit_price = ?, line_total = ?
+                  WHERE id = ?`,
+    deleteItem: `DELETE FROM sales_invoice_items WHERE id = ?`,
+    countItems: `SELECT COUNT(*) as count FROM sales_invoice_items WHERE invoice_id = ?`,
+    // Keeps invoice_amount permanently in sync with the items, same role as
+    // the purchase side's recalculateInvoiceTotal — called at the end of
+    // every draft item add/edit/delete.
+    recalculateTotal: `UPDATE sales_invoices
+                    SET invoice_amount = (SELECT COALESCE(SUM(line_total), 0) FROM sales_invoice_items WHERE invoice_id = ?)
+                  WHERE id = ?`,
+    updateNotes: `UPDATE sales_invoices SET notes = ? WHERE id = ?`,
+    approve: `UPDATE sales_invoices SET status = 'Final', previous_balance = ?, new_balance = ? WHERE id = ?`,
+    deleteInvoice: `DELETE FROM sales_invoices WHERE id = ?`,
+    deleteItemsByInvoice: `DELETE FROM sales_invoice_items WHERE invoice_id = ?`,
     // Real payments subtract from balance as always. Adjustment rows add
     // their (signed) amount instead — a positive adjustment increases what
     // the customer owes, negative decreases it, same convention as the
     // supplier side's adjustBalance. See customerService.adjustBalance.
+    // A Draft invoice has zero effect on the balance until approved — same
+    // principle as a Pending Review purchase invoice never touching
+    // accounts_payable.
     getCustomerBalance: `SELECT
-                    (COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = ?), 0)
+                    (COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = ? AND status != 'Draft'), 0)
                      - COALESCE((SELECT SUM(CASE WHEN transaction_type = 'adjustment' THEN -amount ELSE amount END)
                                  FROM customer_payments WHERE customer_id = ?), 0)) as balance`,
     // UNION ALL of both ledger sources + a running-total window function —
     // nothing here is stored, the whole statement is regenerated on read.
+    // Drafts are excluded for the same reason as getCustomerBalance above.
     getStatement: `SELECT entry_type, entry_id, entry_date, reference, amount,
                     SUM(amount) OVER (
                       ORDER BY entry_date, entry_created_at, entry_type, entry_id
@@ -412,7 +431,7 @@ const QUERIES = {
                   FROM (
                     SELECT 'invoice' as entry_type, id as entry_id, invoice_date as entry_date, created_at as entry_created_at,
                            invoice_number as reference, invoice_amount as amount
-                    FROM sales_invoices WHERE customer_id = ?
+                    FROM sales_invoices WHERE customer_id = ? AND status != 'Draft'
                     UNION ALL
                     SELECT CASE WHEN transaction_type = 'adjustment' THEN 'adjustment' ELSE 'payment' END as entry_type,
                            id as entry_id, payment_date as entry_date, created_at as entry_created_at,

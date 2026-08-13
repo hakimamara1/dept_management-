@@ -79,6 +79,7 @@ class DatabaseManager {
         this._addColumnIfMissing('purchase_invoices', 'source', "TEXT DEFAULT 'ocr'");
         this._addColumnIfMissing('purchase_invoices', 'ocr_supplier_name', 'TEXT');
         this._addColumnIfMissing('customer_payments', 'transaction_type', "TEXT DEFAULT 'payment'");
+        this._addColumnIfMissing('sales_invoices', 'status', "TEXT DEFAULT 'Final'");
 
         // Seed the settings singleton row once — GET never has to special-case "no row yet".
         this.db.prepare('INSERT OR IGNORE INTO business_profile (id) VALUES (1)').run();
@@ -159,6 +160,14 @@ class DatabaseManager {
                 insert: this.db.prepare(QUERIES.salesInvoices.insert),
                 updateInvoiceNumber: this.db.prepare(QUERIES.salesInvoices.updateInvoiceNumber),
                 insertItem: this.db.prepare(QUERIES.salesInvoices.insertItem),
+                updateItem: this.db.prepare(QUERIES.salesInvoices.updateItem),
+                deleteItem: this.db.prepare(QUERIES.salesInvoices.deleteItem),
+                countItems: this.db.prepare(QUERIES.salesInvoices.countItems),
+                recalculateTotal: this.db.prepare(QUERIES.salesInvoices.recalculateTotal),
+                updateNotes: this.db.prepare(QUERIES.salesInvoices.updateNotes),
+                approve: this.db.prepare(QUERIES.salesInvoices.approve),
+                deleteInvoice: this.db.prepare(QUERIES.salesInvoices.deleteInvoice),
+                deleteItemsByInvoice: this.db.prepare(QUERIES.salesInvoices.deleteItemsByInvoice),
                 getCustomerBalance: this.db.prepare(QUERIES.salesInvoices.getCustomerBalance),
                 getStatement: this.db.prepare(QUERIES.salesInvoices.getStatement)
             },

@@ -22,7 +22,7 @@ import { CreateSalesInvoiceSheet } from '../components/CreateSalesInvoiceSheet'
 import { RecordCustomerPaymentDialog } from '../components/RecordCustomerPaymentDialog'
 import { AdjustCustomerBalanceDialog } from '../components/AdjustCustomerBalanceDialog'
 
-type SubTab = 'invoices' | 'payments' | 'statement'
+type SubTab = 'drafts' | 'invoices' | 'payments' | 'statement'
 
 export function CustomerDetailPage() {
   const { t } = useI18n()
@@ -35,6 +35,9 @@ export function CustomerDetailPage() {
   const invoices = useCustomerInvoices(customerId)
   const payments = useCustomerPayments(customerId)
   const statement = useCustomerStatement(customerId)
+
+  const draftInvoices = invoices.data?.filter((inv) => inv.status === 'Draft') ?? []
+  const approvedInvoices = invoices.data?.filter((inv) => inv.status !== 'Draft') ?? []
 
   const invoiceColumns: ColumnDef<SalesInvoiceListItem, any>[] = [
     {
@@ -177,8 +180,16 @@ export function CustomerDetailPage() {
       </div>
 
       <div className="mb-4 flex gap-2">
+        <Button variant={tab === 'drafts' ? 'default' : 'ghost'} size="sm" onClick={() => setTab('drafts')}>
+          المسودات
+          {draftInvoices.length > 0 && (
+            <Badge variant="warning" className="ms-1">
+              {draftInvoices.length}
+            </Badge>
+          )}
+        </Button>
         <Button variant={tab === 'invoices' ? 'default' : 'ghost'} size="sm" onClick={() => setTab('invoices')}>
-          {t('customers.invoicesTab')}
+          الفواتير المعتمدة
         </Button>
         <Button variant={tab === 'payments' ? 'default' : 'ghost'} size="sm" onClick={() => setTab('payments')}>
           {t('customers.paymentsTab')}
@@ -188,13 +199,23 @@ export function CustomerDetailPage() {
         </Button>
       </div>
 
+      {tab === 'drafts' && (
+        <DataTable
+          columns={invoiceColumns}
+          data={draftInvoices}
+          isLoading={invoices.isLoading}
+          exportFileName={`customer-${customerId}-drafts`}
+          emptyTitle="لا توجد مسودات حالياً"
+          emptyDescription="أنشئ فاتورة جديدة لتبدأ مسودة قابلة للتعديل"
+        />
+      )}
       {tab === 'invoices' && (
         <DataTable
           columns={invoiceColumns}
-          data={invoices.data ?? []}
+          data={approvedInvoices}
           isLoading={invoices.isLoading}
           exportFileName={`customer-${customerId}-invoices`}
-          emptyTitle="لا توجد فواتير بعد"
+          emptyTitle="لا توجد فواتير معتمدة بعد"
         />
       )}
       {tab === 'payments' && (

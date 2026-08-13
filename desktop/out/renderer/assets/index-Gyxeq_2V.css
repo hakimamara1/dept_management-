@@ -964,6 +964,10 @@
     min-width: calc(var(--spacing) * 56);
   }
 
+  .min-w-\[10rem\] {
+    min-width: 10rem;
+  }
+
   .flex-1 {
     flex: 1;
   }
@@ -1206,6 +1210,10 @@
 
   .overflow-hidden {
     overflow: hidden;
+  }
+
+  .overflow-x-auto {
+    overflow-x: auto;
   }
 
   .overflow-y-auto {

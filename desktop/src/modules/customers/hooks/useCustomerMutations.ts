@@ -27,15 +27,13 @@ export function useCreateSalesInvoice(customerId: number) {
   return useMutation({
     mutationFn: (data: CreateSalesInvoiceFormValues) => customersApi.createInvoice(customerId, data),
     onSuccess: (invoice) => {
-      toast.success(`تم إنشاء الفاتورة ${invoice.invoice_number} بنجاح`)
+      // A Draft has zero effect on the balance/statement/reports — only
+      // the invoices list actually changed, so only that needs refetching.
+      toast.success(`تم حفظ المسودة ${invoice.invoice_number} — راجعها واعتمدها من صفحتها`)
       queryClient.invalidateQueries({ queryKey: queryKeys.customers.invoices(customerId) })
-      queryClient.invalidateQueries({ queryKey: queryKeys.customers.detail(customerId) })
-      queryClient.invalidateQueries({ queryKey: queryKeys.customers.statement(customerId) })
-      queryClient.invalidateQueries({ queryKey: ['customers', 'list'] })
-      queryClient.invalidateQueries({ queryKey: queryKeys.customers.reports })
     },
     onError: (error: Error) => {
-      toast.error('فشل إنشاء الفاتورة', { description: error.message })
+      toast.error('فشل حفظ المسودة', { description: error.message })
     }
   })
 }

@@ -57,6 +57,10 @@ class CustomerService {
         return { ...invoice, items };
     }
 
+    // Always created as a Draft — has zero effect on the customer's balance
+    // or statement until explicitly approved (see approveInvoice below).
+    // previous_balance/new_balance are stamped here as a live preview only;
+    // they get overwritten for real at approval time.
     createInvoice(customerId, { invoiceDate, items, notes }) {
         if (!invoiceDate) {
             throw new Error('تاريخ الفاتورة مطلوب');
@@ -100,7 +104,8 @@ class CustomerService {
                 invoiceAmount,
                 previousBalance,
                 newBalance,
-                notes || null
+                notes || null,
+                'Draft'
             );
 
             const invoiceId = result.lastInsertRowid;
@@ -118,6 +123,135 @@ class CustomerService {
                 );
             }
 
+            return this.getInvoice(customerId, invoiceId);
+        });
+
+        return transaction();
+    }
+
+    // ═══════════════════════════════════════════════════════════════
+    // DRAFT EDITING — the only place item corrections happen. Every method
+    // here throws if the invoice isn't still a Draft; once Final (approved),
+    // none of this is reachable, by design (mirrors invoiceProcessor's
+    // Pending-Review-only item editing on the purchase side).
+    // ═══════════════════════════════════════════════════════════════
+    _requireDraftInvoice(customerId, invoiceId) {
+        const invoice = db.stmts.salesInvoices.getById.get(invoiceId, customerId);
+        if (!invoice) {
+            throw new Error('الفاتورة غير موجودة');
+        }
+        if (invoice.status !== 'Draft') {
+            throw new Error('لا يمكن التعديل — الفاتورة معتمدة بالفعل');
+        }
+        return invoice;
+    }
+
+    // Recomputes previous_balance/new_balance as a fresh live preview after
+    // an item change — the draft itself is excluded from getCurrentBalance,
+    // so this always reflects "what the balance would become if approved
+    // right now."
+    _refreshDraftPreview(customerId, invoiceId) {
+        const invoice = db.stmts.salesInvoices.getById.get(invoiceId, customerId);
+        const previousBalance = this.getCurrentBalance(customerId);
+        const newBalance = previousBalance + Number(invoice.invoice_amount);
+        db.prepare('UPDATE sales_invoices SET previous_balance = ?, new_balance = ? WHERE id = ?')
+            .run(previousBalance, newBalance, invoiceId);
+    }
+
+    updateInvoiceItem(customerId, invoiceId, itemId, { productName, unit, quantity, unitPrice }) {
+        const transaction = db.transaction(() => {
+            this._requireDraftInvoice(customerId, invoiceId);
+            const item = db.prepare('SELECT * FROM sales_invoice_items WHERE id = ? AND invoice_id = ?').get(itemId, invoiceId);
+            if (!item) {
+                throw new Error('الصنف غير موجود في هذه الفاتورة');
+            }
+
+            const newName = productName && productName.toString().trim() ? productName.toString().trim() : item.product_name;
+            const newUnit = unit !== undefined ? (unit || null) : item.unit;
+            const newQty = quantity != null ? Number(quantity) : Number(item.quantity);
+            const newPrice = unitPrice != null ? Number(unitPrice) : Number(item.unit_price);
+            if (!newQty || newQty <= 0) throw new Error('الكمية يجب أن تكون أكبر من الصفر');
+            if (newPrice < 0) throw new Error('سعر الوحدة غير صالح');
+            const newTotal = newQty * newPrice;
+
+            db.stmts.salesInvoices.updateItem.run(newName, newUnit, newQty, newPrice, newTotal, itemId);
+            db.stmts.salesInvoices.recalculateTotal.run(invoiceId, invoiceId);
+            this._refreshDraftPreview(customerId, invoiceId);
+
+            return this.getInvoice(customerId, invoiceId);
+        });
+
+        return transaction();
+    }
+
+    addInvoiceItem(customerId, invoiceId, { productName, unit, quantity, unitPrice }) {
+        const transaction = db.transaction(() => {
+            this._requireDraftInvoice(customerId, invoiceId);
+            if (!productName || !productName.toString().trim()) throw new Error('اسم الصنف مطلوب');
+            const qty = Number(quantity);
+            const price = Number(unitPrice);
+            if (!qty || qty <= 0) throw new Error('الكمية يجب أن تكون أكبر من الصفر');
+            if (price == null || price < 0 || Number.isNaN(price)) throw new Error('سعر الوحدة غير صالح');
+
+            db.stmts.salesInvoices.insertItem.run(invoiceId, productName.toString().trim(), unit || null, qty, price, qty * price);
+            db.stmts.salesInvoices.recalculateTotal.run(invoiceId, invoiceId);
+            this._refreshDraftPreview(customerId, invoiceId);
+
+            return this.getInvoice(customerId, invoiceId);
+        });
+
+        return transaction();
+    }
+
+    deleteInvoiceItem(customerId, invoiceId, itemId) {
+        const transaction = db.transaction(() => {
+            this._requireDraftInvoice(customerId, invoiceId);
+            const item = db.prepare('SELECT * FROM sales_invoice_items WHERE id = ? AND invoice_id = ?').get(itemId, invoiceId);
+            if (!item) {
+                throw new Error('الصنف غير موجود في هذه الفاتورة');
+            }
+            const { count } = db.stmts.salesInvoices.countItems.get(invoiceId);
+            if (count <= 1) {
+                throw new Error('يجب أن تحتوي الفاتورة على صنف واحد على الأقل');
+            }
+
+            db.stmts.salesInvoices.deleteItem.run(itemId);
+            db.stmts.salesInvoices.recalculateTotal.run(invoiceId, invoiceId);
+            this._refreshDraftPreview(customerId, invoiceId);
+
+            return this.getInvoice(customerId, invoiceId);
+        });
+
+        return transaction();
+    }
+
+    updateInvoiceNotes(customerId, invoiceId, notes) {
+        this._requireDraftInvoice(customerId, invoiceId);
+        db.stmts.salesInvoices.updateNotes.run(notes || null, invoiceId);
+        return this.getInvoice(customerId, invoiceId);
+    }
+
+    deleteInvoice(customerId, invoiceId) {
+        const transaction = db.transaction(() => {
+            this._requireDraftInvoice(customerId, invoiceId);
+            db.stmts.salesInvoices.deleteItemsByInvoice.run(invoiceId);
+            db.stmts.salesInvoices.deleteInvoice.run(invoiceId);
+            return { success: true };
+        });
+
+        return transaction();
+    }
+
+    // Locks the draft in for real: the live balance *at this moment*
+    // becomes previous_balance (correctly excludes this row — it's still
+    // Draft at read time), status flips to Final, and only from here on
+    // does this invoice affect getCustomerBalance/getStatement.
+    approveInvoice(customerId, invoiceId) {
+        const transaction = db.transaction(() => {
+            const invoice = this._requireDraftInvoice(customerId, invoiceId);
+            const previousBalance = this.getCurrentBalance(customerId);
+            const newBalance = previousBalance + Number(invoice.invoice_amount);
+            db.stmts.salesInvoices.approve.run(previousBalance, newBalance, invoiceId);
             return this.getInvoice(customerId, invoiceId);
         });
 

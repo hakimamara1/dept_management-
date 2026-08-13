@@ -1,5 +1,6 @@
 import { apiClient } from '@shared/lib/api-client'
 import type {
+  AddSalesInvoiceItemInput,
   AdjustBalanceInput,
   Customer,
   CustomerPayment,
@@ -9,7 +10,8 @@ import type {
   CreateSalesInvoiceInput,
   RecordCustomerPaymentInput,
   SalesInvoiceDetail,
-  SalesInvoiceListItem
+  SalesInvoiceListItem,
+  UpdateSalesInvoiceItemInput
 } from '@shared/types/api'
 
 export const customersApi = {
@@ -24,6 +26,18 @@ export const customersApi = {
     apiClient.get<SalesInvoiceDetail>(`/api/customers/${customerId}/invoices/${invoiceId}`),
   createInvoice: (customerId: number, data: CreateSalesInvoiceInput) =>
     apiClient.post<SalesInvoiceDetail>(`/api/customers/${customerId}/invoices`, data),
+  updateInvoiceItem: (customerId: number, invoiceId: number, itemId: number, data: UpdateSalesInvoiceItemInput) =>
+    apiClient.patch<SalesInvoiceDetail>(`/api/customers/${customerId}/invoices/${invoiceId}/items/${itemId}`, data),
+  addInvoiceItem: (customerId: number, invoiceId: number, data: AddSalesInvoiceItemInput) =>
+    apiClient.post<SalesInvoiceDetail>(`/api/customers/${customerId}/invoices/${invoiceId}/items`, data),
+  deleteInvoiceItem: (customerId: number, invoiceId: number, itemId: number) =>
+    apiClient.delete<SalesInvoiceDetail>(`/api/customers/${customerId}/invoices/${invoiceId}/items/${itemId}`),
+  updateInvoiceNotes: (customerId: number, invoiceId: number, notes: string) =>
+    apiClient.patch<SalesInvoiceDetail>(`/api/customers/${customerId}/invoices/${invoiceId}/notes`, { notes }),
+  deleteInvoice: (customerId: number, invoiceId: number) =>
+    apiClient.delete<{ success: boolean }>(`/api/customers/${customerId}/invoices/${invoiceId}`),
+  approveInvoice: (customerId: number, invoiceId: number) =>
+    apiClient.post<SalesInvoiceDetail>(`/api/customers/${customerId}/invoices/${invoiceId}/approve`),
 
   getPayments: (customerId: number) =>
     apiClient.get<CustomerPayment[]>(`/api/customers/${customerId}/payments`),

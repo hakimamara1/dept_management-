@@ -84,6 +84,83 @@ router.get('/:id/invoices/:invoiceId', (req, res) => {
     }
 });
 
+// PATCH /api/customers/:id/invoices/:invoiceId/items/:itemId — Draft only.
+router.patch('/:id/invoices/:invoiceId/items/:itemId', (req, res) => {
+    try {
+        const customerId = parseInt(req.params.id);
+        const invoiceId = parseInt(req.params.invoiceId);
+        const itemId = parseInt(req.params.itemId);
+        const invoice = customerService.updateInvoiceItem(customerId, invoiceId, itemId, req.body);
+        res.json(invoice);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// POST /api/customers/:id/invoices/:invoiceId/items — Draft only.
+router.post('/:id/invoices/:invoiceId/items', (req, res) => {
+    try {
+        const customerId = parseInt(req.params.id);
+        const invoiceId = parseInt(req.params.invoiceId);
+        const invoice = customerService.addInvoiceItem(customerId, invoiceId, req.body);
+        res.json(invoice);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// DELETE /api/customers/:id/invoices/:invoiceId/items/:itemId — Draft only,
+// rejects deleting the last remaining item.
+router.delete('/:id/invoices/:invoiceId/items/:itemId', (req, res) => {
+    try {
+        const customerId = parseInt(req.params.id);
+        const invoiceId = parseInt(req.params.invoiceId);
+        const itemId = parseInt(req.params.itemId);
+        const invoice = customerService.deleteInvoiceItem(customerId, invoiceId, itemId);
+        res.json(invoice);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// PATCH /api/customers/:id/invoices/:invoiceId/notes — Draft only.
+router.patch('/:id/invoices/:invoiceId/notes', (req, res) => {
+    try {
+        const customerId = parseInt(req.params.id);
+        const invoiceId = parseInt(req.params.invoiceId);
+        const invoice = customerService.updateInvoiceNotes(customerId, invoiceId, req.body.notes);
+        res.json(invoice);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// DELETE /api/customers/:id/invoices/:invoiceId — deletes the whole draft
+// (header + items). Draft only — see customerService.deleteInvoice.
+router.delete('/:id/invoices/:invoiceId', (req, res) => {
+    try {
+        const customerId = parseInt(req.params.id);
+        const invoiceId = parseInt(req.params.invoiceId);
+        const result = customerService.deleteInvoice(customerId, invoiceId);
+        res.json(result);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
+// POST /api/customers/:id/invoices/:invoiceId/approve — locks the draft in,
+// affecting the customer's balance/statement for the first time.
+router.post('/:id/invoices/:invoiceId/approve', (req, res) => {
+    try {
+        const customerId = parseInt(req.params.id);
+        const invoiceId = parseInt(req.params.invoiceId);
+        const invoice = customerService.approveInvoice(customerId, invoiceId);
+        res.json(invoice);
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
 // GET /api/customers/:id/payments
 router.get('/:id/payments', (req, res) => {
     try {

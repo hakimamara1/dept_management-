@@ -396,6 +396,8 @@ export interface CreateCustomerInput {
   notes?: string
 }
 
+export type SalesInvoiceStatus = 'Draft' | 'Final'
+
 export interface SalesInvoiceListItem {
   id: number
   invoice_number: string
@@ -405,6 +407,7 @@ export interface SalesInvoiceListItem {
   previous_balance: number
   new_balance: number
   notes: string | null
+  status: SalesInvoiceStatus
   created_at: string
 }
 
@@ -437,6 +440,20 @@ export interface CreateSalesInvoiceInput {
   invoiceDate: string
   notes?: string
   items: CreateSalesInvoiceItemInput[]
+}
+
+export interface UpdateSalesInvoiceItemInput {
+  productName?: string
+  unit?: string | null
+  quantity?: number
+  unitPrice?: number
+}
+
+export interface AddSalesInvoiceItemInput {
+  productName: string
+  unit?: string | null
+  quantity: number
+  unitPrice: number
 }
 
 export interface CustomerPayment {

@@ -201,7 +201,9 @@ CREATE TABLE IF NOT EXISTS customers (
 -- previous_balance/new_balance ARE stored here despite the "no stored
 -- balance" rule above — they are a historical fact on an immutable
 -- document (same pattern as purchase_invoices.previous_balance/new_balance),
--- not a live balance that could drift.
+-- not a live balance that could drift. While status='Draft' they are only a
+-- live preview (recomputed on every item edit) — approveInvoice is what
+-- locks them in for real. See business-rules.md / customerService.js.
 CREATE TABLE IF NOT EXISTS sales_invoices (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     invoice_number TEXT NOT NULL UNIQUE,
@@ -211,6 +213,7 @@ CREATE TABLE IF NOT EXISTS sales_invoices (
     previous_balance DECIMAL(15,2) NOT NULL,
     new_balance DECIMAL(15,2) NOT NULL,
     notes TEXT,
+    status TEXT DEFAULT 'Final',   -- 'Draft' or 'Final' — see approveInvoice
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(id)
 );

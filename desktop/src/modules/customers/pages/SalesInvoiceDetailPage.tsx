@@ -1,7 +1,10 @@
+import { useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
-import { ArrowRight, Printer } from 'lucide-react'
+import { ArrowRight, Check, Printer, Trash2 } from 'lucide-react'
 import { Button } from '@shared/components/ui/button'
+import { Badge } from '@shared/components/ui/badge'
 import { Card, CardContent } from '@shared/components/ui/card'
+import { Textarea } from '@shared/components/ui/textarea'
 import { LoadingState } from '@shared/components/LoadingState'
 import { ErrorState } from '@shared/components/ErrorState'
 import { API_BASE_URL } from '@shared/lib/api-client'
@@ -9,6 +12,8 @@ import { formatCurrency, formatDate } from '@shared/lib/format'
 import { useI18n } from '@shared/lib/i18n'
 import { useBusinessProfile } from '@modules/settings'
 import { useCustomerInvoice } from '../hooks/useCustomerInvoices'
+import { useApproveSalesInvoice, useDeleteSalesInvoice, useUpdateSalesInvoiceNotes } from '../hooks/useSalesInvoiceMutations'
+import { SalesInvoiceItemsTable } from '../components/SalesInvoiceItemsTable'
 
 export function SalesInvoiceDetailPage() {
   const { t } = useI18n()
@@ -19,6 +24,10 @@ export function SalesInvoiceDetailPage() {
 
   const { data, isLoading, error, refetch } = useCustomerInvoice(customerId, salesInvoiceId)
   const { data: profile } = useBusinessProfile()
+  const approveInvoice = useApproveSalesInvoice(customerId, salesInvoiceId)
+  const deleteInvoice = useDeleteSalesInvoice(customerId)
+  const updateNotes = useUpdateSalesInvoiceNotes(customerId, salesInvoiceId)
+  const [notesDraft, setNotesDraft] = useState<string | null>(null)
 
   if (isLoading) return <LoadingState rows={6} />
   if (error || !data) {
@@ -26,6 +35,89 @@ export function SalesInvoiceDetailPage() {
   }
 
   const hasProfile = profile && (profile.business_name || profile.address || profile.phone || profile.tax_number || profile.commercial_register)
+
+  function handleDeleteDraft() {
+    if (!window.confirm('حذف المسودة نهائياً بكل أصنافها؟ لا يمكن التراجع عن هذا.')) return
+    deleteInvoice.mutate(salesInvoiceId, { onSuccess: () => navigate(`/customers/${customerId}`) })
+  }
+
+  function handleSaveNotes() {
+    if (notesDraft == null) return
+    updateNotes.mutate(notesDraft, { onSuccess: () => setNotesDraft(null) })
+  }
+
+  if (data.status === 'Draft') {
+    return (
+      <div className="flex flex-1 flex-col">
+        <div className="mb-4 flex items-center justify-between">
+          <Button variant="ghost" size="sm" className="w-fit" onClick={() => navigate(`/customers/${customerId}`)}>
+            <ArrowRight className="size-4" />
+            {data.customer_name}
+          </Button>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              className="text-destructive hover:text-destructive"
+              onClick={handleDeleteDraft}
+              disabled={deleteInvoice.isPending}
+            >
+              <Trash2 className="size-4" />
+              حذف المسودة
+            </Button>
+            <Button size="sm" onClick={() => approveInvoice.mutate()} disabled={approveInvoice.isPending}>
+              <Check className="size-4" />
+              {approveInvoice.isPending ? 'جاري الاعتماد...' : 'اعتماد الفاتورة'}
+            </Button>
+          </div>
+        </div>
+
+        <Card className="mx-auto w-full max-w-3xl">
+          <CardContent className="flex flex-col gap-4 p-6">
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="text-lg font-semibold text-foreground">{data.invoice_number}</span>
+                <Badge variant="warning">مسودة</Badge>
+              </div>
+              <div className="text-sm text-muted-foreground">
+                {data.customer_name} — {formatDate(data.invoice_date)}
+              </div>
+            </div>
+
+            <SalesInvoiceItemsTable customerId={customerId} invoiceId={salesInvoiceId} items={data.items} />
+
+            <div>
+              <label className="text-xs text-muted-foreground">ملاحظات</label>
+              <Textarea
+                rows={2}
+                value={notesDraft ?? data.notes ?? ''}
+                onChange={(e) => setNotesDraft(e.target.value)}
+                onBlur={handleSaveNotes}
+                placeholder="اختياري"
+              />
+            </div>
+
+            <div className="flex justify-end">
+              <div className="w-full max-w-xs space-y-1.5 rounded-md border border-border bg-muted/40 p-4 text-sm">
+                <div className="flex justify-between text-muted-foreground">
+                  <span>{t('customers.previousBalance')} (معاينة)</span>
+                  <span className="tabular-nums">{formatCurrency(data.previous_balance)}</span>
+                </div>
+                <div className="flex justify-between text-muted-foreground">
+                  <span>{t('customers.invoiceAmount')}</span>
+                  <span className="tabular-nums">{formatCurrency(data.invoice_amount)}</span>
+                </div>
+                <div className="flex justify-between border-t border-border pt-1.5 text-base font-bold text-foreground">
+                  <span>{t('customers.newBalance')} (معاينة)</span>
+                  <span className="tabular-nums">{formatCurrency(data.new_balance)}</span>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-1 flex-col">

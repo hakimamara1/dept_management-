@@ -72910,6 +72910,12 @@ const customersApi = {
   getInvoices: (customerId) => apiClient.get(`/api/customers/${customerId}/invoices`),
   getInvoice: (customerId, invoiceId) => apiClient.get(`/api/customers/${customerId}/invoices/${invoiceId}`),
   createInvoice: (customerId, data) => apiClient.post(`/api/customers/${customerId}/invoices`, data),
+  updateInvoiceItem: (customerId, invoiceId, itemId, data) => apiClient.patch(`/api/customers/${customerId}/invoices/${invoiceId}/items/${itemId}`, data),
+  addInvoiceItem: (customerId, invoiceId, data) => apiClient.post(`/api/customers/${customerId}/invoices/${invoiceId}/items`, data),
+  deleteInvoiceItem: (customerId, invoiceId, itemId) => apiClient.delete(`/api/customers/${customerId}/invoices/${invoiceId}/items/${itemId}`),
+  updateInvoiceNotes: (customerId, invoiceId, notes) => apiClient.patch(`/api/customers/${customerId}/invoices/${invoiceId}/notes`, { notes }),
+  deleteInvoice: (customerId, invoiceId) => apiClient.delete(`/api/customers/${customerId}/invoices/${invoiceId}`),
+  approveInvoice: (customerId, invoiceId) => apiClient.post(`/api/customers/${customerId}/invoices/${invoiceId}/approve`),
   getPayments: (customerId) => apiClient.get(`/api/customers/${customerId}/payments`),
   recordPayment: (customerId, data) => apiClient.post(`/api/customers/${customerId}/payments`, data),
   getStatement: (customerId) => apiClient.get(`/api/customers/${customerId}/statement`),
@@ -72946,15 +72952,11 @@ function useCreateSalesInvoice(customerId) {
   return useMutation({
     mutationFn: (data) => customersApi.createInvoice(customerId, data),
     onSuccess: (invoice) => {
-      toast.success(`تم إنشاء الفاتورة ${invoice.invoice_number} بنجاح`);
+      toast.success(`تم حفظ المسودة ${invoice.invoice_number} — راجعها واعتمدها من صفحتها`);
       queryClient2.invalidateQueries({ queryKey: queryKeys.customers.invoices(customerId) });
-      queryClient2.invalidateQueries({ queryKey: queryKeys.customers.detail(customerId) });
-      queryClient2.invalidateQueries({ queryKey: queryKeys.customers.statement(customerId) });
-      queryClient2.invalidateQueries({ queryKey: ["customers", "list"] });
-      queryClient2.invalidateQueries({ queryKey: queryKeys.customers.reports });
     },
     onError: (error) => {
-      toast.error("فشل إنشاء الفاتورة", { description: error.message });
+      toast.error("فشل حفظ المسودة", { description: error.message });
     }
   });
 }
@@ -73277,7 +73279,7 @@ function CreateSalesInvoiceSheet({ customerId, previousBalance }) {
     /* @__PURE__ */ jsxRuntimeExports.jsxs(SheetContent, { children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs(SheetHeader, { children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(SheetTitle, { children: t2("customers.newInvoice") }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(SheetDescription, { children: "الفاتورة غير قابلة للتعديل بعد الحفظ. الدفعات تُسجَّل لاحقاً بشكل منفصل." })
+        /* @__PURE__ */ jsxRuntimeExports.jsx(SheetDescription, { children: "ستُحفظ كمسودة قابلة للتعديل أو الحذف — لن تؤثر على رصيد العميل حتى تعتمدها من صفحة الفاتورة." })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(Form, { ...form, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: form.handleSubmit(onSubmit), className: "flex flex-1 flex-col gap-4 overflow-y-auto py-4", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -73447,7 +73449,7 @@ function CreateSalesInvoiceSheet({ customerId, previousBalance }) {
         ] }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-end gap-2 border-t border-border pt-4", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "ghost", onClick: () => setOpen(false), children: t2("common.cancel") }),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", disabled: createInvoice.isPending, children: createInvoice.isPending ? t2("common.loading") : t2("common.create") })
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", disabled: createInvoice.isPending, children: createInvoice.isPending ? t2("common.loading") : "حفظ كمسودة" })
         ] })
       ] }) })
     ] }),
@@ -73673,6 +73675,8 @@ function CustomerDetailPage() {
   const invoices = useCustomerInvoices(customerId);
   const payments = useCustomerPayments(customerId);
   const statement = useCustomerStatement(customerId);
+  const draftInvoices = invoices.data?.filter((inv) => inv.status === "Draft") ?? [];
+  const approvedInvoices = invoices.data?.filter((inv) => inv.status !== "Draft") ?? [];
   const invoiceColumns = [
     {
       accessorKey: "invoice_number",
@@ -73793,18 +73797,33 @@ function CustomerDetailPage() {
       /* @__PURE__ */ jsxRuntimeExports.jsx(StatCard, { icon: Calendar, label: "آخر دفعة", value: formatDate(data.last_payment_date) })
     ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 flex gap-2", children: [
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: tab === "invoices" ? "default" : "ghost", size: "sm", onClick: () => setTab("invoices"), children: t2("customers.invoicesTab") }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { variant: tab === "drafts" ? "default" : "ghost", size: "sm", onClick: () => setTab("drafts"), children: [
+        "المسودات",
+        draftInvoices.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: "warning", className: "ms-1", children: draftInvoices.length })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: tab === "invoices" ? "default" : "ghost", size: "sm", onClick: () => setTab("invoices"), children: "الفواتير المعتمدة" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: tab === "payments" ? "default" : "ghost", size: "sm", onClick: () => setTab("payments"), children: t2("customers.paymentsTab") }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: tab === "statement" ? "default" : "ghost", size: "sm", onClick: () => setTab("statement"), children: t2("customers.statementTab") })
     ] }),
+    tab === "drafts" && /* @__PURE__ */ jsxRuntimeExports.jsx(
+      DataTable,
+      {
+        columns: invoiceColumns,
+        data: draftInvoices,
+        isLoading: invoices.isLoading,
+        exportFileName: `customer-${customerId}-drafts`,
+        emptyTitle: "لا توجد مسودات حالياً",
+        emptyDescription: "أنشئ فاتورة جديدة لتبدأ مسودة قابلة للتعديل"
+      }
+    ),
     tab === "invoices" && /* @__PURE__ */ jsxRuntimeExports.jsx(
       DataTable,
       {
         columns: invoiceColumns,
-        data: invoices.data ?? [],
+        data: approvedInvoices,
         isLoading: invoices.isLoading,
         exportFileName: `customer-${customerId}-invoices`,
-        emptyTitle: "لا توجد فواتير بعد"
+        emptyTitle: "لا توجد فواتير معتمدة بعد"
       }
     ),
     tab === "payments" && /* @__PURE__ */ jsxRuntimeExports.jsx(
@@ -74111,6 +74130,214 @@ function SettingsPage() {
     tab === "backup" && /* @__PURE__ */ jsxRuntimeExports.jsx(DataBackupTab, {})
   ] });
 }
+function invalidateInvoice(queryClient2, customerId, invoiceId) {
+  queryClient2.invalidateQueries({ queryKey: queryKeys.customers.invoice(customerId, invoiceId) });
+  queryClient2.invalidateQueries({ queryKey: queryKeys.customers.invoices(customerId) });
+}
+function invalidateBalanceDerived(queryClient2, customerId) {
+  queryClient2.invalidateQueries({ queryKey: queryKeys.customers.detail(customerId) });
+  queryClient2.invalidateQueries({ queryKey: queryKeys.customers.statement(customerId) });
+  queryClient2.invalidateQueries({ queryKey: ["customers", "list"] });
+  queryClient2.invalidateQueries({ queryKey: queryKeys.customers.reports });
+}
+function useUpdateSalesInvoiceItem(customerId, invoiceId) {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: ({ itemId, data }) => customersApi.updateInvoiceItem(customerId, invoiceId, itemId, data),
+    onSuccess: () => invalidateInvoice(queryClient2, customerId, invoiceId),
+    onError: (error) => toast.error("فشل تعديل الصنف", { description: error.message })
+  });
+}
+function useAddSalesInvoiceItem(customerId, invoiceId) {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => customersApi.addInvoiceItem(customerId, invoiceId, data),
+    onSuccess: () => invalidateInvoice(queryClient2, customerId, invoiceId),
+    onError: (error) => toast.error("فشل إضافة الصنف", { description: error.message })
+  });
+}
+function useDeleteSalesInvoiceItem(customerId, invoiceId) {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: (itemId) => customersApi.deleteInvoiceItem(customerId, invoiceId, itemId),
+    onSuccess: () => invalidateInvoice(queryClient2, customerId, invoiceId),
+    onError: (error) => toast.error("فشل حذف الصنف", { description: error.message })
+  });
+}
+function useUpdateSalesInvoiceNotes(customerId, invoiceId) {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: (notes) => customersApi.updateInvoiceNotes(customerId, invoiceId, notes),
+    onSuccess: () => invalidateInvoice(queryClient2, customerId, invoiceId),
+    onError: (error) => toast.error("فشل حفظ الملاحظات", { description: error.message })
+  });
+}
+function useDeleteSalesInvoice(customerId) {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: (invoiceId) => customersApi.deleteInvoice(customerId, invoiceId),
+    onSuccess: () => {
+      toast.success("تم حذف المسودة");
+      queryClient2.invalidateQueries({ queryKey: queryKeys.customers.invoices(customerId) });
+    },
+    onError: (error) => toast.error("فشل حذف المسودة", { description: error.message })
+  });
+}
+function useApproveSalesInvoice(customerId, invoiceId) {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: () => customersApi.approveInvoice(customerId, invoiceId),
+    onSuccess: (invoice) => {
+      toast.success(`تم اعتماد الفاتورة ${invoice.invoice_number}`);
+      invalidateInvoice(queryClient2, customerId, invoiceId);
+      invalidateBalanceDerived(queryClient2, customerId);
+    },
+    onError: (error) => toast.error("فشل اعتماد الفاتورة", { description: error.message })
+  });
+}
+function SalesInvoiceItemRow({ customerId, invoiceId, item, canDelete }) {
+  const [name, setName] = reactExports.useState(item.product_name);
+  const [unit2, setUnit] = reactExports.useState(item.unit ?? "");
+  const [quantity, setQuantity] = reactExports.useState(item.quantity);
+  const [unitPrice, setUnitPrice] = reactExports.useState(item.unit_price);
+  const updateItem = useUpdateSalesInvoiceItem(customerId, invoiceId);
+  const deleteItem = useDeleteSalesInvoiceItem(customerId, invoiceId);
+  const total = Number(quantity || 0) * Number(unitPrice || 0);
+  function saveFields() {
+    if (name.trim() === item.product_name && unit2 === (item.unit ?? "") && quantity === item.quantity && unitPrice === item.unit_price) {
+      return;
+    }
+    updateItem.mutate({ itemId: item.id, data: { productName: name, unit: unit2 || void 0, quantity, unitPrice } });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-border last:border-0", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "py-2 ps-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { value: name, onChange: (e) => setName(e.target.value), onBlur: saveFields, className: "h-8 text-xs" }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { value: unit2, onChange: (e) => setUnit(e.target.value), onBlur: saveFields, placeholder: "الوحدة", className: "h-8 w-20 text-xs" }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Input,
+      {
+        type: "number",
+        step: "0.01",
+        min: "0",
+        value: quantity,
+        onChange: (e) => setQuantity(e.target.valueAsNumber),
+        onBlur: saveFields,
+        className: "h-8 w-24 tabular-nums text-xs"
+      }
+    ) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "py-2", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Input,
+      {
+        type: "number",
+        step: "0.01",
+        min: "0",
+        value: unitPrice,
+        onChange: (e) => setUnitPrice(e.target.valueAsNumber),
+        onBlur: saveFields,
+        className: "h-8 w-28 tabular-nums text-xs"
+      }
+    ) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "tabular-nums py-2 pe-3 font-medium", children: formatCurrency(total) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "py-2 pe-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+      Button,
+      {
+        type: "button",
+        variant: "ghost",
+        size: "icon",
+        disabled: !canDelete || deleteItem.isPending,
+        onClick: () => deleteItem.mutate(item.id),
+        children: /* @__PURE__ */ jsxRuntimeExports.jsx(Trash2, { className: "size-4 text-destructive" })
+      }
+    ) })
+  ] });
+}
+function SalesInvoiceItemsTable({ customerId, invoiceId, items }) {
+  const addItem = useAddSalesInvoiceItem(customerId, invoiceId);
+  const [name, setName] = reactExports.useState("");
+  const [unit2, setUnit] = reactExports.useState("");
+  const [quantity, setQuantity] = reactExports.useState("");
+  const [unitPrice, setUnitPrice] = reactExports.useState("");
+  function handleAdd() {
+    if (!name.trim() || !quantity || quantity <= 0 || unitPrice === "" || unitPrice < 0) return;
+    addItem.mutate(
+      { productName: name.trim(), unit: unit2 || void 0, quantity: Number(quantity), unitPrice: Number(unitPrice) },
+      {
+        onSuccess: () => {
+          setName("");
+          setUnit("");
+          setQuantity("");
+          setUnitPrice("");
+        }
+      }
+    );
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "rounded-md border border-border", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "overflow-x-auto", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("table", { className: "w-full text-sm", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("thead", { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-border bg-muted/50 text-start text-xs text-muted-foreground", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "py-2 ps-3 text-start", children: "الصنف" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "py-2 text-start", children: "الوحدة" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "py-2 text-start", children: "الكمية" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "py-2 text-start", children: "سعر الوحدة" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "py-2 pe-3 text-start", children: "الإجمالي" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "py-2 pe-3" })
+      ] }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx("tbody", { children: items.map((item) => /* @__PURE__ */ jsxRuntimeExports.jsx(
+        SalesInvoiceItemRow,
+        {
+          customerId,
+          invoiceId,
+          item,
+          canDelete: items.length > 1
+        },
+        item.id
+      )) })
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap items-end gap-2 border-t border-border p-2", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "min-w-[10rem] flex-[2]", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+        ProductPicker,
+        {
+          value: null,
+          placeholder: "اسم صنف جديد...",
+          onQueryChange: setName,
+          onChange: (product) => {
+            if (!product) return;
+            setName(product.name);
+            if (product.unit && !unit2) setUnit(product.unit);
+            if (product.defaultSalePrice != null && unitPrice === "") setUnitPrice(product.defaultSalePrice);
+          }
+        }
+      ) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { value: unit2, onChange: (e) => setUnit(e.target.value), placeholder: "الوحدة", className: "h-8 w-20 text-xs" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Input,
+        {
+          type: "number",
+          step: "0.01",
+          min: "0",
+          value: quantity,
+          onChange: (e) => setQuantity(e.target.value === "" ? "" : e.target.valueAsNumber),
+          placeholder: "الكمية",
+          className: "h-8 w-24 text-xs"
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Input,
+        {
+          type: "number",
+          step: "0.01",
+          min: "0",
+          value: unitPrice,
+          onChange: (e) => setUnitPrice(e.target.value === "" ? "" : e.target.valueAsNumber),
+          placeholder: "السعر",
+          className: "h-8 w-28 text-xs"
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { type: "button", variant: "ghost", size: "sm", onClick: handleAdd, disabled: addItem.isPending, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Plus, { className: "size-3.5" }),
+        "إضافة صنف"
+      ] })
+    ] })
+  ] });
+}
 function SalesInvoiceDetailPage() {
   const { t: t2 } = useI18n();
   const { id, invoiceId } = useParams();
@@ -74119,11 +74346,100 @@ function SalesInvoiceDetailPage() {
   const salesInvoiceId = Number(invoiceId);
   const { data, isLoading, error, refetch } = useCustomerInvoice(customerId, salesInvoiceId);
   const { data: profile } = useBusinessProfile();
+  const approveInvoice = useApproveSalesInvoice(customerId, salesInvoiceId);
+  const deleteInvoice = useDeleteSalesInvoice(customerId);
+  const updateNotes = useUpdateSalesInvoiceNotes(customerId, salesInvoiceId);
+  const [notesDraft, setNotesDraft] = reactExports.useState(null);
   if (isLoading) return /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingState, { rows: 6 });
   if (error || !data) {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(ErrorState, { message: error?.message ?? "الفاتورة غير موجودة", onRetry: () => refetch() });
   }
   const hasProfile = profile && (profile.business_name || profile.address || profile.phone || profile.tax_number || profile.commercial_register);
+  function handleDeleteDraft() {
+    if (!window.confirm("حذف المسودة نهائياً بكل أصنافها؟ لا يمكن التراجع عن هذا.")) return;
+    deleteInvoice.mutate(salesInvoiceId, { onSuccess: () => navigate(`/customers/${customerId}`) });
+  }
+  function handleSaveNotes() {
+    if (notesDraft == null) return;
+    updateNotes.mutate(notesDraft, { onSuccess: () => setNotesDraft(null) });
+  }
+  if (data.status === "Draft") {
+    return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-1 flex-col", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 flex items-center justify-between", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { variant: "ghost", size: "sm", className: "w-fit", onClick: () => navigate(`/customers/${customerId}`), children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowRight, { className: "size-4" }),
+          data.customer_name
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(
+            Button,
+            {
+              variant: "outline",
+              size: "sm",
+              className: "text-destructive hover:text-destructive",
+              onClick: handleDeleteDraft,
+              disabled: deleteInvoice.isPending,
+              children: [
+                /* @__PURE__ */ jsxRuntimeExports.jsx(Trash2, { className: "size-4" }),
+                "حذف المسودة"
+              ]
+            }
+          ),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { size: "sm", onClick: () => approveInvoice.mutate(), disabled: approveInvoice.isPending, children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Check, { className: "size-4" }),
+            approveInvoice.isPending ? "جاري الاعتماد..." : "اعتماد الفاتورة"
+          ] })
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { className: "mx-auto w-full max-w-3xl", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { className: "flex flex-col gap-4 p-6", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-lg font-semibold text-foreground", children: data.invoice_number }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: "warning", children: "مسودة" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-sm text-muted-foreground", children: [
+            data.customer_name,
+            " — ",
+            formatDate(data.invoice_date)
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(SalesInvoiceItemsTable, { customerId, invoiceId: salesInvoiceId, items: data.items }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("label", { className: "text-xs text-muted-foreground", children: "ملاحظات" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(
+            Textarea,
+            {
+              rows: 2,
+              value: notesDraft ?? data.notes ?? "",
+              onChange: (e) => setNotesDraft(e.target.value),
+              onBlur: handleSaveNotes,
+              placeholder: "اختياري"
+            }
+          )
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex justify-end", children: /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "w-full max-w-xs space-y-1.5 rounded-md border border-border bg-muted/40 p-4 text-sm", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-muted-foreground", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+              t2("customers.previousBalance"),
+              " (معاينة)"
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums", children: formatCurrency(data.previous_balance) })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-between text-muted-foreground", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { children: t2("customers.invoiceAmount") }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums", children: formatCurrency(data.invoice_amount) })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex justify-between border-t border-border pt-1.5 text-base font-bold text-foreground", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { children: [
+              t2("customers.newBalance"),
+              " (معاينة)"
+            ] }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums", children: formatCurrency(data.new_balance) })
+          ] })
+        ] }) })
+      ] }) })
+    ] });
+  }
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-1 flex-col", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 flex items-center justify-between print:hidden", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { variant: "ghost", size: "sm", className: "w-fit", onClick: () => navigate(`/customers/${customerId}`), children: [

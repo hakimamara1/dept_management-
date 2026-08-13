@@ -59,7 +59,9 @@ export function CreateSalesInvoiceSheet({ customerId, previousBalance }: { custo
       <SheetContent>
         <SheetHeader>
           <SheetTitle>{t('customers.newInvoice')}</SheetTitle>
-          <SheetDescription>الفاتورة غير قابلة للتعديل بعد الحفظ. الدفعات تُسجَّل لاحقاً بشكل منفصل.</SheetDescription>
+          <SheetDescription>
+            ستُحفظ كمسودة قابلة للتعديل أو الحذف — لن تؤثر على رصيد العميل حتى تعتمدها من صفحة الفاتورة.
+          </SheetDescription>
         </SheetHeader>
 
         <Form {...form}>
@@ -253,7 +255,7 @@ export function CreateSalesInvoiceSheet({ customerId, previousBalance }: { custo
                 {t('common.cancel')}
               </Button>
               <Button type="submit" disabled={createInvoice.isPending}>
-                {createInvoice.isPending ? t('common.loading') : t('common.create')}
+                {createInvoice.isPending ? t('common.loading') : 'حفظ كمسودة'}
               </Button>
             </div>
           </form>
