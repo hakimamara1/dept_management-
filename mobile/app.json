@@ -1,0 +1,51 @@
+{
+  "expo": {
+    "name": "Spice ERP",
+    "slug": "spice-erp-mobile",
+    "version": "0.1.0",
+    "scheme": "spiceerp",
+    "orientation": "portrait",
+    "userInterfaceStyle": "automatic",
+    "platforms": [
+      "android"
+    ],
+    "updates": {
+      "enabled": false
+    },
+    "android": {
+      "package": "com.spiceerp.mobile",
+      "supportsRtl": true,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.INTERNET",
+        "android.permission.ACCESS_WIFI_STATE",
+        "android.permission.CHANGE_WIFI_MULTICAST_STATE"
+      ]
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-localization",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "التطبيق يحتاج الكاميرا لمسح رمز الاقتران وتصوير فواتير الموردين."
+        }
+      ],
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "للاختيار من صور الفواتير المحفوظة في المعرض."
+        }
+      ],
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "usesCleartextTraffic": true
+          }
+        }
+      ]
+    ]
+  }
+}

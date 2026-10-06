@@ -358,10 +358,13 @@ function createPairingCode() {
     let code = '';
     for (let i = 0; i < CODE_LENGTH; i++) code += CODE_ALPHABET[crypto.randomInt(CODE_ALPHABET.length)];
     pairing = { code, expiresAt: Date.now() + PAIR_TTL_MS, attempts: 0 };
-    const payload = JSON.stringify({
+    // A spiceerp:// link, not bare JSON: the in-app scanner reads it, and so does the phone's
+    // own camera app, which then opens Spice ERP straight into pairing.
+    const data = JSON.stringify({
         app: 'spice-erp', v: API_VERSION, name: desktopName(),
         port: gateway.port, hosts: getLanHosts().map((h) => h.address), code
     });
+    const payload = `spiceerp://pair?d=${encodeURIComponent(data)}`;
     return { code, expiresAt: new Date(pairing.expiresAt).toISOString(), payload };
 }
 

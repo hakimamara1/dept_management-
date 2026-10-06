@@ -20,7 +20,7 @@ Request pipeline: private-network-only → `POST /api/mobile/pair` (public) → 
 
 ## Pairing and tokens
 
-1. Settings → *إضافة هاتف* shows a QR: `{app, v, name, port, hosts[], code}`. The code is 20 random characters,
+1. Settings → *إضافة هاتف* shows a QR containing a link `spiceerp://pair?d=<url-encoded JSON {app, v, name, port, hosts[], code}>` (the in-app scanner and the phone's own camera app both understand it). The code is 20 random characters,
    single-use, valid 5 minutes, burned after 5 wrong guesses; pairing attempts are rate-limited per IP.
 2. The phone POSTs `{code, deviceName}` to `/api/mobile/pair` and receives a random 256-bit **token once**.
 3. Only `SHA-256(token)` is stored (`mobile_devices`). *Settings → فصل* revokes a phone immediately.
