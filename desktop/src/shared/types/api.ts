@@ -793,3 +793,30 @@ export interface DebtAnalysisFilters {
   to?: string
   entityId?: number | null
 }
+
+// ── Mobile access (Android companion app) ────────────────────
+export interface MobileStatus {
+  enabled: boolean
+  running: boolean
+  port: number | null
+  hosts: { name: string; address: string }[]
+  desktopName: string
+  /** mDNS announcement active (phones can auto-find this PC). */
+  discovery: boolean
+  deviceCount: number
+}
+
+export interface MobileDevice {
+  id: number
+  name: string
+  created_at: string
+  last_seen_at: string | null
+  last_ip: string | null
+}
+
+export interface MobilePairingCode {
+  code: string
+  expiresAt: string
+  /** JSON string to render as the QR code. */
+  payload: string
+}

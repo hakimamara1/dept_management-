@@ -83,6 +83,7 @@ class DatabaseManager {
 
         // Seed the settings singleton row once — GET never has to special-case "no row yet".
         this.db.prepare('INSERT OR IGNORE INTO business_profile (id) VALUES (1)').run();
+        this.db.prepare('INSERT OR IGNORE INTO mobile_settings (id) VALUES (1)').run();
     }
 
     _addColumnIfMissing(table, column, definition) {

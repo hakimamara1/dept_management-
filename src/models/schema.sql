@@ -290,6 +290,40 @@ CREATE TABLE IF NOT EXISTS business_profile (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
 );
 
+-- ═══════════════════════════════════════════════════════════════
+-- MOBILE ACCESS — the Android companion app talks to the desktop over the
+-- local network through a separate, token-guarded gateway (see
+-- services/mobileGatewayService.js). Only a hash of each phone's token is
+-- stored, so a database copy can never be replayed against the gateway.
+-- ═══════════════════════════════════════════════════════════════
+CREATE TABLE IF NOT EXISTS mobile_settings (
+    id INTEGER PRIMARY KEY CHECK (id = 1),
+    enabled INTEGER NOT NULL DEFAULT 0       -- off until the owner turns it on
+);
+
+CREATE TABLE IF NOT EXISTS mobile_devices (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    token_hash TEXT NOT NULL UNIQUE,         -- SHA-256 hex of the bearer token
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    last_seen_at DATETIME,
+    last_ip TEXT,
+    revoked_at DATETIME                      -- set = token no longer accepted
+);
+
+-- Lets a retried money request (flaky Wi-Fi) replay the first response
+-- instead of recording a payment/approval twice. Pruned after 24 h.
+CREATE TABLE IF NOT EXISTS idempotency_keys (
+    device_id INTEGER NOT NULL,
+    key TEXT NOT NULL,
+    method TEXT NOT NULL,
+    path TEXT NOT NULL,
+    status INTEGER NOT NULL,
+    response_json TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (device_id, key)
+);
+
 -- Indexes for performance
 CREATE INDEX IF NOT EXISTS idx_aliases_normalized ON product_aliases(normalized_alias);
 CREATE INDEX IF NOT EXISTS idx_invoices_status ON purchase_invoices(status);

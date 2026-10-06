@@ -12,9 +12,10 @@ import { API_BASE_URL } from '@shared/lib/api-client'
 import { formatDate } from '@shared/lib/format'
 import { useBusinessProfile } from '../hooks/useBusinessProfile'
 import { useDownloadBackup, useRestoreBackup, useUpdateBusinessProfile, useUploadLogo } from '../hooks/useSettingsMutations'
+import { MobileAccessTab } from '../components/MobileAccessTab'
 import { businessProfileSchema, type BusinessProfileFormValues } from '../schemas/businessProfile.schema'
 
-type SubTab = 'profile' | 'backup'
+type SubTab = 'profile' | 'backup' | 'mobile'
 
 function BusinessProfileTab() {
   const { data: profile, isLoading } = useBusinessProfile()
@@ -246,7 +247,7 @@ export function SettingsPage() {
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader title="الإعدادات" subtitle="بيانات الشركة والنسخ الاحتياطي" />
+      <PageHeader title="الإعدادات" subtitle="بيانات الشركة والنسخ الاحتياطي والهاتف المحمول" />
 
       <div className="mb-4 flex gap-2">
         <Button variant={tab === 'profile' ? 'default' : 'ghost'} size="sm" onClick={() => setTab('profile')}>
@@ -255,10 +256,14 @@ export function SettingsPage() {
         <Button variant={tab === 'backup' ? 'default' : 'ghost'} size="sm" onClick={() => setTab('backup')}>
           النسخ الاحتياطي
         </Button>
+        <Button variant={tab === 'mobile' ? 'default' : 'ghost'} size="sm" onClick={() => setTab('mobile')}>
+          الهاتف المحمول
+        </Button>
       </div>
 
       {tab === 'profile' && <BusinessProfileTab />}
       {tab === 'backup' && <DataBackupTab />}
+      {tab === 'mobile' && <MobileAccessTab />}
     </div>
   )
 }

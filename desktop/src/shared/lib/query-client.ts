@@ -57,6 +57,10 @@ export const queryKeys = {
     list: (filters: unknown) => ['payments', 'list', filters] as const,
     analytics: (filters: unknown) => ['payments', 'analytics', filters] as const
   },
+  mobile: {
+    status: ['mobile', 'status'] as const,
+    devices: ['mobile', 'devices'] as const
+  },
   reports: {
     trialBalance: ['reports', 'trial-balance'] as const,
     balanceSheet: ['reports', 'balance-sheet'] as const,

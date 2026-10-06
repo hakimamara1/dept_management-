@@ -27,6 +27,7 @@ require('dotenv').config({ path: ENV_PATH });
 const express = require('express');
 const cors = require('cors');
 const db = require('./config/database');
+const mobileGateway = require('./services/mobileGatewayService');
 
 BigInt.prototype.toJSON = function () {
     return Number(this);
@@ -56,6 +57,7 @@ app.use('/api/payments', require('./routes/payments'));
 app.use('/api/customers', require('./routes/customers'));
 app.use('/api/expiration-batches', require('./routes/expirationBatches'));
 app.use('/api/settings', require('./routes/settings'));
+app.use('/api/mobile', require('./routes/mobile'));
 
 
 // Health check
@@ -77,6 +79,10 @@ const server = app.listen(PORT, '127.0.0.1', () => {
     console.log(`Server started on port ${PORT}`);
 });
 
+// Optional second listener for the Android companion app (off until the owner
+// enables it in Settings). The loopback server above is not affected by it.
+mobileGateway.init(app);
+
 // Electron's stopBackend() sends SIGTERM to this process on quit. Node has
 // no default handler for that signal — without one registered here, the
 // process is torn down immediately by the OS and none of our JS ever runs,
@@ -93,6 +99,7 @@ function shutdown(signal) {
     // in-flight requests have finished — closing the DB out from under a
     // request that's still mid-query would surface as a 500, not a clean
     // shutdown.
+    mobileGateway.stop().catch(() => {});
     server.close(() => {
         db.checkpointAndClose();
         console.log('[server] database checkpointed and closed');
