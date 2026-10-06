@@ -43,3 +43,43 @@ method/path returns 422; an identical request still running returns 409. Keys ar
 - Phone works only while the desktop app is running and on the same network (v1 is online-only).
 - Plain HTTP on the LAN: the token controls access but traffic is not encrypted.
 - `POST /api/invoices/extract` (photo → AI) is limited to 10 per 10 minutes per phone.
+
+## The phone app (`mobile/`)
+
+React Native + Expo (SDK 57), Android only. Feature-based layout like the desktop: `src/modules/<feature>/{components,hooks,services}`,
+shared UI/i18n/theme/API client in `src/shared/`. API types are imported **type-only** from
+`desktop/src/shared/types/api.ts` (alias `@desktop-types/*`), so they cannot drift from the backend.
+State: TanStack Query = server data, Zustand = connection/session + language, React state = forms.
+
+### Pairing (user)
+1. Desktop: *Settings → الهاتف المحمول → تفعيل*, then *إضافة هاتف* (QR).
+2. Phone on the **same Wi-Fi**: open Spice ERP → it scans the QR (or tap the `spiceerp://` link).
+3. If the desktop's IP changes later, the app finds it again over mDNS; if that fails use *Scan code again*.
+
+### Build and run (developer)
+```bash
+cd mobile
+npm install
+export ANDROID_HOME=$HOME/Library/Android/sdk JAVA_HOME=$(/usr/libexec/java_home -v 17)
+npx expo prebuild --platform android          # generates android/ (git-ignored)
+cd android && ./gradlew assembleDebug -PreactNativeArchitectures=x86_64   # emulator; use arm64-v8a for phones
+adb install -r app/build/outputs/apk/debug/app-debug.apk
+npx expo start --dev-client                    # JS comes from Metro in debug builds
+```
+mDNS discovery needs this development build (`react-native-zeroconf` is native) — it does not work in Expo Go.
+Release APK for staff phones: `./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a` (sign with your own keystore).
+
+`node mobile/scripts/contract-check.mjs <gateway-url> <pairing-code>` replays the phone's API calls (pair, read, draft invoice,
+payments, retries) against a gateway — **only run it on a copy of the database**.
+
+### Troubleshooting
+- *Phone can't connect (Windows desktop):* Windows labels some Wi-Fi networks "Public" and blocks inbound traffic. Set the
+  network to **Private**, or allow Spice ERP for Private networks when Windows asks. The installer adds the rules when it runs elevated.
+- *Camera/QR won't scan:* tap the `spiceerp://…` link instead, or use the phone's own camera app.
+- *"Desktop not reachable":* desktop app closed, different Wi-Fi, or mobile access disabled in Settings.
+- *Phone shows "not paired":* the phone was removed in Settings → الهاتف المحمول; pair it again.
+- Port 3001 busy? The gateway uses the next free port and shows it in Settings (and in the QR).
+
+### Known limits (v1)
+Online-only; HTTP on the LAN (token-protected, not encrypted); verdict sentences are Arabic-only (same as desktop);
+over-payment on the supplier endpoint returns HTTP 500 with a clear message (existing desktop route behaviour).
