@@ -4,3 +4,4 @@ src/data/uploads/
 src/data/*.db
 src/data/*.db-shm
 src/data/*.db-wal
+src/data/*.before-restore-*
