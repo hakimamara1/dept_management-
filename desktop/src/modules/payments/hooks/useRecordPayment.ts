@@ -18,7 +18,7 @@ export function useRecordPayment() {
       }),
     onSuccess: (_, values) => {
       toast.success(`تم تسجيل الدفعة لـ "${values.supplier?.name}" بنجاح`)
-      queryClient.invalidateQueries({ queryKey: queryKeys.payments.list })
+      queryClient.invalidateQueries({ queryKey: queryKeys.payments.all })
       queryClient.invalidateQueries({ queryKey: queryKeys.suppliers.aging })
       queryClient.invalidateQueries({ queryKey: ['suppliers', 'list'] })
       queryClient.invalidateQueries({ queryKey: ['suppliers', 'detail'] })

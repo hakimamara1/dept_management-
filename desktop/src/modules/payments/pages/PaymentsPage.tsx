@@ -2,13 +2,18 @@ import type { ColumnDef } from '@tanstack/react-table'
 import { DataTable } from '@shared/components/data-table/DataTable'
 import { DataTableColumnHeader } from '@shared/components/data-table/DataTableColumnHeader'
 import { PageHeader } from '@shared/components/PageHeader'
-import { StatCard } from '@shared/components/StatCard'
-import { Wallet } from 'lucide-react'
 import { formatCurrency, formatDate } from '@shared/lib/format'
+import { useDateRange } from '@shared/hooks/useDateRange'
+import type { PickedSupplier } from '@shared/components/SupplierPicker'
 import { useI18n } from '@shared/lib/i18n'
 import type { SupplierTransaction } from '@shared/types/api'
-import { usePayments } from '../hooks/usePayments'
+import { useState } from 'react'
+import { usePaymentAnalytics, usePayments } from '../hooks/usePayments'
 import { RecordPaymentDialog } from '../components/RecordPaymentDialog'
+import { PaymentFilters } from '../components/PaymentFilters'
+import { PaymentKpiGrid } from '../components/PaymentKpiGrid'
+import { PaymentsTimeChart } from '../components/PaymentsTimeChart'
+import { CashFlowSection } from '../components/CashFlowSection'
 
 const columns: ColumnDef<SupplierTransaction, any>[] = [
   {
@@ -47,25 +52,47 @@ const columns: ColumnDef<SupplierTransaction, any>[] = [
 
 export function PaymentsPage() {
   const { t } = useI18n()
-  const { data, isLoading } = usePayments()
+  const { range, setRange, customFrom, setCustomFrom, customTo, setCustomTo, isCustomReady } = useDateRange()
+  const [supplier, setSupplier] = useState<PickedSupplier | null>(null)
 
-  const totalPaid = (data ?? []).reduce((sum, p) => sum + Math.abs(p.amount), 0)
+  const filters = {
+    range,
+    from: range === 'custom' ? customFrom : undefined,
+    to: range === 'custom' ? customTo : undefined,
+    supplierId: supplier?.id ?? null
+  }
+  // A custom range with a missing date would make the backend query nonsense.
+  const analytics = usePaymentAnalytics(filters, isCustomReady)
+  const payments = usePayments(filters, isCustomReady)
 
   return (
     <div className="flex flex-1 flex-col">
-      <PageHeader title={t('nav.payments')} subtitle="سجل كل الدفعات المسجلة عبر جميع الموردين" actions={<RecordPaymentDialog />} />
+      <PageHeader title={t('nav.payments')} subtitle="تحليل المدفوعات للموردين وسجل كل الدفعات" actions={<RecordPaymentDialog />} />
 
-      <div className="mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3">
-        <StatCard icon={Wallet} label="إجمالي المدفوعات" value={formatCurrency(totalPaid)} loading={isLoading} />
-      </div>
-
-      <DataTable
-        columns={columns}
-        data={data ?? []}
-        isLoading={isLoading}
-        exportFileName="payments"
-        emptyTitle="لا توجد دفعات مسجلة بعد"
+      <PaymentFilters
+        range={range}
+        onRangeChange={setRange}
+        customFrom={customFrom}
+        customTo={customTo}
+        onCustomFromChange={setCustomFrom}
+        onCustomToChange={setCustomTo}
+        supplier={supplier}
+        onSupplierChange={setSupplier}
       />
+
+      <div className="flex flex-col gap-6">
+        <PaymentKpiGrid data={analytics.data} isLoading={analytics.isLoading} />
+        <PaymentsTimeChart data={analytics.data} isLoading={analytics.isLoading} />
+        <CashFlowSection data={analytics.data} isLoading={analytics.isLoading} />
+
+        <DataTable
+          columns={columns}
+          data={payments.data ?? []}
+          isLoading={payments.isLoading}
+          exportFileName="payments"
+          emptyTitle="لا توجد دفعات في هذه الفترة"
+        />
+      </div>
     </div>
   )
 }

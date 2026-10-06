@@ -50,6 +50,41 @@ router.post('/', (req, res) => {
     }
 });
 
+// PATCH /api/suppliers/:id — edit contact/identity details. Never touches
+// current_balance (that only moves through the ledger). Renaming is safe for
+// history: invoices and ledger rows reference supplier_id, not the name.
+router.patch('/:id', (req, res) => {
+    try {
+        const supplierId = parseInt(req.params.id);
+        const existing = db.stmts.suppliers.getById.get(supplierId);
+        if (!existing) {
+            return res.status(404).json({ error: 'المورد غير موجود' });
+        }
+
+        const { name, phone, email, address, taxNumber, commercialRegister } = req.body;
+        const cleanName = name == null ? '' : name.toString().trim();
+        if (!cleanName) {
+            return res.status(400).json({ error: 'اسم المورد مطلوب' });
+        }
+
+        // Same case-insensitive rule as POST /, but a supplier may keep its own name.
+        const duplicate = db.stmts.getSupplierByName.get(cleanName);
+        if (duplicate && duplicate.id !== supplierId) {
+            return res.status(400).json({ error: 'مورد بنفس الاسم موجود مسبقاً' });
+        }
+
+        const orNull = (v) => (v == null || !v.toString().trim() ? null : v.toString().trim());
+        db.stmts.suppliers.update.run(
+            cleanName, orNull(phone), orNull(email), orNull(address),
+            orNull(taxNumber), orNull(commercialRegister), supplierId
+        );
+
+        res.json(db.stmts.suppliers.getById.get(supplierId));
+    } catch (err) {
+        res.status(400).json({ error: err.message });
+    }
+});
+
 // GET /api/suppliers/aging
 router.get('/aging', (req, res) => {
     try {

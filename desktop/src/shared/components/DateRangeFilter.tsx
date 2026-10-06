@@ -1,7 +1,7 @@
 import { Input } from '@shared/components/ui/input'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@shared/components/ui/select'
 import type { DashboardRange } from '@shared/types/api'
-import { DATE_RANGE_OPTIONS } from '../hooks/useDateRange'
+import { DATE_RANGE_OPTIONS } from '@shared/hooks/useDateRange'
 
 interface DateRangeFilterProps {
   range: DashboardRange

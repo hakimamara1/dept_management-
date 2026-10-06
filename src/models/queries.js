@@ -10,11 +10,20 @@ const QUERIES = {
   suppliers: {
     getById: `SELECT * FROM suppliers WHERE id = ?`,
     getByName: `SELECT * FROM suppliers WHERE LOWER(name) = LOWER(?)`,
-    getAll: `SELECT * FROM suppliers ORDER BY name`,
+    // invoice_count/last_invoice_date count Approved invoices only — a
+    // Pending Review invoice isn't real debt yet (same rule as everywhere).
+    getAll: `SELECT s.*,
+                    (SELECT COUNT(*) FROM purchase_invoices WHERE supplier_id = s.id AND status = 'Approved') AS invoice_count,
+                    (SELECT MAX(invoice_date) FROM purchase_invoices WHERE supplier_id = s.id AND status = 'Approved') AS last_invoice_date
+                 FROM suppliers s ORDER BY s.name`,
     insert: `INSERT INTO suppliers (name, phone, email, address, tax_number, commercial_register, current_balance)
                  VALUES (?, ?, ?, ?, ?, ?, ?)`,
     updateBalance: `UPDATE suppliers SET current_balance = ? WHERE id = ?`,
-    search: `SELECT * FROM suppliers WHERE name LIKE ? ORDER BY name LIMIT 20`
+    update: `UPDATE suppliers SET name = ?, phone = ?, email = ?, address = ?, tax_number = ?, commercial_register = ? WHERE id = ?`,
+    search: `SELECT s.*,
+                    (SELECT COUNT(*) FROM purchase_invoices WHERE supplier_id = s.id AND status = 'Approved') AS invoice_count,
+                    (SELECT MAX(invoice_date) FROM purchase_invoices WHERE supplier_id = s.id AND status = 'Approved') AS last_invoice_date
+                 FROM suppliers s WHERE s.name LIKE ? ORDER BY s.name LIMIT 20`
   },
 
   // ─── PRODUCTS ───
@@ -317,26 +326,31 @@ const QUERIES = {
   // fan-out bug where joining sales_invoices AND customer_payments in
   // the same query multiplies rows and overcounts both sums.
   customers: {
+    // Same column logic as getSummary below (adjustments excluded from
+    // payment totals, folded into the balance with the opposite sign) —
+    // the list must never disagree with the detail page.
     getAll: `SELECT c.*,
                     COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft'), 0) as total_invoice_amount,
                     COALESCE((SELECT COUNT(*) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft'), 0) as total_invoices,
-                    COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id), 0) as total_payment_amount,
-                    COALESCE((SELECT COUNT(*) FROM customer_payments WHERE customer_id = c.id), 0) as total_payments,
+                    COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id AND transaction_type != 'adjustment'), 0) as total_payment_amount,
+                    COALESCE((SELECT COUNT(*) FROM customer_payments WHERE customer_id = c.id AND transaction_type != 'adjustment'), 0) as total_payments,
                     (SELECT MAX(invoice_date) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft') as last_invoice_date,
-                    (SELECT MAX(payment_date) FROM customer_payments WHERE customer_id = c.id) as last_payment_date,
+                    (SELECT MAX(payment_date) FROM customer_payments WHERE customer_id = c.id AND transaction_type != 'adjustment') as last_payment_date,
                     (COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft'), 0)
-                     - COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id), 0)) as current_balance
+                     - COALESCE((SELECT SUM(CASE WHEN transaction_type = 'adjustment' THEN -amount ELSE amount END)
+                                 FROM customer_payments WHERE customer_id = c.id), 0)) as current_balance
                   FROM customers c
                   ORDER BY c.full_name`,
     search: `SELECT c.*,
                     COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft'), 0) as total_invoice_amount,
                     COALESCE((SELECT COUNT(*) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft'), 0) as total_invoices,
-                    COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id), 0) as total_payment_amount,
-                    COALESCE((SELECT COUNT(*) FROM customer_payments WHERE customer_id = c.id), 0) as total_payments,
+                    COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id AND transaction_type != 'adjustment'), 0) as total_payment_amount,
+                    COALESCE((SELECT COUNT(*) FROM customer_payments WHERE customer_id = c.id AND transaction_type != 'adjustment'), 0) as total_payments,
                     (SELECT MAX(invoice_date) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft') as last_invoice_date,
-                    (SELECT MAX(payment_date) FROM customer_payments WHERE customer_id = c.id) as last_payment_date,
+                    (SELECT MAX(payment_date) FROM customer_payments WHERE customer_id = c.id AND transaction_type != 'adjustment') as last_payment_date,
                     (COALESCE((SELECT SUM(invoice_amount) FROM sales_invoices WHERE customer_id = c.id AND status != 'Draft'), 0)
-                     - COALESCE((SELECT SUM(amount) FROM customer_payments WHERE customer_id = c.id), 0)) as current_balance
+                     - COALESCE((SELECT SUM(CASE WHEN transaction_type = 'adjustment' THEN -amount ELSE amount END)
+                                 FROM customer_payments WHERE customer_id = c.id), 0)) as current_balance
                   FROM customers c
                   WHERE c.full_name LIKE ?
                   ORDER BY c.full_name

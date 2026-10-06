@@ -15245,13 +15245,17 @@ const queryKeys = {
     detail: (id) => ["purchase-orders", "detail", id]
   },
   payments: {
-    list: ["payments", "list"]
+    /** Prefix of every payments query — invalidate this after recording a payment. */
+    all: ["payments"],
+    list: (filters) => ["payments", "list", filters],
+    analytics: (filters) => ["payments", "analytics", filters]
   },
   reports: {
     trialBalance: ["reports", "trial-balance"],
     balanceSheet: ["reports", "balance-sheet"],
     profitLoss: ["reports", "profit-loss"],
-    verify: ["reports", "verify"]
+    verify: ["reports", "verify"],
+    debtAnalysis: (filters) => ["reports", "debt-analysis", filters]
   },
   customers: {
     list: (query) => ["customers", "list", query],
@@ -23440,8 +23444,8 @@ const Toast = (props) => {
         x: 0,
         y: 0
       };
-      const getDampening = (delta) => {
-        const factor = Math.abs(delta) / 20;
+      const getDampening = (delta2) => {
+        const factor = Math.abs(delta2) / 20;
         return 1 / (1.5 + factor);
       };
       if (swipeDirection === "y") {
@@ -24015,10 +24019,10 @@ function getUrlBasedHistory(getLocation, createHref2, validateLocation, options2
   function handlePop() {
     action = "POP";
     let nextIndex = getIndex();
-    let delta = nextIndex == null ? null : nextIndex - index2;
+    let delta2 = nextIndex == null ? null : nextIndex - index2;
     index2 = nextIndex;
     if (listener2) {
-      listener2({ action, location: history.location, delta });
+      listener2({ action, location: history.location, delta: delta2 });
     }
   }
   function push(to2, state) {
@@ -26402,33 +26406,53 @@ const createLucideIcon = (iconName, iconNode) => {
   Component.displayName = toPascalCase(iconName);
   return Component;
 };
-const __iconNode$V = [
+const __iconNode$$ = [
+  [
+    "path",
+    {
+      d: "M22 12h-2.48a2 2 0 0 0-1.93 1.46l-2.35 8.36a.25.25 0 0 1-.48 0L9.24 2.18a.25.25 0 0 0-.48 0l-2.35 8.36A2 2 0 0 1 4.49 12H2",
+      key: "169zse"
+    }
+  ]
+];
+const Activity = createLucideIcon("activity", __iconNode$$);
+const __iconNode$_ = [
+  ["path", { d: "m7 7 10 10", key: "1fmybs" }],
+  ["path", { d: "M17 7v10H7", key: "6fjiku" }]
+];
+const ArrowDownRight = createLucideIcon("arrow-down-right", __iconNode$_);
+const __iconNode$Z = [
   ["path", { d: "M12 5v14", key: "s699le" }],
   ["path", { d: "m19 12-7 7-7-7", key: "1idqje" }]
 ];
-const ArrowDown = createLucideIcon("arrow-down", __iconNode$V);
-const __iconNode$U = [
+const ArrowDown = createLucideIcon("arrow-down", __iconNode$Z);
+const __iconNode$Y = [
   ["path", { d: "M5 12h14", key: "1ays0h" }],
   ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
 ];
-const ArrowRight = createLucideIcon("arrow-right", __iconNode$U);
-const __iconNode$T = [
+const ArrowRight = createLucideIcon("arrow-right", __iconNode$Y);
+const __iconNode$X = [
+  ["path", { d: "M7 7h10v10", key: "1tivn9" }],
+  ["path", { d: "M7 17 17 7", key: "1vkiza" }]
+];
+const ArrowUpRight = createLucideIcon("arrow-up-right", __iconNode$X);
+const __iconNode$W = [
   ["path", { d: "m5 12 7-7 7 7", key: "hav0vg" }],
   ["path", { d: "M12 19V5", key: "x0mq9r" }]
 ];
-const ArrowUp = createLucideIcon("arrow-up", __iconNode$T);
-const __iconNode$S = [
+const ArrowUp = createLucideIcon("arrow-up", __iconNode$W);
+const __iconNode$V = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "M4.929 4.929 19.07 19.071", key: "196cmz" }]
 ];
-const Ban = createLucideIcon("ban", __iconNode$S);
-const __iconNode$R = [
+const Ban = createLucideIcon("ban", __iconNode$V);
+const __iconNode$U = [
   ["rect", { width: "20", height: "12", x: "2", y: "6", rx: "2", key: "9lu3g6" }],
   ["circle", { cx: "12", cy: "12", r: "2", key: "1c9p78" }],
   ["path", { d: "M6 12h.01M18 12h.01", key: "113zkx" }]
 ];
-const Banknote = createLucideIcon("banknote", __iconNode$R);
-const __iconNode$Q = [
+const Banknote = createLucideIcon("banknote", __iconNode$U);
+const __iconNode$T = [
   ["path", { d: "M10.268 21a2 2 0 0 0 3.464 0", key: "vwvbt9" }],
   [
     "path",
@@ -26438,8 +26462,8 @@ const __iconNode$Q = [
     }
   ]
 ];
-const Bell = createLucideIcon("bell", __iconNode$Q);
-const __iconNode$P = [
+const Bell = createLucideIcon("bell", __iconNode$T);
+const __iconNode$S = [
   ["path", { d: "M12 8V4H8", key: "hb8ula" }],
   ["rect", { width: "16", height: "12", x: "4", y: "8", rx: "2", key: "enze0r" }],
   ["path", { d: "M2 14h2", key: "vft8re" }],
@@ -26447,8 +26471,8 @@ const __iconNode$P = [
   ["path", { d: "M15 13v2", key: "1xurst" }],
   ["path", { d: "M9 13v2", key: "rq6x2g" }]
 ];
-const Bot = createLucideIcon("bot", __iconNode$P);
-const __iconNode$O = [
+const Bot = createLucideIcon("bot", __iconNode$S);
+const __iconNode$R = [
   ["path", { d: "M16 14v2.2l1.6 1", key: "fo4ql5" }],
   ["path", { d: "M16 2v4", key: "4m81vk" }],
   ["path", { d: "M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5", key: "1osxxc" }],
@@ -26456,15 +26480,15 @@ const __iconNode$O = [
   ["path", { d: "M8 2v4", key: "1cmpym" }],
   ["circle", { cx: "16", cy: "16", r: "6", key: "qoo3c4" }]
 ];
-const CalendarClock = createLucideIcon("calendar-clock", __iconNode$O);
-const __iconNode$N = [
+const CalendarClock = createLucideIcon("calendar-clock", __iconNode$R);
+const __iconNode$Q = [
   ["path", { d: "M8 2v4", key: "1cmpym" }],
   ["path", { d: "M16 2v4", key: "4m81vk" }],
   ["rect", { width: "18", height: "18", x: "3", y: "4", rx: "2", key: "1hopcy" }],
   ["path", { d: "M3 10h18", key: "8toen8" }]
 ];
-const Calendar = createLucideIcon("calendar", __iconNode$N);
-const __iconNode$M = [
+const Calendar = createLucideIcon("calendar", __iconNode$Q);
+const __iconNode$P = [
   [
     "path",
     {
@@ -26474,77 +26498,77 @@ const __iconNode$M = [
   ],
   ["circle", { cx: "12", cy: "13", r: "3", key: "1vg3eu" }]
 ];
-const Camera = createLucideIcon("camera", __iconNode$M);
-const __iconNode$L = [
+const Camera = createLucideIcon("camera", __iconNode$P);
+const __iconNode$O = [
   ["path", { d: "M3 3v16a2 2 0 0 0 2 2h16", key: "c24i48" }],
   ["path", { d: "M18 17V9", key: "2bz60n" }],
   ["path", { d: "M13 17V5", key: "1frdt8" }],
   ["path", { d: "M8 17v-3", key: "17ska0" }]
 ];
-const ChartColumn = createLucideIcon("chart-column", __iconNode$L);
-const __iconNode$K = [
+const ChartColumn = createLucideIcon("chart-column", __iconNode$O);
+const __iconNode$N = [
   ["path", { d: "M3 3v16a2 2 0 0 0 2 2h16", key: "c24i48" }],
   ["path", { d: "m19 9-5 5-4-4-3 3", key: "2osh9i" }]
 ];
-const ChartLine = createLucideIcon("chart-line", __iconNode$K);
-const __iconNode$J = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
-const Check = createLucideIcon("check", __iconNode$J);
-const __iconNode$I = [["path", { d: "m15 18-6-6 6-6", key: "1wnfg3" }]];
-const ChevronLeft = createLucideIcon("chevron-left", __iconNode$I);
-const __iconNode$H = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-const ChevronDown = createLucideIcon("chevron-down", __iconNode$H);
-const __iconNode$G = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
-const ChevronRight = createLucideIcon("chevron-right", __iconNode$G);
-const __iconNode$F = [
+const ChartLine = createLucideIcon("chart-line", __iconNode$N);
+const __iconNode$M = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
+const Check = createLucideIcon("check", __iconNode$M);
+const __iconNode$L = [["path", { d: "m15 18-6-6 6-6", key: "1wnfg3" }]];
+const ChevronLeft = createLucideIcon("chevron-left", __iconNode$L);
+const __iconNode$K = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+const ChevronDown = createLucideIcon("chevron-down", __iconNode$K);
+const __iconNode$J = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
+const ChevronRight = createLucideIcon("chevron-right", __iconNode$J);
+const __iconNode$I = [
   ["path", { d: "m11 17-5-5 5-5", key: "13zhaf" }],
   ["path", { d: "m18 17-5-5 5-5", key: "h8a8et" }]
 ];
-const ChevronsLeft = createLucideIcon("chevrons-left", __iconNode$F);
-const __iconNode$E = [
+const ChevronsLeft = createLucideIcon("chevrons-left", __iconNode$I);
+const __iconNode$H = [
   ["path", { d: "m6 17 5-5-5-5", key: "xnjwq" }],
   ["path", { d: "m13 17 5-5-5-5", key: "17xmmf" }]
 ];
-const ChevronsRight = createLucideIcon("chevrons-right", __iconNode$E);
-const __iconNode$D = [
+const ChevronsRight = createLucideIcon("chevrons-right", __iconNode$H);
+const __iconNode$G = [
   ["path", { d: "m7 15 5 5 5-5", key: "1hf1tw" }],
   ["path", { d: "m7 9 5-5 5 5", key: "sgt6xg" }]
 ];
-const ChevronsUpDown = createLucideIcon("chevrons-up-down", __iconNode$D);
-const __iconNode$C = [
+const ChevronsUpDown = createLucideIcon("chevrons-up-down", __iconNode$G);
+const __iconNode$F = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
   ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
 ];
-const CircleAlert = createLucideIcon("circle-alert", __iconNode$C);
-const __iconNode$B = [
+const CircleAlert = createLucideIcon("circle-alert", __iconNode$F);
+const __iconNode$E = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
 ];
-const CircleCheck = createLucideIcon("circle-check", __iconNode$B);
-const __iconNode$A = [
+const CircleCheck = createLucideIcon("circle-check", __iconNode$E);
+const __iconNode$D = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "m15 9-6 6", key: "1uzhvr" }],
   ["path", { d: "m9 9 6 6", key: "z0biqf" }]
 ];
-const CircleX = createLucideIcon("circle-x", __iconNode$A);
-const __iconNode$z = [
+const CircleX = createLucideIcon("circle-x", __iconNode$D);
+const __iconNode$C = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "M12 6v6l4 2", key: "mmk7yg" }]
 ];
-const Clock = createLucideIcon("clock", __iconNode$z);
-const __iconNode$y = [
+const Clock = createLucideIcon("clock", __iconNode$C);
+const __iconNode$B = [
   ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
   ["path", { d: "M9 3v18", key: "fh3hqa" }],
   ["path", { d: "M15 3v18", key: "14nvp0" }]
 ];
-const Columns3 = createLucideIcon("columns-3", __iconNode$y);
-const __iconNode$x = [
+const Columns3 = createLucideIcon("columns-3", __iconNode$B);
+const __iconNode$A = [
   ["path", { d: "M12 15V3", key: "m9g1x1" }],
   ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
   ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
 ];
-const Download = createLucideIcon("download", __iconNode$x);
-const __iconNode$w = [
+const Download = createLucideIcon("download", __iconNode$A);
+const __iconNode$z = [
   [
     "path",
     {
@@ -26555,8 +26579,8 @@ const __iconNode$w = [
   ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5", key: "wfsgrz" }],
   ["path", { d: "m9 15 2 2 4-4", key: "1grp1n" }]
 ];
-const FileCheck = createLucideIcon("file-check", __iconNode$w);
-const __iconNode$v = [
+const FileCheck = createLucideIcon("file-check", __iconNode$z);
+const __iconNode$y = [
   [
     "path",
     {
@@ -26568,8 +26592,8 @@ const __iconNode$v = [
   ["path", { d: "M12 18v-6", key: "17g6i2" }],
   ["path", { d: "m9 15 3 3 3-3", key: "1npd3o" }]
 ];
-const FileDown = createLucideIcon("file-down", __iconNode$v);
-const __iconNode$u = [
+const FileDown = createLucideIcon("file-down", __iconNode$y);
+const __iconNode$x = [
   [
     "path",
     {
@@ -26581,8 +26605,8 @@ const __iconNode$u = [
   ["path", { d: "M2 15h10", key: "jfw4w8" }],
   ["path", { d: "m9 18 3-3-3-3", key: "112psh" }]
 ];
-const FileInput = createLucideIcon("file-input", __iconNode$u);
-const __iconNode$t = [
+const FileInput = createLucideIcon("file-input", __iconNode$x);
+const __iconNode$w = [
   [
     "path",
     {
@@ -26595,20 +26619,37 @@ const __iconNode$t = [
   ["path", { d: "M16 13H8", key: "t4e002" }],
   ["path", { d: "M16 17H8", key: "z1uh3a" }]
 ];
-const FileText = createLucideIcon("file-text", __iconNode$t);
-const __iconNode$s = [
+const FileText = createLucideIcon("file-text", __iconNode$w);
+const __iconNode$v = [
+  [
+    "path",
+    {
+      d: "M4 22V4a1 1 0 0 1 .4-.8A6 6 0 0 1 8 2c3 0 5 2 7.333 2q2 0 3.067-.8A1 1 0 0 1 20 4v10a1 1 0 0 1-.4.8A6 6 0 0 1 16 16c-3 0-5-2-8-2a6 6 0 0 0-4 1.528",
+      key: "1jaruq"
+    }
+  ]
+];
+const Flag = createLucideIcon("flag", __iconNode$v);
+const __iconNode$u = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20", key: "13o1zl" }],
   ["path", { d: "M2 12h20", key: "9i4pu4" }]
 ];
-const Globe = createLucideIcon("globe", __iconNode$s);
-const __iconNode$r = [
+const Globe = createLucideIcon("globe", __iconNode$u);
+const __iconNode$t = [
+  ["line", { x1: "4", x2: "20", y1: "9", y2: "9", key: "4lhtct" }],
+  ["line", { x1: "4", x2: "20", y1: "15", y2: "15", key: "vyu0kd" }],
+  ["line", { x1: "10", x2: "8", y1: "3", y2: "21", key: "1ggp8o" }],
+  ["line", { x1: "16", x2: "14", y1: "3", y2: "21", key: "weycgp" }]
+];
+const Hash = createLucideIcon("hash", __iconNode$t);
+const __iconNode$s = [
   ["path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "1357e3" }],
   ["path", { d: "M3 3v5h5", key: "1xhq8a" }],
   ["path", { d: "M12 7v5l4 2", key: "1fdv2h" }]
 ];
-const History = createLucideIcon("history", __iconNode$r);
-const __iconNode$q = [
+const History = createLucideIcon("history", __iconNode$s);
+const __iconNode$r = [
   ["polyline", { points: "22 12 16 12 14 15 10 15 8 12 2 12", key: "o97t9d" }],
   [
     "path",
@@ -26618,15 +26659,15 @@ const __iconNode$q = [
     }
   ]
 ];
-const Inbox = createLucideIcon("inbox", __iconNode$q);
-const __iconNode$p = [
+const Inbox = createLucideIcon("inbox", __iconNode$r);
+const __iconNode$q = [
   ["rect", { width: "7", height: "9", x: "3", y: "3", rx: "1", key: "10lvy0" }],
   ["rect", { width: "7", height: "5", x: "14", y: "3", rx: "1", key: "16une8" }],
   ["rect", { width: "7", height: "9", x: "14", y: "12", rx: "1", key: "1hutg5" }],
   ["rect", { width: "7", height: "5", x: "3", y: "16", rx: "1", key: "ldoo1y" }]
 ];
-const LayoutDashboard = createLucideIcon("layout-dashboard", __iconNode$p);
-const __iconNode$o = [
+const LayoutDashboard = createLucideIcon("layout-dashboard", __iconNode$q);
+const __iconNode$p = [
   [
     "path",
     {
@@ -26637,14 +26678,14 @@ const __iconNode$o = [
   ["path", { d: "M9 18h6", key: "x1upvd" }],
   ["path", { d: "M10 22h4", key: "ceow96" }]
 ];
-const Lightbulb = createLucideIcon("lightbulb", __iconNode$o);
-const __iconNode$n = [
+const Lightbulb = createLucideIcon("lightbulb", __iconNode$p);
+const __iconNode$o = [
   ["rect", { width: "20", height: "14", x: "2", y: "3", rx: "2", key: "48i651" }],
   ["line", { x1: "8", x2: "16", y1: "21", y2: "21", key: "1svkeh" }],
   ["line", { x1: "12", x2: "12", y1: "17", y2: "21", key: "vw1qmm" }]
 ];
-const Monitor = createLucideIcon("monitor", __iconNode$n);
-const __iconNode$m = [
+const Monitor = createLucideIcon("monitor", __iconNode$o);
+const __iconNode$n = [
   [
     "path",
     {
@@ -26653,8 +26694,8 @@ const __iconNode$m = [
     }
   ]
 ];
-const Moon = createLucideIcon("moon", __iconNode$m);
-const __iconNode$l = [
+const Moon = createLucideIcon("moon", __iconNode$n);
+const __iconNode$m = [
   ["path", { d: "M12 22V12", key: "d0xqtd" }],
   ["path", { d: "M16 17h6", key: "1ook5g" }],
   ["path", { d: "M19 14v6", key: "1ckrd5" }],
@@ -26668,8 +26709,8 @@ const __iconNode$l = [
   ["path", { d: "M3.29 7 12 12l8.71-5", key: "19ckod" }],
   ["path", { d: "m7.5 4.27 8.997 5.148", key: "9yrvtv" }]
 ];
-const PackagePlus = createLucideIcon("package-plus", __iconNode$l);
-const __iconNode$k = [
+const PackagePlus = createLucideIcon("package-plus", __iconNode$m);
+const __iconNode$l = [
   [
     "path",
     {
@@ -26681,8 +26722,8 @@ const __iconNode$k = [
   ["polyline", { points: "3.29 7 12 12 20.71 7", key: "ousv84" }],
   ["path", { d: "m7.5 4.27 9 5.15", key: "1c824w" }]
 ];
-const Package = createLucideIcon("package", __iconNode$k);
-const __iconNode$j = [
+const Package = createLucideIcon("package", __iconNode$l);
+const __iconNode$k = [
   [
     "path",
     {
@@ -26692,7 +26733,13 @@ const __iconNode$j = [
   ],
   ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
 ];
-const Pencil = createLucideIcon("pencil", __iconNode$j);
+const Pencil = createLucideIcon("pencil", __iconNode$k);
+const __iconNode$j = [
+  ["line", { x1: "19", x2: "5", y1: "5", y2: "19", key: "1x9vlm" }],
+  ["circle", { cx: "6.5", cy: "6.5", r: "2.5", key: "4mh3h7" }],
+  ["circle", { cx: "17.5", cy: "17.5", r: "2.5", key: "1mdrzq" }]
+];
+const Percent = createLucideIcon("percent", __iconNode$j);
 const __iconNode$i = [
   ["path", { d: "M5 12h14", key: "1ays0h" }],
   ["path", { d: "M12 5v14", key: "s699le" }]
@@ -27845,11 +27892,11 @@ var getDirectionFactor = function(axis, direction) {
 };
 var handleScroll = function(axis, endTarget, event, sourceDelta, noOverscroll) {
   var directionFactor = getDirectionFactor(axis, window.getComputedStyle(endTarget).direction);
-  var delta = directionFactor * sourceDelta;
+  var delta2 = directionFactor * sourceDelta;
   var target = event.target;
   var targetInLock = endTarget.contains(target);
   var shouldCancelScroll = false;
-  var isDeltaPositive = delta > 0;
+  var isDeltaPositive = delta2 > 0;
   var availableScroll = 0;
   var availableScrollTop = 0;
   do {
@@ -27968,9 +28015,9 @@ function RemoveScrollSideCar(props) {
     if (!lockStack.length || lockStack[lockStack.length - 1] !== Style2) {
       return;
     }
-    var delta = "deltaY" in event ? getDeltaXY(event) : getTouchXY(event);
+    var delta2 = "deltaY" in event ? getDeltaXY(event) : getTouchXY(event);
     var sourceEvent = shouldPreventQueue.current.filter(function(e) {
-      return e.name === event.type && (e.target === event.target || event.target === e.shadowParent) && deltaCompare(e.delta, delta);
+      return e.name === event.type && (e.target === event.target || event.target === e.shadowParent) && deltaCompare(e.delta, delta2);
     })[0];
     if (sourceEvent && sourceEvent.should) {
       if (event.cancelable) {
@@ -27990,8 +28037,8 @@ function RemoveScrollSideCar(props) {
       }
     }
   }, []);
-  var shouldCancel = reactExports.useCallback(function(name, delta, target, should) {
-    var event = { name, delta, target, should, shadowParent: getOutermostShadowParent(target) };
+  var shouldCancel = reactExports.useCallback(function(name, delta2, target, should) {
+    var event = { name, delta: delta2, target, should, shadowParent: getOutermostShadowParent(target) };
     shouldPreventQueue.current.push(event);
     setTimeout(function() {
       shouldPreventQueue.current = shouldPreventQueue.current.filter(function(e) {
@@ -33607,7 +33654,7 @@ const CardFooter = reactExports.forwardRef(
   ({ className, ...props }, ref) => /* @__PURE__ */ jsxRuntimeExports.jsx("div", { ref, className: cn$1("flex items-center p-6 pt-0", className), ...props })
 );
 CardFooter.displayName = "CardFooter";
-function StatCard({ icon: Icon2, label, value, delta, loading, tooltip }) {
+function StatCard({ icon: Icon2, label, value, delta: delta2, loading, tooltip }) {
   if (loading) {
     return /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { className: "flex items-center gap-4 p-5", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(Skeleton, { className: "size-10 rounded-md" }),
@@ -33617,7 +33664,7 @@ function StatCard({ icon: Icon2, label, value, delta, loading, tooltip }) {
       ] })
     ] }) });
   }
-  const deltaIsPositive = delta && (delta.direction === "up" ? delta.upIsGood : !delta.upIsGood);
+  const deltaIsPositive = delta2 && (delta2.direction === "up" ? delta2.upIsGood : !delta2.upIsGood);
   return /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { className: "flex items-center gap-4 p-5", children: [
     /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex size-10 shrink-0 items-center justify-center rounded-md bg-accent text-accent-foreground", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Icon2, { className: "size-5" }) }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "min-w-0", children: [
@@ -33627,7 +33674,7 @@ function StatCard({ icon: Icon2, label, value, delta, loading, tooltip }) {
       ] }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-xs text-muted-foreground", children: label }),
       /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-baseline gap-2", children: [
         /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "tabular-nums text-lg font-semibold text-foreground", children: value }),
-        delta && delta.direction !== "flat" && /* @__PURE__ */ jsxRuntimeExports.jsxs(
+        delta2 && delta2.direction !== "flat" && /* @__PURE__ */ jsxRuntimeExports.jsxs(
           "span",
           {
             className: cn$1(
@@ -33635,8 +33682,8 @@ function StatCard({ icon: Icon2, label, value, delta, loading, tooltip }) {
               deltaIsPositive ? "text-success" : "text-destructive"
             ),
             children: [
-              delta.direction === "up" ? /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowUp, { className: "size-3" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowDown, { className: "size-3" }),
-              delta.label
+              delta2.direction === "up" ? /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowUp, { className: "size-3" }) : /* @__PURE__ */ jsxRuntimeExports.jsx(ArrowDown, { className: "size-3" }),
+              delta2.label
             ]
           }
         )
@@ -42638,7 +42685,7 @@ function AlertsSection({ range: range2, from: from2, to: to2 }) {
     )) }) })
   ] });
 }
-function toDelta(kpi, upIsGood) {
+function toDelta$1(kpi, upIsGood) {
   return {
     label: `${Math.abs(kpi.changePercent)}%`,
     direction: kpi.direction,
@@ -42657,7 +42704,7 @@ function KpiGrid({ range: range2, from: from2, to: to2 }) {
         icon: Wallet,
         label: "إجمالي ديون الموردين",
         value: formatCompactCurrency(data.totalDebt.value),
-        delta: toDelta(data.totalDebt, false),
+        delta: toDelta$1(data.totalDebt, false),
         tooltip: "الرصيد الحالي المستحق لجميع الموردين مجتمعين"
       }
     ),
@@ -42667,7 +42714,7 @@ function KpiGrid({ range: range2, from: from2, to: to2 }) {
         icon: ShoppingCart,
         label: "إجمالي المشتريات",
         value: formatCompactCurrency(data.totalPurchases.value),
-        delta: toDelta(data.totalPurchases, true),
+        delta: toDelta$1(data.totalPurchases, true),
         tooltip: "إجمالي قيمة كل الفواتير المعتمدة منذ البداية"
       }
     ),
@@ -42677,7 +42724,7 @@ function KpiGrid({ range: range2, from: from2, to: to2 }) {
         icon: TrendingUp,
         label: "مشتريات الفترة المحددة",
         value: formatCompactCurrency(data.purchasesThisPeriod.value),
-        delta: toDelta(data.purchasesThisPeriod, true),
+        delta: toDelta$1(data.purchasesThisPeriod, true),
         tooltip: "قيمة الفواتير المعتمدة خلال الفترة المحددة أعلاه"
       }
     ),
@@ -42687,7 +42734,7 @@ function KpiGrid({ range: range2, from: from2, to: to2 }) {
         icon: Banknote,
         label: "مدفوعات الفترة المحددة",
         value: formatCompactCurrency(data.paymentsThisPeriod.value),
-        delta: toDelta(data.paymentsThisPeriod, true),
+        delta: toDelta$1(data.paymentsThisPeriod, true),
         tooltip: "المبالغ المدفوعة للموردين خلال الفترة المحددة أعلاه"
       }
     ),
@@ -42715,7 +42762,7 @@ function KpiGrid({ range: range2, from: from2, to: to2 }) {
         icon: Receipt,
         label: "متوسط قيمة الفاتورة",
         value: formatCompactCurrency(data.averageInvoiceValue.value),
-        delta: toDelta(data.averageInvoiceValue, true),
+        delta: toDelta$1(data.averageInvoiceValue, true),
         tooltip: "متوسط قيمة الفواتير المعتمدة خلال الفترة المحددة"
       }
     )
@@ -53122,15 +53169,15 @@ function descending(a2, b) {
   return a2 == null || b == null ? NaN : b < a2 ? -1 : b > a2 ? 1 : b >= a2 ? 0 : NaN;
 }
 function bisector(f) {
-  let compare1, compare2, delta;
+  let compare1, compare2, delta2;
   if (f.length !== 2) {
     compare1 = ascending;
     compare2 = (d, x2) => ascending(f(d), x2);
-    delta = (d, x2) => f(d) - x2;
+    delta2 = (d, x2) => f(d) - x2;
   } else {
     compare1 = f === ascending || f === descending ? f : zero$1;
     compare2 = f;
-    delta = f;
+    delta2 = f;
   }
   function left(a2, x2, lo = 0, hi = a2.length) {
     if (lo < hi) {
@@ -53156,7 +53203,7 @@ function bisector(f) {
   }
   function center(a2, x2, lo = 0, hi = a2.length) {
     const i2 = left(a2, x2, lo, hi - 1);
-    return i2 > lo && delta(a2[i2 - 1], x2) > -delta(a2[i2], x2) ? i2 - 1 : i2;
+    return i2 > lo && delta2(a2[i2 - 1], x2) > -delta2(a2[i2], x2) ? i2 - 1 : i2;
   }
   return { left, center, right };
 }
@@ -55018,7 +55065,7 @@ function formatLocale(locale2) {
     "L": formatMilliseconds,
     "m": formatMonthNumber,
     "M": formatMinutes,
-    "p": formatPeriod,
+    "p": formatPeriod2,
     "q": formatQuarter,
     "Q": formatUnixTimestamp,
     "s": formatUnixTimestampSeconds,
@@ -55224,7 +55271,7 @@ function formatLocale(locale2) {
   function formatMonth(d) {
     return locale_months[d.getMonth()];
   }
-  function formatPeriod(d) {
+  function formatPeriod2(d) {
     return locale_periods[+(d.getHours() >= 12)];
   }
   function formatQuarter(d) {
@@ -66115,9 +66162,9 @@ function computeBarRectangles(_ref6) {
         height: offset2.height
       };
       if (Math.abs(minPointSize) > 0 && Math.abs(height) < Math.abs(minPointSize)) {
-        var delta = mathSign(height || minPointSize) * (Math.abs(minPointSize) - Math.abs(height));
-        y2 -= delta;
-        height += delta;
+        var delta2 = mathSign(height || minPointSize) * (Math.abs(minPointSize) - Math.abs(height));
+        y2 -= delta2;
+        height += delta2;
       }
     } else {
       var _baseValueScale = xAxis.scale.map(value[0]);
@@ -69701,6 +69748,7 @@ const suppliersApi = {
   getAging: () => apiClient.get("/api/suppliers/aging"),
   getLedger: (id) => apiClient.get(`/api/suppliers/${id}/ledger`),
   create: (data) => apiClient.post("/api/suppliers", data),
+  update: (id, data) => apiClient.patch(`/api/suppliers/${id}`, data),
   recordPayment: (id, data) => apiClient.post(`/api/suppliers/${id}/payments`, data),
   adjustBalance: (id, data) => apiClient.post(`/api/suppliers/${id}/adjust`, data),
   remove: (id) => apiClient.delete(`/api/suppliers/${id}`)
@@ -69728,6 +69776,22 @@ function useCreateSupplier() {
     },
     onError: (error) => {
       toast.error("فشل إضافة المورد", { description: error.message });
+    }
+  });
+}
+function useUpdateSupplier(supplierId) {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: (data) => suppliersApi.update(supplierId, data),
+    onSuccess: () => {
+      toast.success("تم تحديث معلومات المورد");
+      queryClient2.invalidateQueries({ queryKey: queryKeys.suppliers.detail(supplierId) });
+      queryClient2.invalidateQueries({ queryKey: queryKeys.suppliers.ledger(supplierId) });
+      queryClient2.invalidateQueries({ queryKey: queryKeys.suppliers.aging });
+      queryClient2.invalidateQueries({ queryKey: ["suppliers", "list"] });
+    },
+    onError: (error) => {
+      toast.error("فشل تحديث المورد", { description: error.message });
     }
   });
 }
@@ -69778,6 +69842,86 @@ function useAdjustBalance(supplierId) {
       toast.error("فشل تسوية الرصيد", { description: error.message });
     }
   });
+}
+function SupplierFormFields({ control }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      FormField,
+      {
+        control,
+        name: "name",
+        render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "اسم المورد *" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "مثال: أسواق مزارع سارة", ...field }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
+        ] })
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        FormField,
+        {
+          control,
+          name: "phone",
+          render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "الهاتف" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "اختياري", ...field }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
+          ] })
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        FormField,
+        {
+          control,
+          name: "email",
+          render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "البريد الإلكتروني" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "اختياري", ...field }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
+          ] })
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      FormField,
+      {
+        control,
+        name: "address",
+        render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "العنوان" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "اختياري", ...field }) }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
+        ] })
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-4", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        FormField,
+        {
+          control,
+          name: "taxNumber",
+          render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "الرقم الضريبي" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "اختياري", ...field }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
+          ] })
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        FormField,
+        {
+          control,
+          name: "commercialRegister",
+          render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "السجل التجاري" }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "اختياري", ...field }) }),
+            /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
+          ] })
+        }
+      )
+    ] })
+  ] });
 }
 const PAYMENT_METHODS$2 = [
   { value: "cash", label: "نقداً" },
@@ -69847,85 +69991,54 @@ function CreateSupplierDialog() {
         /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: "سيتم إضافة المورد برصيد صفر — يمكن تسجيل الفواتير والدفعات عليه لاحقاً." })
       ] }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(Form, { ...form, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: form.handleSubmit(onSubmit), className: "grid gap-4", children: [
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          FormField,
-          {
-            control: form.control,
-            name: "name",
-            render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "اسم المورد *" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "مثال: أسواق مزارع سارة", ...field }) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
-            ] })
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-4", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            FormField,
-            {
-              control: form.control,
-              name: "phone",
-              render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "الهاتف" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "اختياري", ...field }) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
-              ] })
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            FormField,
-            {
-              control: form.control,
-              name: "email",
-              render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "البريد الإلكتروني" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "اختياري", ...field }) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
-              ] })
-            }
-          )
-        ] }),
-        /* @__PURE__ */ jsxRuntimeExports.jsx(
-          FormField,
-          {
-            control: form.control,
-            name: "address",
-            render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
-              /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "العنوان" }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "اختياري", ...field }) }),
-              /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
-            ] })
-          }
-        ),
-        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-2 gap-4", children: [
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            FormField,
-            {
-              control: form.control,
-              name: "taxNumber",
-              render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "الرقم الضريبي" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "اختياري", ...field }) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
-              ] })
-            }
-          ),
-          /* @__PURE__ */ jsxRuntimeExports.jsx(
-            FormField,
-            {
-              control: form.control,
-              name: "commercialRegister",
-              render: ({ field }) => /* @__PURE__ */ jsxRuntimeExports.jsxs(FormItem, { children: [
-                /* @__PURE__ */ jsxRuntimeExports.jsx(FormLabel, { children: "السجل التجاري" }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(FormControl, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(Input, { placeholder: "اختياري", ...field }) }),
-                /* @__PURE__ */ jsxRuntimeExports.jsx(FormMessage, {})
-              ] })
-            }
-          )
-        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(SupplierFormFields, { control: form.control }),
         /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogFooter, { children: [
           /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "ghost", onClick: () => setOpen(false), children: t2("common.cancel") }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", disabled: createSupplier.isPending || !form.formState.isDirty, children: createSupplier.isPending ? t2("common.loading") : t2("common.save") })
+        ] })
+      ] }) })
+    ] })
+  ] });
+}
+function toFormValues(supplier) {
+  return {
+    name: supplier.name,
+    phone: supplier.phone ?? "",
+    email: supplier.email ?? "",
+    address: supplier.address ?? "",
+    taxNumber: supplier.tax_number ?? "",
+    commercialRegister: supplier.commercial_register ?? ""
+  };
+}
+function EditSupplierDialog({ supplier, iconOnly = false }) {
+  const { t: t2 } = useI18n();
+  const [open, setOpen] = reactExports.useState(false);
+  const updateSupplier = useUpdateSupplier(supplier.id);
+  const form = useForm({
+    resolver: u(createSupplierSchema),
+    defaultValues: toFormValues(supplier)
+  });
+  reactExports.useEffect(() => {
+    if (open) form.reset(toFormValues(supplier));
+  }, [open, supplier, form]);
+  function onSubmit(values) {
+    updateSupplier.mutate(values, { onSuccess: () => setOpen(false) });
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Dialog, { open, onOpenChange: setOpen, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTrigger, { asChild: true, children: iconOnly ? /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { size: "icon", variant: "ghost", className: "size-8", "aria-label": "تعديل المورد", children: /* @__PURE__ */ jsxRuntimeExports.jsx(Pencil, { className: "size-4" }) }) : /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { size: "sm", variant: "outline", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Pencil, { className: "size-4" }),
+      "تعديل المعلومات"
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogContent, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: "تعديل معلومات المورد" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: "تغيير الاسم لا يؤثر على الفواتير أو الرصيد — كلها مرتبطة بالمورد نفسه." })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Form, { ...form, children: /* @__PURE__ */ jsxRuntimeExports.jsxs("form", { onSubmit: form.handleSubmit(onSubmit), className: "grid gap-4", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(SupplierFormFields, { control: form.control }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogFooter, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "ghost", onClick: () => setOpen(false), children: t2("common.cancel") }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "submit", disabled: updateSupplier.isPending || !form.formState.isDirty, children: updateSupplier.isPending ? t2("common.loading") : t2("common.save") })
         ] })
       ] }) })
     ] })
@@ -69961,10 +70074,25 @@ function SuppliersPage() {
       }
     },
     {
+      accessorKey: "invoice_count",
+      header: ({ column }) => /* @__PURE__ */ jsxRuntimeExports.jsx(DataTableColumnHeader, { column, title: "عدد الفواتير" }),
+      meta: { exportLabel: "عدد الفواتير" },
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums", children: row.original.invoice_count ?? 0 })
+    },
+    {
+      accessorKey: "last_invoice_date",
+      header: ({ column }) => /* @__PURE__ */ jsxRuntimeExports.jsx(DataTableColumnHeader, { column, title: "آخر فاتورة" }),
+      meta: { exportLabel: "آخر فاتورة" },
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: row.original.last_invoice_date ? formatDate(row.original.last_invoice_date) : "—" })
+    },
+    {
       id: "actions",
       header: "",
       enableHiding: false,
-      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: "outline", size: "sm", onClick: () => navigate(`/suppliers/${row.original.id}`), children: "عرض السجل" })
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-1", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: "outline", size: "sm", onClick: () => navigate(`/suppliers/${row.original.id}`), children: "عرض السجل" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(EditSupplierDialog, { supplier: row.original, iconOnly: true })
+      ] })
     }
   ];
   const agingColumns = [
@@ -70263,7 +70391,7 @@ function DeleteSupplierDialog({ supplierId, supplierName, balance }) {
     ] })
   ] });
 }
-const TYPE_BADGE = {
+const TYPE_BADGE$1 = {
   invoice: { label: "فاتورة", variant: "destructive" },
   payment: { label: "دفعة", variant: "success" },
   adjustment: { label: "تسوية", variant: "secondary" }
@@ -70281,7 +70409,7 @@ function buildLedgerColumns(navigate) {
       header: "النوع",
       meta: { exportLabel: "النوع" },
       cell: ({ row }) => {
-        const badge = TYPE_BADGE[row.original.transaction_type];
+        const badge = TYPE_BADGE$1[row.original.transaction_type];
         return /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: badge.variant, children: badge.label });
       }
     },
@@ -70351,8 +70479,9 @@ function SupplierDetailPage() {
       PageHeader,
       {
         title: supplier.data.name,
-        subtitle: supplier.data.phone ?? void 0,
+        subtitle: [supplier.data.phone, supplier.data.email, supplier.data.address].filter(Boolean).join(" · ") || void 0,
         actions: /* @__PURE__ */ jsxRuntimeExports.jsxs(jsxRuntimeExports.Fragment, { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(EditSupplierDialog, { supplier: supplier.data }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(DeleteSupplierDialog, { supplierId, supplierName: supplier.data.name, balance }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(AdjustBalanceDialog, { supplierId }),
           /* @__PURE__ */ jsxRuntimeExports.jsx(RecordPaymentDialog$1, { supplierId, currentBalance: balance })
@@ -72559,14 +72688,32 @@ function PurchaseOrderDetailPage() {
     /* @__PURE__ */ jsxRuntimeExports.jsx(PurchaseOrderItemsTable, { orderId: data.id, items: data.items, readOnly: !isDraft2 })
   ] });
 }
+function filterQuery({ range: range2, from: from2, to: to2, supplierId }) {
+  const params = new URLSearchParams({ range: range2 });
+  if (range2 === "custom") {
+    if (from2) params.set("from", from2);
+    if (to2) params.set("to", to2);
+  }
+  if (supplierId) params.set("supplierId", String(supplierId));
+  return params.toString();
+}
 const paymentsApi = {
-  getAll: () => apiClient.get("/api/payments"),
+  getAll: (filters) => apiClient.get(`/api/payments?${filterQuery(filters)}`),
+  getAnalytics: (filters) => apiClient.get(`/api/payments/analytics?${filterQuery(filters)}`),
   record: (supplierId, data) => apiClient.post(`/api/suppliers/${supplierId}/payments`, data)
 };
-function usePayments() {
+function usePayments(filters, enabled = true) {
   return useQuery({
-    queryKey: queryKeys.payments.list,
-    queryFn: paymentsApi.getAll
+    queryKey: queryKeys.payments.list(filters),
+    queryFn: () => paymentsApi.getAll(filters),
+    enabled
+  });
+}
+function usePaymentAnalytics(filters, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.payments.analytics(filters),
+    queryFn: () => paymentsApi.getAnalytics(filters),
+    enabled
   });
 }
 function useRecordPayment() {
@@ -72581,7 +72728,7 @@ function useRecordPayment() {
     }),
     onSuccess: (_, values) => {
       toast.success(`تم تسجيل الدفعة لـ "${values.supplier?.name}" بنجاح`);
-      queryClient2.invalidateQueries({ queryKey: queryKeys.payments.list });
+      queryClient2.invalidateQueries({ queryKey: queryKeys.payments.all });
       queryClient2.invalidateQueries({ queryKey: queryKeys.suppliers.aging });
       queryClient2.invalidateQueries({ queryKey: ["suppliers", "list"] });
       queryClient2.invalidateQueries({ queryKey: ["suppliers", "detail"] });
@@ -72737,6 +72884,196 @@ function RecordPaymentDialog() {
     ] })
   ] });
 }
+function PaymentFilters({ supplier, onSupplierChange, ...dateProps }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-6 flex flex-wrap items-center gap-3", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(DateRangeFilter, { ...dateProps }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex w-64 items-center gap-1", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-1", children: /* @__PURE__ */ jsxRuntimeExports.jsx(SupplierPicker, { value: supplier, onChange: onSupplierChange, placeholder: "كل الموردين — ابحث عن مورد..." }) }),
+      supplier && /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "ghost", size: "icon", className: "size-8", onClick: () => onSupplierChange(null), "aria-label": "إزالة فلتر المورد", children: /* @__PURE__ */ jsxRuntimeExports.jsx(X, { className: "size-4" }) })
+    ] })
+  ] });
+}
+function toDelta(kpi) {
+  return { label: `${Math.abs(kpi.changePercent)}%`, direction: kpi.direction, upIsGood: true };
+}
+function PaymentKpiGrid({ data, isLoading }) {
+  if (isLoading || !data) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4", children: Array.from({ length: 4 }).map((_, i2) => /* @__PURE__ */ jsxRuntimeExports.jsx(StatCard, { icon: Banknote, label: "", value: "", loading: true }, i2)) });
+  }
+  const { kpis } = data;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      StatCard,
+      {
+        icon: Banknote,
+        label: "إجمالي المدفوعات",
+        value: formatCompactCurrency(kpis.totalPaid.value),
+        delta: toDelta(kpis.totalPaid),
+        tooltip: "مجموع الدفعات المسجلة في الفترة المحددة، مقارنةً بالفترة السابقة المماثلة"
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      StatCard,
+      {
+        icon: Hash,
+        label: "عدد الدفعات",
+        value: String(kpis.paymentCount.value),
+        delta: toDelta(kpis.paymentCount),
+        tooltip: "عدد عمليات الدفع في الفترة المحددة"
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      StatCard,
+      {
+        icon: Scale,
+        label: "متوسط الدفعة",
+        value: formatCompactCurrency(kpis.averagePayment.value),
+        delta: toDelta(kpis.averagePayment),
+        tooltip: "إجمالي المدفوعات ÷ عدد الدفعات"
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      StatCard,
+      {
+        icon: TrendingUp,
+        label: "أكبر دفعة",
+        value: formatCompactCurrency(kpis.largestPayment.value),
+        delta: toDelta(kpis.largestPayment),
+        tooltip: "أكبر دفعة منفردة في الفترة المحددة"
+      }
+    )
+  ] });
+}
+function formatPeriod(period) {
+  if (period.length === 7) {
+    return (/* @__PURE__ */ new Date(`${period}-01`)).toLocaleDateString("ar-DZ", { year: "numeric", month: "short" });
+  }
+  return formatDate(period);
+}
+const TOOLTIP_STYLE = {
+  background: "var(--popover)",
+  border: "1px solid var(--border)",
+  borderRadius: 8,
+  fontSize: 12
+};
+function PaymentsTimeChart({ data, isLoading }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(CardHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsx(CardTitle, { children: "المدفوعات عبر الزمن" }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: isLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingState, { rows: 4 }) : !data || data.perPeriod.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx(EmptyState, { icon: ChartColumn, title: "لا توجد دفعات في هذه الفترة" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-64", dir: "ltr", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ResponsiveContainer, { width: "100%", height: "100%", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(BarChart, { data: data.perPeriod, margin: { top: 8, right: 8, left: 0, bottom: 0 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(CartesianGrid, { vertical: false, stroke: "var(--border)" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        XAxis,
+        {
+          dataKey: "period",
+          tickFormatter: formatPeriod,
+          tickLine: false,
+          axisLine: false,
+          tick: { fill: "var(--muted-foreground)", fontSize: 11 }
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        YAxis,
+        {
+          tickFormatter: (v) => formatCompactCurrency(v),
+          tickLine: false,
+          axisLine: false,
+          width: 56,
+          tick: { fill: "var(--muted-foreground)", fontSize: 11 }
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Tooltip,
+        {
+          formatter: (value, _name, item) => [
+            `${formatCurrency(Number(value))} (${item.payload.count} دفعة)`,
+            "المدفوع"
+          ],
+          labelFormatter: (p) => formatPeriod(String(p)),
+          contentStyle: TOOLTIP_STYLE
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Bar, { dataKey: "total", fill: "var(--chart-2)", radius: [4, 4, 0, 0] })
+    ] }) }) }) })
+  ] });
+}
+const SERIES_LABEL = { purchased: "المشتريات", paid: "المدفوع" };
+function CashFlowSection({ data, isLoading }) {
+  if (isLoading || !data) return /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingState, { rows: 5 });
+  const { cashFlow } = data;
+  const debtGrew = cashFlow.netDebtChange > 0;
+  const flat = cashFlow.netDebtChange === 0;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-4", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-1 gap-4 sm:grid-cols-3", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        StatCard,
+        {
+          icon: ShoppingCart,
+          label: "مشتريات الفترة",
+          value: formatCompactCurrency(cashFlow.purchased.value),
+          tooltip: "قيمة الفواتير المعتمدة في الفترة (ما اشتريته)"
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        StatCard,
+        {
+          icon: debtGrew ? ArrowUpRight : ArrowDownRight,
+          label: "التغير في الديون",
+          value: `${debtGrew ? "+" : ""}${formatCompactCurrency(cashFlow.netDebtChange)}`,
+          tooltip: "المشتريات − المدفوعات. موجب = الدين زاد، سالب = الدين نقص"
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        StatCard,
+        {
+          icon: Percent,
+          label: "نسبة السداد",
+          value: cashFlow.paidRatio == null ? "—" : `${cashFlow.paidRatio}%`,
+          tooltip: "المدفوع ÷ المشتريات في نفس الفترة. أقل من 100% يعني أنك تشتري أكثر مما تسدد"
+        }
+      )
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(CardTitle, { children: "المدفوع مقابل المشتريات" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: flat ? "ما دفعته يساوي ما اشتريته في هذه الفترة — الديون ثابتة." : debtGrew ? `اشتريت أكثر مما سددت بمقدار ${formatCurrency(cashFlow.netDebtChange)} — ديونك زادت.` : `سددت أكثر مما اشتريت بمقدار ${formatCurrency(Math.abs(cashFlow.netDebtChange))} — ديونك نقصت.` })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: cashFlow.perPeriod.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx(EmptyState, { icon: ShoppingCart, title: "لا توجد مشتريات ولا دفعات في هذه الفترة" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-64", dir: "ltr", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ResponsiveContainer, { width: "100%", height: "100%", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(BarChart, { data: cashFlow.perPeriod, margin: { top: 8, right: 8, left: 0, bottom: 0 }, children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(CartesianGrid, { vertical: false, stroke: "var(--border)" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          XAxis,
+          {
+            dataKey: "period",
+            tickFormatter: formatPeriod,
+            tickLine: false,
+            axisLine: false,
+            tick: { fill: "var(--muted-foreground)", fontSize: 11 }
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          YAxis,
+          {
+            tickFormatter: (v) => formatCompactCurrency(v),
+            tickLine: false,
+            axisLine: false,
+            width: 56,
+            tick: { fill: "var(--muted-foreground)", fontSize: 11 }
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Tooltip,
+          {
+            formatter: (value, name) => [formatCurrency(Number(value)), SERIES_LABEL[String(name)] ?? name],
+            labelFormatter: (p) => formatPeriod(String(p)),
+            contentStyle: TOOLTIP_STYLE
+          }
+        ),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Legend, { formatter: (name) => SERIES_LABEL[String(name)] ?? name, wrapperStyle: { fontSize: 12 } }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Bar, { dataKey: "purchased", fill: "var(--chart-1)", radius: [4, 4, 0, 0] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(Bar, { dataKey: "paid", fill: "var(--chart-2)", radius: [4, 4, 0, 0] })
+      ] }) }) }) })
+    ] })
+  ] });
+}
 const columns = [
   {
     accessorKey: "created_at",
@@ -72771,24 +73108,59 @@ const columns = [
 ];
 function PaymentsPage() {
   const { t: t2 } = useI18n();
-  const { data, isLoading } = usePayments();
-  const totalPaid = (data ?? []).reduce((sum2, p) => sum2 + Math.abs(p.amount), 0);
+  const { range: range2, setRange, customFrom, setCustomFrom, customTo, setCustomTo, isCustomReady } = useDateRange();
+  const [supplier, setSupplier] = reactExports.useState(null);
+  const filters = {
+    range: range2,
+    from: range2 === "custom" ? customFrom : void 0,
+    to: range2 === "custom" ? customTo : void 0,
+    supplierId: supplier?.id ?? null
+  };
+  const analytics = usePaymentAnalytics(filters, isCustomReady);
+  const payments = usePayments(filters, isCustomReady);
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-1 flex-col", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(PageHeader, { title: t2("nav.payments"), subtitle: "سجل كل الدفعات المسجلة عبر جميع الموردين", actions: /* @__PURE__ */ jsxRuntimeExports.jsx(RecordPaymentDialog, {}) }),
-    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "mb-6 grid grid-cols-1 gap-4 sm:grid-cols-3", children: /* @__PURE__ */ jsxRuntimeExports.jsx(StatCard, { icon: Wallet, label: "إجمالي المدفوعات", value: formatCurrency(totalPaid), loading: isLoading }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(PageHeader, { title: t2("nav.payments"), subtitle: "تحليل المدفوعات للموردين وسجل كل الدفعات", actions: /* @__PURE__ */ jsxRuntimeExports.jsx(RecordPaymentDialog, {}) }),
     /* @__PURE__ */ jsxRuntimeExports.jsx(
-      DataTable,
+      PaymentFilters,
       {
-        columns,
-        data: data ?? [],
-        isLoading,
-        exportFileName: "payments",
-        emptyTitle: "لا توجد دفعات مسجلة بعد"
+        range: range2,
+        onRangeChange: setRange,
+        customFrom,
+        customTo,
+        onCustomFromChange: setCustomFrom,
+        onCustomToChange: setCustomTo,
+        supplier,
+        onSupplierChange: setSupplier
       }
-    )
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-6", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(PaymentKpiGrid, { data: analytics.data, isLoading: analytics.isLoading }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(PaymentsTimeChart, { data: analytics.data, isLoading: analytics.isLoading }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(CashFlowSection, { data: analytics.data, isLoading: analytics.isLoading }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        DataTable,
+        {
+          columns,
+          data: payments.data ?? [],
+          isLoading: payments.isLoading,
+          exportFileName: "payments",
+          emptyTitle: "لا توجد دفعات في هذه الفترة"
+        }
+      )
+    ] })
   ] });
 }
+function debtAnalysisQuery({ scope, range: range2, from: from2, to: to2, entityId }) {
+  const params = new URLSearchParams({ scope, range: range2 });
+  if (range2 === "custom") {
+    if (from2) params.set("from", from2);
+    if (to2) params.set("to", to2);
+  }
+  if (entityId) params.set("entityId", String(entityId));
+  return params.toString();
+}
 const reportsApi = {
+  getDebtAnalysis: (filters) => apiClient.get(`/api/reports/debt-analysis?${debtAnalysisQuery(filters)}`),
   getTrialBalance: () => apiClient.get("/api/accounting/trial-balance"),
   getBalanceSheet: () => apiClient.get("/api/accounting/balance-sheet"),
   getProfitLoss: () => apiClient.get("/api/accounting/profit-loss"),
@@ -72817,6 +73189,530 @@ function useVerifyBalance() {
     queryKey: queryKeys.reports.verify,
     queryFn: reportsApi.verifyBalance
   });
+}
+function useDebtAnalysis(filters, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.reports.debtAnalysis(filters),
+    queryFn: () => reportsApi.getDebtAnalysis(filters),
+    enabled
+  });
+}
+const signed = (n2) => `${n2 > 0 ? "+" : n2 < 0 ? "−" : ""}${formatCurrency(Math.abs(n2))}`;
+function buildVerdict(a2) {
+  const isSuppliers = a2.scope === "suppliers";
+  const { current: c2, previous: p } = a2;
+  const words = isSuppliers ? { purchases: "مشتريات جديدة", payments: "دفعات للموردين", debt: "الدين", purchasesShort: "اشتريت", paidShort: "سددت" } : { purchases: "مبيعات جديدة", payments: "تحصيلات من العملاء", debt: "ديون العملاء", purchasesShort: "بعت", paidShort: "حصّلت" };
+  const subject = a2.entity ? ` «${a2.entity.name}»` : "";
+  const level = Math.max(Math.abs(c2.beginning), Math.abs(c2.ending));
+  const status = c2.change === 0 || Math.abs(c2.change) < level * 0.01 ? "stable" : c2.change < 0 ? "down" : "up";
+  const title = status === "down" ? isSuppliers ? "🟢 الدين ينخفض — أنت على الطريق الصحيح" : "🟢 ديون العملاء تنخفض — التحصيل يسير جيداً" : status === "up" ? isSuppliers ? "🔴 الدين يرتفع — ديونك تحتاج انتباهاً" : "🔴 ديون العملاء ترتفع — راجع التحصيل" : isSuppliers ? "🟡 الدين مستقر تقريباً" : "🟡 ديون العملاء مستقرة تقريباً";
+  const drivers = [
+    { key: "purchases", label: words.purchases, value: c2.purchases },
+    { key: "payments", label: words.payments, value: -c2.payments },
+    { key: "adjustments", label: "تسويات يدوية", value: c2.adjustments }
+  ];
+  const lines = [];
+  const noActivity = c2.purchases === 0 && c2.payments === 0 && c2.adjustments === 0;
+  if (noActivity) {
+    lines.push(`لا توجد حركات${subject} في هذه الفترة، فبقي ${words.debt} ثابتاً عند ${formatCurrency(c2.ending)}.`);
+  } else {
+    const pct2 = c2.changePercent == null ? "" : ` (${Math.abs(c2.changePercent)}%)`;
+    const verb = isSuppliers ? status === "stable" ? "تغيّر قليلاً" : status === "up" ? "ارتفع" : "انخفض" : status === "stable" ? "تغيّرت قليلاً" : status === "up" ? "ارتفعت" : "انخفضت";
+    lines.push(
+      `${words.debt}${subject} ${verb} بمقدار ${formatCurrency(Math.abs(c2.change))}${pct2}: من ${formatCurrency(c2.beginning)} إلى ${formatCurrency(c2.ending)}.`
+    );
+    const dominant = [...drivers].filter((d) => d.value !== 0).sort((x2, y2) => Math.abs(y2.value) - Math.abs(x2.value))[0];
+    if (dominant) {
+      if (dominant.key === "adjustments") {
+        lines.push(
+          `السبب الرئيسي: تسويات يدوية بقيمة ${signed(dominant.value)} — وليس ${isSuppliers ? "مشتريات أو دفعات فعلية" : "مبيعات أو تحصيلات فعلية"}.`
+        );
+      } else if (dominant.key === "purchases") {
+        lines.push(`السبب الرئيسي: ${words.purchases} بقيمة ${formatCurrency(dominant.value)}.`);
+      } else {
+        lines.push(`السبب الرئيسي: ${words.payments} بقيمة ${formatCurrency(Math.abs(dominant.value))}.`);
+      }
+    }
+    if (c2.paymentRatio != null) {
+      lines.push(
+        c2.paymentRatio >= 100 ? `${words.paidShort} ${c2.paymentRatio}% مما ${words.purchasesShort} — أي أكثر من نشاط الفترة.` : `${words.paidShort} ${c2.paymentRatio}% فقط مما ${words.purchasesShort} — الباقي يُضاف إلى الدين.`
+      );
+    } else if (c2.payments > 0) {
+      lines.push(`لا توجد ${words.purchases} في الفترة، وتم ${isSuppliers ? "تسديد" : "تحصيل"} ${formatCurrency(c2.payments)}.`);
+    }
+  }
+  const prevActive = p.purchases !== 0 || p.payments !== 0 || p.adjustments !== 0;
+  if (!prevActive) {
+    lines.push("لا توجد حركات في الفترة السابقة للمقارنة معها.");
+  } else if (c2.change < p.change) {
+    lines.push(`أفضل من الفترة السابقة (التغير السابق: ${signed(p.change)}).`);
+  } else if (c2.change > p.change) {
+    lines.push(`أسوأ من الفترة السابقة (التغير السابق: ${signed(p.change)}).`);
+  } else {
+    lines.push("نفس أداء الفترة السابقة.");
+  }
+  return { status, title, lines, drivers };
+}
+function CustomerPicker({ value, onChange, placeholder = "ابحث عن عميل...", disabled }) {
+  const [query, setQuery] = reactExports.useState(value?.name ?? "");
+  const [open, setOpen] = reactExports.useState(false);
+  const debouncedQuery = useDebouncedValue(query.trim(), 250);
+  reactExports.useEffect(() => {
+    setQuery(value?.name ?? "");
+  }, [value?.id, value?.name]);
+  const { data, isFetching } = useQuery({
+    queryKey: ["customer-picker", debouncedQuery],
+    queryFn: () => apiClient.get(`/api/customers?query=${encodeURIComponent(debouncedQuery)}`),
+    enabled: open && debouncedQuery.length > 0
+  });
+  const results = data ?? [];
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "relative", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Search, { className: "absolute start-3 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Input,
+        {
+          value: query,
+          disabled,
+          placeholder,
+          className: "ps-8",
+          onFocus: () => setOpen(true),
+          onChange: (e) => {
+            setQuery(e.target.value);
+            setOpen(true);
+            if (!e.target.value) onChange(null);
+          },
+          onBlur: () => setTimeout(() => setOpen(false), 120)
+        }
+      )
+    ] }),
+    open && debouncedQuery.length > 0 && /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "absolute z-20 mt-1 max-h-56 w-full overflow-y-auto rounded-md border border-border bg-popover shadow-md", children: isFetching ? /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "px-3 py-2 text-xs text-muted-foreground", children: "جاري البحث..." }) : results.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "px-3 py-2 text-xs text-muted-foreground", children: [
+      'لا نتائج لـ "',
+      debouncedQuery,
+      '"'
+    ] }) : results.map((customer) => /* @__PURE__ */ jsxRuntimeExports.jsxs(
+      "button",
+      {
+        type: "button",
+        className: cn$1(
+          "flex w-full items-center justify-between gap-2 px-3 py-2 text-start text-sm hover:bg-accent hover:text-accent-foreground",
+          value?.id === customer.id && "bg-accent/60"
+        ),
+        onMouseDown: (e) => {
+          e.preventDefault();
+          onChange({ id: customer.id, name: customer.full_name });
+          setQuery(customer.full_name);
+          setOpen(false);
+        },
+        children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium", children: customer.full_name }),
+          customer.phone && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: customer.phone })
+        ]
+      },
+      customer.id
+    )) })
+  ] });
+}
+const SCOPES = [
+  { value: "suppliers", label: "ديون الموردين" },
+  { value: "customers", label: "ديون العملاء" }
+];
+function DebtFilters({ scope, onScopeChange, entity, onEntityChange, ...dateProps }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-6 flex flex-wrap items-center gap-3", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex gap-1 rounded-lg border border-border p-1", children: SCOPES.map((s2) => /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { size: "sm", variant: scope === s2.value ? "default" : "ghost", onClick: () => onScopeChange(s2.value), children: s2.label }, s2.value)) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(DateRangeFilter, { ...dateProps }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex w-64 items-center gap-1", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex-1", children: scope === "suppliers" ? /* @__PURE__ */ jsxRuntimeExports.jsx(SupplierPicker, { value: entity, onChange: onEntityChange, placeholder: "كل الموردين — ابحث عن مورد..." }) : /* @__PURE__ */ jsxRuntimeExports.jsx(CustomerPicker, { value: entity, onChange: onEntityChange, placeholder: "كل العملاء — ابحث عن عميل..." }) }),
+      entity && /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { type: "button", variant: "ghost", size: "icon", className: "size-8", onClick: () => onEntityChange(null), "aria-label": "إزالة الفلتر", children: /* @__PURE__ */ jsxRuntimeExports.jsx(X, { className: "size-4" }) })
+    ] })
+  ] });
+}
+const TONE = {
+  down: "border-success/40 bg-success/5",
+  up: "border-destructive/40 bg-destructive/5",
+  stable: "border-warning/40 bg-warning/5"
+};
+function DebtVerdictBanner({ verdict }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { className: cn$1("mb-6", TONE[verdict.status]), children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { className: "flex flex-col gap-2 p-5", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-lg font-semibold text-foreground", children: verdict.title }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx("ul", { className: "flex flex-col gap-1 text-sm text-muted-foreground", children: verdict.lines.map((line, i2) => /* @__PURE__ */ jsxRuntimeExports.jsx("li", { children: line }, i2)) })
+  ] }) });
+}
+function delta(kpi, upIsGood) {
+  return { label: `${Math.abs(kpi.changePercent)}%`, direction: kpi.direction, upIsGood };
+}
+const signedCompact = (n2) => `${n2 > 0 ? "+" : ""}${formatCompactCurrency(n2)}`;
+function DebtKpiGrid({ data }) {
+  const { current: c2, comparison: cmp } = data;
+  const isSuppliers = data.scope === "suppliers";
+  const buy = isSuppliers ? "المشتريات" : "المبيعات";
+  const pay = isSuppliers ? "المدفوعات" : "التحصيلات";
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-6 grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      StatCard,
+      {
+        icon: Flag,
+        label: "الدين في بداية الفترة",
+        value: formatCompactCurrency(c2.beginning),
+        tooltip: "إجمالي الدين قبل أول يوم في الفترة المحددة"
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      StatCard,
+      {
+        icon: isSuppliers ? ShoppingCart : TrendingUp,
+        label: `${buy} خلال الفترة`,
+        value: formatCompactCurrency(c2.purchases),
+        delta: delta(cmp.purchases, !isSuppliers),
+        tooltip: `${buy} المسجلة في الفترة، مقارنةً بالفترة السابقة المماثلة`
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      StatCard,
+      {
+        icon: Banknote,
+        label: `${pay} خلال الفترة`,
+        value: formatCompactCurrency(c2.payments),
+        delta: delta(cmp.payments, true),
+        tooltip: `${pay} المسجلة في الفترة، مقارنةً بالفترة السابقة المماثلة`
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      StatCard,
+      {
+        icon: Scale,
+        label: "التسويات اليدوية",
+        value: signedCompact(c2.adjustments),
+        delta: delta(cmp.adjustments, false),
+        tooltip: "تصحيحات يدوية للرصيد — موجبة تزيد الدين وسالبة تنقصه. تُحسب كحركة مستقلة ولا تعدّل الفواتير أو الدفعات"
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      StatCard,
+      {
+        icon: Wallet,
+        label: "الدين في نهاية الفترة",
+        value: formatCompactCurrency(c2.ending),
+        delta: delta(cmp.ending, false),
+        tooltip: "البداية + المشتريات − المدفوعات ± التسويات"
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      StatCard,
+      {
+        icon: c2.change <= 0 ? TrendingDown : TrendingUp,
+        label: "التغير في الدين",
+        value: `${signedCompact(c2.change)}${c2.changePercent == null ? "" : ` (${c2.changePercent}%)`}`,
+        delta: delta(cmp.change, false),
+        tooltip: "النهاية − البداية. سالب = الدين انخفض (جيد)"
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      StatCard,
+      {
+        icon: Percent,
+        label: `نسبة ${pay} إلى ${buy}`,
+        value: c2.paymentRatio == null ? "—" : `${c2.paymentRatio}%`,
+        tooltip: `${pay} ÷ ${buy}. أقل من 100% يعني أن الجزء المتبقي يُضاف إلى الدين`
+      }
+    ),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      StatCard,
+      {
+        icon: data.entity ? Hash : Activity,
+        label: "عدد الفواتير · الدفعات",
+        value: `${c2.invoiceCount} · ${c2.paymentCount}`,
+        tooltip: "عدد الفواتير وعدد الدفعات المسجلة في الفترة"
+      }
+    )
+  ] });
+}
+function DebtTrendChart({ data }) {
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(CardHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { children: [
+      "تطور ",
+      data.scope === "suppliers" ? "الدين" : "ديون العملاء",
+      " خلال الفترة"
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: data.evolution.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx(EmptyState, { icon: ChartLine, title: "لا توجد بيانات لهذه الفترة" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-64", dir: "ltr", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ResponsiveContainer, { width: "100%", height: "100%", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(AreaChart, { data: data.evolution, margin: { top: 8, right: 8, left: 0, bottom: 0 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("defs", { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("linearGradient", { id: "debtTrendFill", x1: "0", y1: "0", x2: "0", y2: "1", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("stop", { offset: "0%", stopColor: "var(--destructive)", stopOpacity: 0.2 }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("stop", { offset: "100%", stopColor: "var(--destructive)", stopOpacity: 0 })
+      ] }) }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(CartesianGrid, { vertical: false, stroke: "var(--border)" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        XAxis,
+        {
+          dataKey: "date",
+          tickFormatter: formatPeriod,
+          tickLine: false,
+          axisLine: false,
+          tick: { fill: "var(--muted-foreground)", fontSize: 11 },
+          minTickGap: 24
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        YAxis,
+        {
+          tickFormatter: (v) => formatCompactCurrency(v),
+          tickLine: false,
+          axisLine: false,
+          width: 64,
+          tick: { fill: "var(--muted-foreground)", fontSize: 11 }
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Tooltip,
+        {
+          formatter: (value) => [formatCurrency(Number(value)), "الدين"],
+          labelFormatter: (d) => formatPeriod(String(d)),
+          contentStyle: TOOLTIP_STYLE
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Area, { type: "stepAfter", dataKey: "debt", stroke: "var(--destructive)", strokeWidth: 2, fill: "url(#debtTrendFill)" })
+    ] }) }) }) })
+  ] });
+}
+function FlowsChart({ data }) {
+  const isSuppliers = data.scope === "suppliers";
+  const labels = {
+    purchases: isSuppliers ? "المشتريات" : "المبيعات",
+    payments: isSuppliers ? "المدفوعات" : "التحصيلات",
+    adjustments: "التسويات"
+  };
+  const hasData = data.perPeriod.some((p) => p.purchases || p.payments || p.adjustments);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(CardHeader, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardTitle, { children: [
+      labels.purchases,
+      " مقابل ",
+      labels.payments
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: !hasData ? /* @__PURE__ */ jsxRuntimeExports.jsx(EmptyState, { icon: ChartColumn, title: "لا توجد حركات في هذه الفترة" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-64", dir: "ltr", children: /* @__PURE__ */ jsxRuntimeExports.jsx(ResponsiveContainer, { width: "100%", height: "100%", children: /* @__PURE__ */ jsxRuntimeExports.jsxs(BarChart, { data: data.perPeriod, margin: { top: 8, right: 8, left: 0, bottom: 0 }, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(CartesianGrid, { vertical: false, stroke: "var(--border)" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        XAxis,
+        {
+          dataKey: "period",
+          tickFormatter: formatPeriod,
+          tickLine: false,
+          axisLine: false,
+          tick: { fill: "var(--muted-foreground)", fontSize: 11 },
+          minTickGap: 24
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        YAxis,
+        {
+          tickFormatter: (v) => formatCompactCurrency(v),
+          tickLine: false,
+          axisLine: false,
+          width: 64,
+          tick: { fill: "var(--muted-foreground)", fontSize: 11 }
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(
+        Tooltip,
+        {
+          formatter: (value, name) => [formatCurrency(Number(value)), labels[String(name)] ?? name],
+          labelFormatter: (p) => formatPeriod(String(p)),
+          contentStyle: TOOLTIP_STYLE
+        }
+      ),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Legend, { formatter: (name) => labels[String(name)] ?? name, wrapperStyle: { fontSize: 12 } }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Bar, { dataKey: "purchases", fill: "var(--chart-1)", radius: [4, 4, 0, 0] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Bar, { dataKey: "payments", fill: "var(--chart-2)", radius: [4, 4, 0, 0] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Bar, { dataKey: "adjustments", fill: "var(--chart-3)", radius: [4, 4, 0, 0] })
+    ] }) }) }) })
+  ] });
+}
+const pct = (v) => v == null ? "—" : `${v}%`;
+function DebtAnalysisSection({ data, verdict }) {
+  const isSuppliers = data.scope === "suppliers";
+  const { current: c2, previous: p, range: range2 } = data;
+  const rows = [
+    { label: "الدين في البداية", cur: formatCurrency(c2.beginning), prev: formatCurrency(p.beginning) },
+    { label: isSuppliers ? "المشتريات" : "المبيعات", cur: formatCurrency(c2.purchases), prev: formatCurrency(p.purchases) },
+    { label: isSuppliers ? "المدفوعات" : "التحصيلات", cur: formatCurrency(c2.payments), prev: formatCurrency(p.payments) },
+    { label: "التسويات", cur: formatCurrency(c2.adjustments), prev: formatCurrency(p.adjustments) },
+    { label: "الدين في النهاية", cur: formatCurrency(c2.ending), prev: formatCurrency(p.ending) },
+    { label: "التغير في الدين", cur: formatCurrency(c2.change), prev: formatCurrency(p.change) },
+    { label: "نسبة السداد", cur: pct(c2.paymentRatio), prev: pct(p.paymentRatio) }
+  ];
+  const maxAbs = Math.max(1, ...verdict.drivers.map((d) => Math.abs(d.value)));
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "grid grid-cols-1 gap-4 lg:grid-cols-2", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(CardTitle, { children: "ما الذي حرّك الدين؟" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "مساهمة كل عنصر في تغيّر الدين خلال الفترة" })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { className: "flex flex-col gap-4", children: [
+        verdict.drivers.map((d) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-1 flex items-center justify-between text-sm", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-foreground", children: d.label }),
+            /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: cn$1("tabular-nums font-medium", d.value > 0 ? "text-destructive" : d.value < 0 ? "text-success" : "text-muted-foreground"), children: [
+              d.value > 0 ? "+" : d.value < 0 ? "−" : "",
+              formatCurrency(Math.abs(d.value))
+            ] })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "h-2 rounded-full bg-muted", children: /* @__PURE__ */ jsxRuntimeExports.jsx(
+            "div",
+            {
+              className: cn$1("h-2 rounded-full", d.value > 0 ? "bg-destructive" : "bg-success"),
+              style: { width: `${Math.abs(d.value) / maxAbs * 100}%` }
+            }
+          ) })
+        ] }, d.key)),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "الأحمر يرفع الدين والأخضر يخفضه." })
+      ] })
+    ] }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(Card, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(CardHeader, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(CardTitle, { children: "مقارنة مع الفترة السابقة" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground", children: [
+          formatDate(range2.prevStartDate),
+          " — ",
+          formatDate(range2.prevEndDate)
+        ] })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(CardContent, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("table", { className: "w-full text-sm", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("thead", { children: /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-border text-xs text-muted-foreground", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "py-2 text-start font-medium", children: "البند" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "py-2 text-start font-medium", children: "هذه الفترة" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("th", { className: "py-2 text-start font-medium", children: "السابقة" })
+        ] }) }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx("tbody", { children: rows.map((r2) => /* @__PURE__ */ jsxRuntimeExports.jsxs("tr", { className: "border-b border-border last:border-0", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "py-2 text-foreground", children: r2.label }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "tabular-nums py-2 font-medium", children: r2.cur }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("td", { className: "tabular-nums py-2 text-muted-foreground", children: r2.prev })
+        ] }, r2.label)) })
+      ] }) })
+    ] })
+  ] });
+}
+const TYPE_BADGE = {
+  invoice: { label: "فاتورة", variant: "destructive" },
+  payment: { label: "دفعة", variant: "success" },
+  adjustment: { label: "تسوية", variant: "secondary" }
+};
+function DebtTransactionsTable({ data }) {
+  const navigate = useNavigate();
+  const showEntity = !data.entity;
+  const columns2 = [
+    {
+      accessorKey: "date",
+      header: ({ column }) => /* @__PURE__ */ jsxRuntimeExports.jsx(DataTableColumnHeader, { column, title: "التاريخ" }),
+      meta: { exportLabel: "التاريخ" },
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-muted-foreground", children: formatDate(row.original.date) })
+    },
+    ...showEntity ? [{
+      accessorKey: "entityName",
+      header: ({ column }) => /* @__PURE__ */ jsxRuntimeExports.jsx(DataTableColumnHeader, { column, title: data.scope === "suppliers" ? "المورد" : "العميل" }),
+      meta: { exportLabel: data.scope === "suppliers" ? "المورد" : "العميل" },
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "font-medium text-foreground", children: row.original.entityName })
+    }] : [],
+    {
+      accessorKey: "type",
+      header: "النوع",
+      meta: { exportLabel: "النوع" },
+      cell: ({ row }) => {
+        const b = TYPE_BADGE[row.original.type];
+        return /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: b.variant, children: b.label });
+      }
+    },
+    {
+      accessorKey: "amount",
+      header: ({ column }) => /* @__PURE__ */ jsxRuntimeExports.jsx(DataTableColumnHeader, { column, title: "المبلغ" }),
+      meta: { exportLabel: "المبلغ" },
+      cell: ({ row }) => {
+        const a2 = row.original.amount;
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: cn$1("tabular-nums font-medium", a2 > 0 ? "text-destructive" : "text-success"), children: [
+          a2 > 0 ? "+" : "",
+          formatCurrency(a2)
+        ] });
+      }
+    },
+    {
+      accessorKey: "balanceAfter",
+      header: "الرصيد بعد الحركة",
+      meta: { exportLabel: "الرصيد بعد الحركة" },
+      cell: ({ row }) => /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums", children: formatCurrency(row.original.balanceAfter) })
+    },
+    {
+      id: "details",
+      header: "البيان",
+      meta: { exportLabel: "البيان" },
+      cell: ({ row }) => {
+        const t2 = row.original;
+        const link = t2.invoiceId != null ? data.scope === "suppliers" ? `/invoices/${t2.invoiceId}` : `/customers/${t2.entityId}/invoices/${t2.invoiceId}` : null;
+        return /* @__PURE__ */ jsxRuntimeExports.jsxs("span", { className: "text-muted-foreground", children: [
+          link && /* @__PURE__ */ jsxRuntimeExports.jsxs("button", { type: "button", onClick: () => navigate(link), className: "me-1 inline-flex items-center gap-1 text-primary hover:underline", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Receipt, { className: "size-3" }),
+            "فاتورة #",
+            t2.reference
+          ] }),
+          link && t2.note ? " — " : "",
+          t2.note ?? (link ? "" : "—")
+        ] });
+      }
+    }
+  ];
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-2", children: [
+    data.transactionsTruncated && /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-xs text-muted-foreground", children: "يُعرض آخر 1000 حركة فقط — ضيّق الفترة لرؤية الباقي." }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      DataTable,
+      {
+        columns: columns2,
+        data: data.transactions,
+        exportFileName: "debt-transactions",
+        pageSize: 15,
+        emptyTitle: "لا توجد حركات في هذه الفترة"
+      }
+    )
+  ] });
+}
+function DebtAnalysisTab() {
+  const { range: range2, setRange, customFrom, setCustomFrom, customTo, setCustomTo, isCustomReady } = useDateRange();
+  const [scope, setScope] = reactExports.useState("suppliers");
+  const [entity, setEntity] = reactExports.useState(null);
+  const filters = {
+    scope,
+    range: range2,
+    from: range2 === "custom" ? customFrom : void 0,
+    to: range2 === "custom" ? customTo : void 0,
+    entityId: entity?.id ?? null
+  };
+  const { data, isLoading, error, refetch } = useDebtAnalysis(filters, isCustomReady);
+  const verdict = reactExports.useMemo(() => data ? buildVerdict(data) : null, [data]);
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(
+      DebtFilters,
+      {
+        scope,
+        onScopeChange: (s2) => {
+          setScope(s2);
+          setEntity(null);
+        },
+        range: range2,
+        onRangeChange: setRange,
+        customFrom,
+        customTo,
+        onCustomFromChange: setCustomFrom,
+        onCustomToChange: setCustomTo,
+        entity,
+        onEntityChange: setEntity
+      }
+    ),
+    !isCustomReady ? /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "اختر تاريخ البداية والنهاية لعرض التحليل." }) : isLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingState, { rows: 6 }) : error || !data || !verdict ? /* @__PURE__ */ jsxRuntimeExports.jsx(ErrorState, { message: error?.message ?? "تعذّر تحميل التحليل", onRetry: () => refetch() }) : /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col gap-6", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DebtVerdictBanner, { verdict }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DebtKpiGrid, { data })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(DebtTrendChart, { data }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(FlowsChart, { data }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(DebtAnalysisSection, { data, verdict }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(DebtTransactionsTable, { data })
+    ] })
+  ] });
 }
 const ACCOUNT_LABELS = {
   inventory: "المخزون",
@@ -72866,14 +73762,16 @@ function BalanceVerificationBadge() {
     data.balanced ? "الدفاتر متوازنة" : `فرق غير متوازن: ${formatCurrency(data.difference)}`
   ] });
 }
-function ReportsPage() {
-  const { t: t2 } = useI18n();
+function AccountingReports() {
   const [tab, setTab] = reactExports.useState("trialBalance");
   const trialBalance = useTrialBalance();
   const balanceSheet = useBalanceSheet();
   const profitLoss = useProfitLoss();
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-1 flex-col", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(PageHeader, { title: t2("nav.reports"), subtitle: "الميزان، الميزانية العمومية، والأرباح والخسائر", actions: /* @__PURE__ */ jsxRuntimeExports.jsx(BalanceVerificationBadge, {}) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 flex flex-wrap items-center justify-between gap-2", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: "الميزان، الميزانية العمومية، والأرباح والخسائر — مبنية على دفتر القيود المحاسبية، وقد لا تعكس كل تسويات وحركات الديون." }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(BalanceVerificationBadge, {})
+    ] }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 flex gap-2", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: tab === "trialBalance" ? "default" : "ghost", size: "sm", onClick: () => setTab("trialBalance"), children: "ميزان المراجعة" }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: tab === "balanceSheet" ? "default" : "ghost", size: "sm", onClick: () => setTab("balanceSheet"), children: "الميزانية العمومية" }),
@@ -72900,6 +73798,18 @@ function ReportsPage() {
       /* @__PURE__ */ jsxRuntimeExports.jsx(StatCard, { icon: Wallet, label: "إجمالي المشتريات", value: formatCurrency(profitLoss.data?.netPurchases ?? 0) }),
       /* @__PURE__ */ jsxRuntimeExports.jsx(StatCard, { icon: TrendingUp, label: "إجمالي الربح", value: formatCurrency(profitLoss.data?.grossProfit ?? 0) })
     ] }))
+  ] });
+}
+function ReportsPage() {
+  const { t: t2 } = useI18n();
+  const [tab, setTab] = reactExports.useState("debt");
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-1 flex-col", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(PageHeader, { title: t2("nav.reports"), subtitle: "هل وضعك المالي يتحسن أم يتدهور؟ تحليل الديون وأسباب تغيّرها" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-6 flex gap-2 border-b border-border pb-3", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: tab === "debt" ? "default" : "ghost", size: "sm", onClick: () => setTab("debt"), children: "تحليل الديون" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: tab === "accounting" ? "default" : "ghost", size: "sm", onClick: () => setTab("accounting"), children: "المحاسبة (متقدم)" })
+    ] }),
+    tab === "debt" ? /* @__PURE__ */ jsxRuntimeExports.jsx(DebtAnalysisTab, {}) : /* @__PURE__ */ jsxRuntimeExports.jsx(AccountingReports, {})
   ] });
 }
 const customersApi = {

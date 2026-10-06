@@ -19,6 +19,24 @@ export function useCreateSupplier() {
   })
 }
 
+export function useUpdateSupplier(supplierId: number) {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: (data: CreateSupplierFormValues) => suppliersApi.update(supplierId, data),
+    onSuccess: () => {
+      toast.success('تم تحديث معلومات المورد')
+      queryClient.invalidateQueries({ queryKey: queryKeys.suppliers.detail(supplierId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.suppliers.ledger(supplierId) })
+      queryClient.invalidateQueries({ queryKey: queryKeys.suppliers.aging })
+      queryClient.invalidateQueries({ queryKey: ['suppliers', 'list'] })
+    },
+    onError: (error: Error) => {
+      toast.error('فشل تحديث المورد', { description: error.message })
+    }
+  })
+}
+
 export function useRecordPayment(supplierId: number) {
   const queryClient = useQueryClient()
 

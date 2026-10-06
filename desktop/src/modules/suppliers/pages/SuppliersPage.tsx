@@ -8,12 +8,13 @@ import { Badge } from '@shared/components/ui/badge'
 import { DataTable } from '@shared/components/data-table/DataTable'
 import { DataTableColumnHeader } from '@shared/components/data-table/DataTableColumnHeader'
 import { PageHeader } from '@shared/components/PageHeader'
-import { formatCurrency } from '@shared/lib/format'
+import { formatCurrency, formatDate } from '@shared/lib/format'
 import { useI18n } from '@shared/lib/i18n'
 import { cn } from '@shared/lib/utils'
 import type { Supplier, SupplierAging } from '@shared/types/api'
 import { useSupplierAging, useSuppliers } from '../hooks/useSuppliers'
 import { CreateSupplierDialog } from '../components/CreateSupplierDialog'
+import { EditSupplierDialog } from '../components/EditSupplierDialog'
 
 type SubTab = 'all' | 'aging'
 
@@ -53,13 +54,32 @@ export function SuppliersPage() {
       }
     },
     {
+      accessorKey: 'invoice_count',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="عدد الفواتير" />,
+      meta: { exportLabel: 'عدد الفواتير' },
+      cell: ({ row }) => <span className="tabular-nums">{row.original.invoice_count ?? 0}</span>
+    },
+    {
+      accessorKey: 'last_invoice_date',
+      header: ({ column }) => <DataTableColumnHeader column={column} title="آخر فاتورة" />,
+      meta: { exportLabel: 'آخر فاتورة' },
+      cell: ({ row }) => (
+        <span className="text-muted-foreground">
+          {row.original.last_invoice_date ? formatDate(row.original.last_invoice_date) : '—'}
+        </span>
+      )
+    },
+    {
       id: 'actions',
       header: '',
       enableHiding: false,
       cell: ({ row }) => (
-        <Button variant="outline" size="sm" onClick={() => navigate(`/suppliers/${row.original.id}`)}>
-          عرض السجل
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="outline" size="sm" onClick={() => navigate(`/suppliers/${row.original.id}`)}>
+            عرض السجل
+          </Button>
+          <EditSupplierDialog supplier={row.original} iconOnly />
+        </div>
       )
     }
   ]

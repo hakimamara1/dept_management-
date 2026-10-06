@@ -186,6 +186,7 @@ class DatabaseManager {
                 getAll: this.db.prepare(QUERIES.suppliers.getAll),
                 insert: this.db.prepare(QUERIES.suppliers.insert),
                 updateBalance: this.db.prepare(QUERIES.suppliers.updateBalance),
+                update: this.db.prepare(QUERIES.suppliers.update),
                 search: this.db.prepare(QUERIES.suppliers.search)
             },
 

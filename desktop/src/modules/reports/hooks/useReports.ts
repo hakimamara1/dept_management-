@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { queryKeys } from '@shared/lib/query-client'
+import type { DebtAnalysisFilters } from '@shared/types/api'
 import { reportsApi } from '../services/reports.api'
 
 export function useTrialBalance() {
@@ -27,5 +28,13 @@ export function useVerifyBalance() {
   return useQuery({
     queryKey: queryKeys.reports.verify,
     queryFn: reportsApi.verifyBalance
+  })
+}
+
+export function useDebtAnalysis(filters: DebtAnalysisFilters, enabled = true) {
+  return useQuery({
+    queryKey: queryKeys.reports.debtAnalysis(filters),
+    queryFn: () => reportsApi.getDebtAnalysis(filters),
+    enabled
   })
 }

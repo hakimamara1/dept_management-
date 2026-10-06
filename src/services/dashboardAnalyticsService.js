@@ -362,6 +362,7 @@ function getRecentActivity(limit = 20) {
 
 module.exports = {
     resolveDateRange,
+    withComparison,
     getKpis,
     getDebtEvolution,
     getDebtBySupplier,

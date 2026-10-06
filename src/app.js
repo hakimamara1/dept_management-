@@ -50,6 +50,7 @@ app.use('/api/stock', require('./routes/stock'));
 app.use('/api/accounting', require('./routes/accounting'));
 app.use('/api/analytics', require('./routes/analytics'));
 app.use('/api/dashboard', require('./routes/dashboardAnalytics'));
+app.use('/api/reports', require('./routes/debtAnalysis'));
 app.use('/api/purchase-orders', require('./routes/purchaseOrders'));
 app.use('/api/payments', require('./routes/payments'));
 app.use('/api/customers', require('./routes/customers'));
@@ -69,8 +70,11 @@ app.use((err, req, res, next) => {
 });
 
 
-const server = app.listen(3000, '127.0.0.1', () => {
-    console.log('Server started on port 3000');
+// Electron already passes PORT=3000; honoring it lets a dev/test copy run
+// alongside another instance without a code change.
+const PORT = Number(process.env.PORT) || 3000;
+const server = app.listen(PORT, '127.0.0.1', () => {
+    console.log(`Server started on port ${PORT}`);
 });
 
 // Electron's stopBackend() sends SIGTERM to this process on quit. Node has

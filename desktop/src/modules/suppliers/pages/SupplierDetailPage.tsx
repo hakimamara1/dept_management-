@@ -19,6 +19,7 @@ import { useSupplier, useSupplierLedger } from '../hooks/useSupplierDetail'
 import { RecordPaymentDialog } from '../components/RecordPaymentDialog'
 import { AdjustBalanceDialog } from '../components/AdjustBalanceDialog'
 import { DeleteSupplierDialog } from '../components/DeleteSupplierDialog'
+import { EditSupplierDialog } from '../components/EditSupplierDialog'
 
 const TYPE_BADGE: Record<SupplierTransactionType, { label: string; variant: 'destructive' | 'success' | 'secondary' }> = {
   invoice: { label: 'فاتورة', variant: 'destructive' },
@@ -116,9 +117,10 @@ export function SupplierDetailPage() {
 
       <PageHeader
         title={supplier.data.name}
-        subtitle={supplier.data.phone ?? undefined}
+        subtitle={[supplier.data.phone, supplier.data.email, supplier.data.address].filter(Boolean).join(' · ') || undefined}
         actions={
           <>
+            <EditSupplierDialog supplier={supplier.data} />
             <DeleteSupplierDialog supplierId={supplierId} supplierName={supplier.data.name} balance={balance} />
             <AdjustBalanceDialog supplierId={supplierId} />
             <RecordPaymentDialog supplierId={supplierId} currentBalance={balance} />

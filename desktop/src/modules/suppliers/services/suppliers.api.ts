@@ -4,7 +4,8 @@ import type {
   RecordPaymentInput,
   Supplier,
   SupplierAging,
-  SupplierTransaction
+  SupplierTransaction,
+  UpdateSupplierInput
 } from '@shared/types/api'
 import type { CreateSupplierFormValues } from '../schemas/supplier.schema'
 
@@ -14,6 +15,7 @@ export const suppliersApi = {
   getAging: () => apiClient.get<SupplierAging[]>('/api/suppliers/aging'),
   getLedger: (id: number) => apiClient.get<SupplierTransaction[]>(`/api/suppliers/${id}/ledger`),
   create: (data: CreateSupplierFormValues) => apiClient.post<Supplier>('/api/suppliers', data),
+  update: (id: number, data: UpdateSupplierInput) => apiClient.patch<Supplier>(`/api/suppliers/${id}`, data),
   recordPayment: (id: number, data: RecordPaymentInput) =>
     apiClient.post(`/api/suppliers/${id}/payments`, data),
   adjustBalance: (id: number, data: AdjustBalanceInput) =>

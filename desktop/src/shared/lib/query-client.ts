@@ -52,13 +52,17 @@ export const queryKeys = {
     detail: (id: number) => ['purchase-orders', 'detail', id] as const
   },
   payments: {
-    list: ['payments', 'list'] as const
+    /** Prefix of every payments query — invalidate this after recording a payment. */
+    all: ['payments'] as const,
+    list: (filters: unknown) => ['payments', 'list', filters] as const,
+    analytics: (filters: unknown) => ['payments', 'analytics', filters] as const
   },
   reports: {
     trialBalance: ['reports', 'trial-balance'] as const,
     balanceSheet: ['reports', 'balance-sheet'] as const,
     profitLoss: ['reports', 'profit-loss'] as const,
-    verify: ['reports', 'verify'] as const
+    verify: ['reports', 'verify'] as const,
+    debtAnalysis: (filters: unknown) => ['reports', 'debt-analysis', filters] as const
   },
   customers: {
     list: (query: string) => ['customers', 'list', query] as const,

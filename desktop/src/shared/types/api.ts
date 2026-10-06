@@ -109,6 +109,18 @@ export interface Supplier {
   commercial_register: string | null
   current_balance: number
   created_at: string
+  /** Approved invoices only — present on list/search responses. */
+  invoice_count?: number
+  last_invoice_date?: string | null
+}
+
+export interface UpdateSupplierInput {
+  name: string
+  phone?: string
+  email?: string
+  address?: string
+  taxNumber?: string
+  commercialRegister?: string
 }
 
 export type SupplierTransactionType = 'invoice' | 'payment' | 'adjustment'
@@ -683,4 +695,101 @@ export interface ActivityEntry {
   ts: string
   label: string
   detail: number | null
+}
+
+// ── Payments analytics ───────────────────────────────────────
+export interface PaymentFilters {
+  range: DashboardRange
+  from?: string
+  to?: string
+  supplierId?: number | null
+}
+
+export interface PaymentPeriodEntry {
+  period: string
+  total: number
+  count: number
+}
+
+export interface CashFlowPeriodEntry {
+  period: string
+  purchased: number
+  paid: number
+}
+
+export interface PaymentAnalytics {
+  range: { startDate: string; endDate: string }
+  granularity: 'day' | 'month'
+  kpis: {
+    totalPaid: KpiComparison
+    paymentCount: KpiComparison
+    averagePayment: KpiComparison
+    largestPayment: KpiComparison
+  }
+  perPeriod: PaymentPeriodEntry[]
+  cashFlow: {
+    purchased: KpiComparison
+    paid: KpiComparison
+    /** purchased − paid: positive = debt grew, negative = debt shrank. */
+    netDebtChange: number
+    /** paid ÷ purchased as a percentage; null when nothing was purchased. */
+    paidRatio: number | null
+    perPeriod: CashFlowPeriodEntry[]
+  }
+}
+
+// ── Reports: debt analysis ───────────────────────────────────
+export type DebtScope = 'suppliers' | 'customers'
+
+export interface DebtFigures {
+  beginning: number
+  purchases: number
+  /** Paid/collected, as a positive amount. */
+  payments: number
+  /** Net of manual adjustments (signed: + increases debt). */
+  adjustments: number
+  ending: number
+  change: number
+  /** null when the beginning debt is 0. */
+  changePercent: number | null
+  /** payments ÷ purchases × 100; null when nothing was purchased. */
+  paymentRatio: number | null
+  invoiceCount: number
+  paymentCount: number
+}
+
+export interface DebtTransaction {
+  id: number
+  date: string
+  type: 'invoice' | 'payment' | 'adjustment'
+  /** Signed effect on debt: + increases, − decreases. */
+  amount: number
+  balanceAfter: number
+  entityId: number
+  entityName: string
+  invoiceId: number | null
+  reference: string | null
+  note: string | null
+}
+
+export interface DebtAnalysis {
+  scope: DebtScope
+  entity: { id: number; name: string } | null
+  granularity: 'day' | 'month'
+  range: { startDate: string; endDate: string; prevStartDate: string; prevEndDate: string }
+  current: DebtFigures
+  previous: DebtFigures
+  comparison: Record<'beginning' | 'purchases' | 'payments' | 'adjustments' | 'ending' | 'change', KpiComparison>
+  evolution: { date: string; debt: number }[]
+  perPeriod: { period: string; purchases: number; payments: number; adjustments: number }[]
+  transactions: DebtTransaction[]
+  transactionsTruncated: boolean
+}
+
+export interface DebtAnalysisFilters {
+  scope: DebtScope
+  range: DashboardRange
+  from?: string
+  to?: string
+  entityId?: number | null
 }
