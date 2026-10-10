@@ -112,5 +112,28 @@ check('ledger has 2 rows (adjustment + payment)', ledger.length === 2, `${ledger
 const over = await call('POST', `/api/suppliers/${supplier.id}/payments`, { key: randomUUID().replace(/-/g, ''), body: { amount: 99999, paymentMethod: 'cash' } })
 check('over-payment is rejected (400)', over.status === 400 || over.status === 500, `HTTP ${over.status}`)
 
+// ── products: the phone's Products screens ──
+const prodName = `__contract_product_${Date.now()}`
+const pKey = randomUUID().replace(/-/g, '')
+const prodA = await call('POST', '/api/products', { key: pKey, body: { name: prodName, unit: 'kg', defaultSalePrice: 120 }, expect: 200 })
+const prodB = await call('POST', '/api/products', { key: pKey, body: { name: prodName, unit: 'kg', defaultSalePrice: 120 }, expect: 200 })
+check('product create retry replays (same id, one row)', prodB.replay && prodA.data.id === prodB.data.id, `ids ${prodA.data.id}/${prodB.data.id}`)
+const prod = (await call('GET', `/api/products/${prodA.data.id}`, { expect: 200 })).data
+check('GET /products/:id returns the product', prod.name === prodName && Number(prod.default_sale_price) === 120)
+await call('PATCH', `/api/products/${prod.id}/price`, { key: randomUUID().replace(/-/g, ''), body: { defaultSalePrice: 150 }, expect: 200 })
+const prod2 = (await call('GET', `/api/products/${prod.id}`, { expect: 200 })).data
+check('sale price updated', Number(prod2.default_sale_price) === 150)
+const upd = await call('PATCH', `/api/products/${prod.id}`, { key: randomUUID().replace(/-/g, ''), body: { name: prodName, unit: 'box', barcode: '123456' }, expect: 200 })
+check('catalogue fields updated', upd.data.unit === 'box' && upd.data.barcode === '123456')
+const bh = (await call('GET', `/api/products/${prod.id}/price-history`, { expect: 200 })).data
+check('buy price history shape', Array.isArray(bh.points) && 'stats' in bh)
+const sh = (await call('GET', `/api/products/${prod.id}/sales-price-history`, { expect: 200 })).data
+check('sales price history shape (customer, not supplier)', Array.isArray(sh.points) && 'stats' in sh && sh.product.id === prod.id)
+check('unknown product → 404', (await call('GET', '/api/products/99999999')).status === 404)
+for (const merge of ['/api/products/merge', '/api/products/MERGE', '/api/products/Merge/']) {
+  const r = await call('POST', merge, { body: { keepId: prod.id, mergeId: prod.id } })
+  check(`merge is blocked on the gateway (${merge})`, r.status === 403, `HTTP ${r.status}`)
+}
+
 console.log(failures ? `\n${failures} FAILED` : '\nall contract checks passed')
 process.exit(failures ? 1 : 0)

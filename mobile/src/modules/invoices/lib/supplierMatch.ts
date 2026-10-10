@@ -1,23 +1,11 @@
 // The AI reads a supplier name off a photo; this only *suggests* a known supplier. It is never applied silently —
 // the desktop's rule is that a misread name must not create or pick a supplier on its own (see business-rules).
 
+import { normalizeName } from '@/shared/lib/normalizeName'
+
 const STOPWORDS = new Set([
   'شركة', 'مؤسسة', 'مورد', 'المورد', 'محلات', 'محل', 'ش', 'م', 'sarl', 'eurl', 'spa', 'sa', 'ets', 'ste', 'societe', 'entreprise'
 ])
-
-/** Lower-case, strip diacritics/punctuation and unify the Arabic letter variants that OCR and typing disagree on. */
-export function normalizeName(input: string): string {
-  return input
-    .toLowerCase()
-    .normalize('NFKD')
-    .replace(/[ً-ٰٟـ]/g, '') // tashkeel + tatweel
-    .replace(/[إأآٱ]/g, 'ا')
-    .replace(/ى/g, 'ي')
-    .replace(/ة/g, 'ه')
-    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
-    .replace(/\s+/g, ' ')
-    .trim()
-}
 
 function tokens(input: string): string[] {
   return normalizeName(input)

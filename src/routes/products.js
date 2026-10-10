@@ -56,6 +56,89 @@ router.get('/search', (req, res) => {
     }
 });
 
+// GET /api/products/:id — one product (the phone's detail screen; the desktop reads the list).
+router.get('/:id', (req, res) => {
+    try {
+        const product = db.stmts.getProductById.get(parseInt(req.params.id));
+        if (!product) {
+            return res.status(404).json({ error: 'المنتج غير موجود' });
+        }
+        res.json(product);
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// GET /api/products/:id/sales-price-history — what this product actually sold for.
+// Sales invoice lines are free text on purpose (no FK to products — the sales
+// module must not touch the purchasing catalog), so a line is attributed to a
+// product by NAME: its normalized text must equal the product's normalized name
+// or one of its normalized aliases. Approximate by design; read-only; Final
+// (approved) sales invoices only. Same response shape as /price-history, with
+// `customer` in place of `supplier`.
+router.get('/:id/sales-price-history', (req, res) => {
+    try {
+        const productId = parseInt(req.params.id);
+        const product = db.stmts.getProductById.get(productId);
+        if (!product) {
+            return res.status(404).json({ error: 'المنتج غير موجود' });
+        }
+
+        const names = new Set([normalizeArabic(product.name)]);
+        for (const a of db.prepare('SELECT alias, normalized_alias FROM product_aliases WHERE product_id = ?').all(productId)) {
+            if (a.normalized_alias) names.add(a.normalized_alias);
+            else if (a.alias) names.add(normalizeArabic(a.alias));
+        }
+        names.delete('');
+
+        const rows = db.prepare(
+            `SELECT sii.product_name, sii.unit_price, sii.quantity,
+                    si.invoice_date, si.invoice_number, c.full_name AS customer_name
+             FROM sales_invoice_items sii
+             JOIN sales_invoices si ON sii.invoice_id = si.id
+             JOIN customers c ON si.customer_id = c.id
+             WHERE si.status = 'Final'
+             ORDER BY si.invoice_date ASC, si.id ASC`
+        ).all();
+
+        const points = rows
+            .filter((r) => names.has(normalizeArabic(r.product_name)))
+            .map((r) => ({
+                date: r.invoice_date,
+                price: Number(r.unit_price),
+                quantity: Number(r.quantity),
+                customer: r.customer_name,
+                invoiceNumber: r.invoice_number
+            }));
+
+        let stats = null;
+        if (points.length) {
+            const prices = points.map((p) => p.price);
+            const first = points[0].price;
+            const last = points[points.length - 1].price;
+            stats = {
+                count: points.length,
+                min: Math.min(...prices),
+                max: Math.max(...prices),
+                avg: prices.reduce((a, b) => a + b, 0) / prices.length,
+                first,
+                last,
+                changeAbs: last - first,
+                changePct: first ? ((last - first) / first) * 100 : 0,
+                trend: points.length < 2 ? 'flat' : (last > first ? 'up' : (last < first ? 'down' : 'flat'))
+            };
+        }
+
+        res.json({
+            product: { id: product.id, name: product.name, unit: product.unit },
+            points,
+            stats
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // GET /api/products/:id/price-history
 router.get('/:id/price-history', (req, res) => {
     try {

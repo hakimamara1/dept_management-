@@ -29,3 +29,9 @@ export function formatPeriod(period: string): string {
   }
   return formatDate(period)
 }
+
+/** "12.5%" / "-5.7%". A leading LRM keeps the sign on the left in right-to-left text (otherwise "-5.7%" renders as "5.7%-"). */
+export function formatPercent(value: number | null | undefined, digits = 1): string {
+  if (value == null || Number.isNaN(value)) return '—'
+  return `\u200E${value.toFixed(digits)}%`
+}

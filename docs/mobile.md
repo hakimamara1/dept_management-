@@ -30,7 +30,8 @@ Request pipeline: private-network-only → `POST /api/mobile/pair` (public) → 
 Allow-list (anything else → 403): `/api/invoices`, `/api/products`, `/api/suppliers`, `/api/customers`,
 `/api/payments`, `/api/dashboard`, `/api/reports`, `/uploads` (all with a valid token).
 **Never** reachable: `/api/settings` (restore/backup replace or export the whole database), `/api/accounting`,
-`/api/mobile` admin routes (these also refuse any non-loopback caller on their own).
+`/api/mobile` admin routes (these also refuse any non-loopback caller on their own), and
+`/api/products/merge` (an admin-style clean-up the phone never needs; matched case-insensitively because Express routes are).
 
 ## Idempotency (money safety)
 

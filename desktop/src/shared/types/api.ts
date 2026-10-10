@@ -53,6 +53,22 @@ export interface PriceHistoryResponse {
   stats: PriceHistoryStats | null
 }
 
+// GET /api/products/:id/sales-price-history — what the product actually sold for. Sales lines are
+// free text, so they are attributed to a product by name (approximate); Final invoices only.
+export interface SalesPriceHistoryPoint {
+  date: string
+  price: number
+  quantity: number
+  customer: string | null
+  invoiceNumber: string
+}
+
+export interface SalesPriceHistoryResponse {
+  product: { id: number; name: string; unit: string | null }
+  points: SalesPriceHistoryPoint[]
+  stats: PriceHistoryStats | null
+}
+
 export interface DashboardStats {
   pending_invoices: number
   approved_invoices: number

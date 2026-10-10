@@ -68,6 +68,21 @@ AI call (stubbed, no paid call made), a real phone camera.
   with the total and the reason when disabled.
 - Deferred to phase 6 (needs the dev-client rebuild that phase 5 triggers anyway): haptic feedback, dark-mode pass.
 
+### Phase 4 result (done): Products
+
+- **New tab Products** (bar is now Home · Invoices · Accounts · Products). List with search, sort by name / margin / stock,
+  buy and sale price on every row, and an add button.
+- **Detail:** last buy price, average cost, sale price, margin (formula shown), a **dated chart of buy price vs real sold
+  price** (range 3 m / 6 m / 1 y / all, tap a point to read it; line style + marker shape + legend, so it does not depend on
+  colour), cheapest supplier, and the last purchases / sales as tables.
+- **Actions:** edit sale price (shows the resulting margin and warns when below cost), edit catalogue fields, create product
+  (warns on a name that already exists). Every save carries an idempotency key.
+- **Backend (read-only additions):** `GET /api/products/:id` and `GET /api/products/:id/sales-price-history` (sales lines are
+  attributed to a product by normalized name or alias — approximate, Final invoices only; no schema change).
+- **Gateway:** `/api/products/merge` is now denied for phones (case-insensitive, so `/MERGE` cannot slip through).
+- `contract-check.mjs` covers all of the above (create replay, price update, histories, merge blocked).
+- Deep links to a detail screen keep the list underneath (`initialRouteName: 'index'` on every tab stack).
+
 ## 4. New / changed screens
 
 ### Parties (replaces Suppliers + Customers tabs)

@@ -4,7 +4,7 @@ import { useTheme } from '@/shared/theme/useTheme'
 // A deep link straight to a detail screen must still have the list underneath it.
 export const unstable_settings = { initialRouteName: 'index' }
 
-export default function PartiesLayout() {
+export default function ProductsLayout() {
   const { colors } = useTheme()
   return (
     <Stack

@@ -32,6 +32,9 @@ const CODE_LENGTH = 20;
 // Everything else — notably /api/settings (restore/backup replace or export the
 // whole database), /api/accounting and /api/mobile admin — is unreachable.
 const ALLOWED_PREFIXES = /^\/(api\/(invoices|products|suppliers|customers|payments|dashboard|reports)|uploads)(\/|$)/;
+// Inside an allowed prefix, admin-style operations the phone never needs. Case-INsensitive on purpose:
+// Express matches routes case-insensitively, so /api/products/MERGE would otherwise reach the handler.
+const DENIED_PATHS = /^\/api\/products\/merge(\/|$)/i;
 
 let mainApp = null;
 let gateway = null;      // { server, port, bonjour }
@@ -173,7 +176,7 @@ function handleHandshake(req, res) {
 function allowList(req, res, next) {
     // Strict, case-sensitive allow-list: Express matches routes case-insensitively,
     // so a deny-list could be dodged with /API/Settings/Restore.
-    if (!ALLOWED_PREFIXES.test(req.path)) {
+    if (!ALLOWED_PREFIXES.test(req.path) || DENIED_PATHS.test(req.path)) {
         return res.status(403).json({ error: 'هذا المسار غير متاح للهاتف' });
     }
     next();
