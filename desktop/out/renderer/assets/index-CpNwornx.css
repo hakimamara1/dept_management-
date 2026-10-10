@@ -78,7 +78,9 @@
     "Helvetica Neue", Arial, sans-serif;
     --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
       "Courier New", monospace;
+    --color-neutral-500: oklch(55.6% 0 0);
     --color-black: #000;
+    --color-white: #fff;
     --spacing: .25rem;
     --container-xs: 20rem;
     --container-sm: 24rem;
@@ -789,6 +791,16 @@
   .size-24 {
     width: calc(var(--spacing) * 24);
     height: calc(var(--spacing) * 24);
+  }
+
+  .size-\[280px\] {
+    width: 280px;
+    height: 280px;
+  }
+
+  .size-\[300px\] {
+    width: 300px;
+    height: 300px;
   }
 
   .size-full {
@@ -1583,6 +1595,10 @@
     }
   }
 
+  .bg-white {
+    background-color: var(--color-white);
+  }
+
   .bg-repeat {
     background-repeat: repeat;
   }
@@ -1880,6 +1896,10 @@
     .text-muted-foreground\/60 {
       color: color-mix(in oklab, var(--muted-foreground) 60%, transparent);
     }
+  }
+
+  .text-neutral-500 {
+    color: var(--color-neutral-500);
   }
 
   .text-popover-foreground {

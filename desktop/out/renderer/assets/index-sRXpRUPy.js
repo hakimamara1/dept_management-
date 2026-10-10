@@ -2643,7 +2643,7 @@ function requireReactDomClient_production() {
     return 3 === sourceFiber.tag ? sourceFiber.stateNode : null;
   }
   var emptyContextObject = {};
-  function FiberNode(tag, pendingProps, key, mode) {
+  function FiberNode(tag, pendingProps, key, mode2) {
     this.tag = tag;
     this.key = key;
     this.sibling = this.child = this.return = this.stateNode = this.type = this.elementType = null;
@@ -2651,14 +2651,14 @@ function requireReactDomClient_production() {
     this.refCleanup = this.ref = null;
     this.pendingProps = pendingProps;
     this.dependencies = this.memoizedState = this.updateQueue = this.memoizedProps = null;
-    this.mode = mode;
+    this.mode = mode2;
     this.subtreeFlags = this.flags = 0;
     this.deletions = null;
     this.childLanes = this.lanes = 0;
     this.alternate = null;
   }
-  function createFiberImplClass(tag, pendingProps, key, mode) {
-    return new FiberNode(tag, pendingProps, key, mode);
+  function createFiberImplClass(tag, pendingProps, key, mode2) {
+    return new FiberNode(tag, pendingProps, key, mode2);
   }
   function shouldConstruct(Component) {
     Component = Component.prototype;
@@ -2696,7 +2696,7 @@ function requireReactDomClient_production() {
     });
     return workInProgress2;
   }
-  function createFiberFromTypeAndProps(type, key, pendingProps, owner, mode, lanes) {
+  function createFiberFromTypeAndProps(type, key, pendingProps, owner, mode2, lanes) {
     var fiberTag = 0;
     owner = type;
     if ("function" === typeof type) shouldConstruct(type) && (fiberTag = 1);
@@ -2709,19 +2709,19 @@ function requireReactDomClient_production() {
     else
       a: switch (type) {
         case REACT_ACTIVITY_TYPE:
-          return type = createFiberImplClass(31, pendingProps, key, mode), type.elementType = REACT_ACTIVITY_TYPE, type.lanes = lanes, type;
+          return type = createFiberImplClass(31, pendingProps, key, mode2), type.elementType = REACT_ACTIVITY_TYPE, type.lanes = lanes, type;
         case REACT_FRAGMENT_TYPE:
-          return createFiberFromFragment(pendingProps.children, mode, lanes, key);
+          return createFiberFromFragment(pendingProps.children, mode2, lanes, key);
         case REACT_STRICT_MODE_TYPE:
           fiberTag = 8;
-          mode |= 24;
+          mode2 |= 24;
           break;
         case REACT_PROFILER_TYPE:
-          return type = createFiberImplClass(12, pendingProps, key, mode | 2), type.elementType = REACT_PROFILER_TYPE, type.lanes = lanes, type;
+          return type = createFiberImplClass(12, pendingProps, key, mode2 | 2), type.elementType = REACT_PROFILER_TYPE, type.lanes = lanes, type;
         case REACT_SUSPENSE_TYPE:
-          return type = createFiberImplClass(13, pendingProps, key, mode), type.elementType = REACT_SUSPENSE_TYPE, type.lanes = lanes, type;
+          return type = createFiberImplClass(13, pendingProps, key, mode2), type.elementType = REACT_SUSPENSE_TYPE, type.lanes = lanes, type;
         case REACT_SUSPENSE_LIST_TYPE:
-          return type = createFiberImplClass(19, pendingProps, key, mode), type.elementType = REACT_SUSPENSE_LIST_TYPE, type.lanes = lanes, type;
+          return type = createFiberImplClass(19, pendingProps, key, mode2), type.elementType = REACT_SUSPENSE_LIST_TYPE, type.lanes = lanes, type;
         default:
           if ("object" === typeof type && null !== type)
             switch (type.$$typeof) {
@@ -2748,19 +2748,19 @@ function requireReactDomClient_production() {
           );
           owner = null;
       }
-    key = createFiberImplClass(fiberTag, pendingProps, key, mode);
+    key = createFiberImplClass(fiberTag, pendingProps, key, mode2);
     key.elementType = type;
     key.type = owner;
     key.lanes = lanes;
     return key;
   }
-  function createFiberFromFragment(elements, mode, lanes, key) {
-    elements = createFiberImplClass(7, elements, key, mode);
+  function createFiberFromFragment(elements, mode2, lanes, key) {
+    elements = createFiberImplClass(7, elements, key, mode2);
     elements.lanes = lanes;
     return elements;
   }
-  function createFiberFromText(content, mode, lanes) {
-    content = createFiberImplClass(6, content, null, mode);
+  function createFiberFromText(content, mode2, lanes) {
+    content = createFiberImplClass(6, content, null, mode2);
     content.lanes = lanes;
     return content;
   }
@@ -2769,20 +2769,20 @@ function requireReactDomClient_production() {
     fiber.stateNode = dehydratedNode;
     return fiber;
   }
-  function createFiberFromPortal(portal, mode, lanes) {
-    mode = createFiberImplClass(
+  function createFiberFromPortal(portal, mode2, lanes) {
+    mode2 = createFiberImplClass(
       4,
       null !== portal.children ? portal.children : [],
       portal.key,
-      mode
+      mode2
     );
-    mode.lanes = lanes;
-    mode.stateNode = {
+    mode2.lanes = lanes;
+    mode2.stateNode = {
       containerInfo: portal.containerInfo,
       pendingChildren: null,
       implementation: portal.implementation
     };
-    return mode;
+    return mode2;
   }
   var CapturedStacks = /* @__PURE__ */ new WeakMap();
   function createCapturedValueAtFiber(value, source) {
@@ -5951,8 +5951,8 @@ function requireReactDomClient_production() {
     primaryChildren.return = workInProgress2;
     return workInProgress2.child = primaryChildren;
   }
-  function mountWorkInProgressOffscreenFiber(offscreenProps, mode) {
-    offscreenProps = createFiberImplClass(22, offscreenProps, null, mode);
+  function mountWorkInProgressOffscreenFiber(offscreenProps, mode2) {
+    offscreenProps = createFiberImplClass(22, offscreenProps, null, mode2);
     offscreenProps.lanes = 0;
     return offscreenProps;
   }
@@ -15250,6 +15250,10 @@ const queryKeys = {
     list: (filters) => ["payments", "list", filters],
     analytics: (filters) => ["payments", "analytics", filters]
   },
+  mobile: {
+    status: ["mobile", "status"],
+    devices: ["mobile", "devices"]
+  },
   reports: {
     trialBalance: ["reports", "trial-balance"],
     balanceSheet: ["reports", "balance-sheet"],
@@ -24203,9 +24207,9 @@ function flattenRoutes(routes, branches = [], parentsMeta = [], parentPath = "",
   return branches;
 }
 function explodeOptionalSegments(path) {
-  let segments = path.split("/");
-  if (segments.length === 0) return [];
-  let [first, ...rest] = segments;
+  let segments2 = path.split("/");
+  if (segments2.length === 0) return [];
+  let [first, ...rest] = segments2;
   let isOptional = first.endsWith("?");
   let required2 = first.replace(/\?$/, "");
   if (rest.length === 0) {
@@ -24241,15 +24245,15 @@ var staticSegmentValue = 10;
 var splatPenalty = -2;
 var isSplat = (s2) => s2 === "*";
 function computeScore(path, index2) {
-  let segments = path.split("/");
-  let initialScore = segments.length;
-  if (segments.some(isSplat)) {
+  let segments2 = path.split("/");
+  let initialScore = segments2.length;
+  if (segments2.some(isSplat)) {
     initialScore += splatPenalty;
   }
   if (index2) {
     initialScore += indexRouteValue;
   }
-  return segments.filter((s2) => !isSplat(s2)).reduce(
+  return segments2.filter((s2) => !isSplat(s2)).reduce(
     (score, segment) => score + (paramRe.test(segment) ? dynamicSegmentValue : segment === "" ? emptySegmentValue : staticSegmentValue),
     initialScore
   );
@@ -24439,16 +24443,16 @@ function resolvePath(to2, fromPathname = "/") {
   };
 }
 function resolvePathname(relativePath, fromPathname) {
-  let segments = removeTrailingSlash(fromPathname).split("/");
+  let segments2 = removeTrailingSlash(fromPathname).split("/");
   let relativeSegments = relativePath.split("/");
   relativeSegments.forEach((segment) => {
     if (segment === "..") {
-      if (segments.length > 1) segments.pop();
+      if (segments2.length > 1) segments2.pop();
     } else if (segment !== ".") {
-      segments.push(segment);
+      segments2.push(segment);
     }
   });
-  return segments.length > 1 ? segments.join("/") : "/";
+  return segments2.length > 1 ? segments2.join("/") : "/";
 }
 function getInvalidPathError(char, field, dest, path) {
   return `Cannot include a '${char}' character in a manually specified \`to.${field}\` field [${JSON.stringify(
@@ -24828,8 +24832,8 @@ Please change the parent <Route path="${parentPath}"> to <Route path="${parentPa
   let remainingPathname = pathname;
   if (parentPathnameBase !== "/") {
     let parentSegments = parentPathnameBase.replace(/^\//, "").split("/");
-    let segments = pathname.replace(/^\//, "").split("/");
-    remainingPathname = "/" + segments.slice(parentSegments.length).join("/");
+    let segments2 = pathname.replace(/^\//, "").split("/");
+    remainingPathname = "/" + segments2.slice(parentSegments.length).join("/");
   }
   let matches2 = dataRouterOpts && dataRouterOpts.state.matches.length ? (
     // If we're in a data router, use the matches we've already identified but ensure
@@ -25558,7 +25562,7 @@ async function getKeyedPrefetchLinks(matches2, manifest, routeModules) {
     )
   );
 }
-function getNewMatchesForLinks(page, nextMatches, currentMatches, manifest, location, mode) {
+function getNewMatchesForLinks(page, nextMatches, currentMatches, manifest, location, mode2) {
   let isNew = (match, index2) => {
     if (!currentMatches[index2]) return true;
     return match.route.id !== currentMatches[index2].route.id;
@@ -25571,12 +25575,12 @@ function getNewMatchesForLinks(page, nextMatches, currentMatches, manifest, loca
       currentMatches[index2].route.path?.endsWith("*") && currentMatches[index2].params["*"] !== match.params["*"]
     );
   };
-  if (mode === "assets") {
+  if (mode2 === "assets") {
     return nextMatches.filter(
       (match, index2) => isNew(match, index2) || matchPathChanged(match, index2)
     );
   }
-  if (mode === "data") {
+  if (mode2 === "data") {
     return nextMatches.filter((match, index2) => {
       let manifestRoute = manifest.routes[match.route.id];
       if (!manifestRoute || !manifestRoute.hasLoader) {
@@ -26406,7 +26410,7 @@ const createLucideIcon = (iconName, iconNode) => {
   Component.displayName = toPascalCase(iconName);
   return Component;
 };
-const __iconNode$$ = [
+const __iconNode$13 = [
   [
     "path",
     {
@@ -26415,44 +26419,44 @@ const __iconNode$$ = [
     }
   ]
 ];
-const Activity = createLucideIcon("activity", __iconNode$$);
-const __iconNode$_ = [
+const Activity = createLucideIcon("activity", __iconNode$13);
+const __iconNode$12 = [
   ["path", { d: "m7 7 10 10", key: "1fmybs" }],
   ["path", { d: "M17 7v10H7", key: "6fjiku" }]
 ];
-const ArrowDownRight = createLucideIcon("arrow-down-right", __iconNode$_);
-const __iconNode$Z = [
+const ArrowDownRight = createLucideIcon("arrow-down-right", __iconNode$12);
+const __iconNode$11 = [
   ["path", { d: "M12 5v14", key: "s699le" }],
   ["path", { d: "m19 12-7 7-7-7", key: "1idqje" }]
 ];
-const ArrowDown = createLucideIcon("arrow-down", __iconNode$Z);
-const __iconNode$Y = [
+const ArrowDown = createLucideIcon("arrow-down", __iconNode$11);
+const __iconNode$10 = [
   ["path", { d: "M5 12h14", key: "1ays0h" }],
   ["path", { d: "m12 5 7 7-7 7", key: "xquz4c" }]
 ];
-const ArrowRight = createLucideIcon("arrow-right", __iconNode$Y);
-const __iconNode$X = [
+const ArrowRight = createLucideIcon("arrow-right", __iconNode$10);
+const __iconNode$$ = [
   ["path", { d: "M7 7h10v10", key: "1tivn9" }],
   ["path", { d: "M7 17 17 7", key: "1vkiza" }]
 ];
-const ArrowUpRight = createLucideIcon("arrow-up-right", __iconNode$X);
-const __iconNode$W = [
+const ArrowUpRight = createLucideIcon("arrow-up-right", __iconNode$$);
+const __iconNode$_ = [
   ["path", { d: "m5 12 7-7 7 7", key: "hav0vg" }],
   ["path", { d: "M12 19V5", key: "x0mq9r" }]
 ];
-const ArrowUp = createLucideIcon("arrow-up", __iconNode$W);
-const __iconNode$V = [
+const ArrowUp = createLucideIcon("arrow-up", __iconNode$_);
+const __iconNode$Z = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "M4.929 4.929 19.07 19.071", key: "196cmz" }]
 ];
-const Ban = createLucideIcon("ban", __iconNode$V);
-const __iconNode$U = [
+const Ban = createLucideIcon("ban", __iconNode$Z);
+const __iconNode$Y = [
   ["rect", { width: "20", height: "12", x: "2", y: "6", rx: "2", key: "9lu3g6" }],
   ["circle", { cx: "12", cy: "12", r: "2", key: "1c9p78" }],
   ["path", { d: "M6 12h.01M18 12h.01", key: "113zkx" }]
 ];
-const Banknote = createLucideIcon("banknote", __iconNode$U);
-const __iconNode$T = [
+const Banknote = createLucideIcon("banknote", __iconNode$Y);
+const __iconNode$X = [
   ["path", { d: "M10.268 21a2 2 0 0 0 3.464 0", key: "vwvbt9" }],
   [
     "path",
@@ -26462,8 +26466,8 @@ const __iconNode$T = [
     }
   ]
 ];
-const Bell = createLucideIcon("bell", __iconNode$T);
-const __iconNode$S = [
+const Bell = createLucideIcon("bell", __iconNode$X);
+const __iconNode$W = [
   ["path", { d: "M12 8V4H8", key: "hb8ula" }],
   ["rect", { width: "16", height: "12", x: "4", y: "8", rx: "2", key: "enze0r" }],
   ["path", { d: "M2 14h2", key: "vft8re" }],
@@ -26471,8 +26475,8 @@ const __iconNode$S = [
   ["path", { d: "M15 13v2", key: "1xurst" }],
   ["path", { d: "M9 13v2", key: "rq6x2g" }]
 ];
-const Bot = createLucideIcon("bot", __iconNode$S);
-const __iconNode$R = [
+const Bot = createLucideIcon("bot", __iconNode$W);
+const __iconNode$V = [
   ["path", { d: "M16 14v2.2l1.6 1", key: "fo4ql5" }],
   ["path", { d: "M16 2v4", key: "4m81vk" }],
   ["path", { d: "M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5", key: "1osxxc" }],
@@ -26480,15 +26484,15 @@ const __iconNode$R = [
   ["path", { d: "M8 2v4", key: "1cmpym" }],
   ["circle", { cx: "16", cy: "16", r: "6", key: "qoo3c4" }]
 ];
-const CalendarClock = createLucideIcon("calendar-clock", __iconNode$R);
-const __iconNode$Q = [
+const CalendarClock = createLucideIcon("calendar-clock", __iconNode$V);
+const __iconNode$U = [
   ["path", { d: "M8 2v4", key: "1cmpym" }],
   ["path", { d: "M16 2v4", key: "4m81vk" }],
   ["rect", { width: "18", height: "18", x: "3", y: "4", rx: "2", key: "1hopcy" }],
   ["path", { d: "M3 10h18", key: "8toen8" }]
 ];
-const Calendar = createLucideIcon("calendar", __iconNode$Q);
-const __iconNode$P = [
+const Calendar = createLucideIcon("calendar", __iconNode$U);
+const __iconNode$T = [
   [
     "path",
     {
@@ -26498,77 +26502,77 @@ const __iconNode$P = [
   ],
   ["circle", { cx: "12", cy: "13", r: "3", key: "1vg3eu" }]
 ];
-const Camera = createLucideIcon("camera", __iconNode$P);
-const __iconNode$O = [
+const Camera = createLucideIcon("camera", __iconNode$T);
+const __iconNode$S = [
   ["path", { d: "M3 3v16a2 2 0 0 0 2 2h16", key: "c24i48" }],
   ["path", { d: "M18 17V9", key: "2bz60n" }],
   ["path", { d: "M13 17V5", key: "1frdt8" }],
   ["path", { d: "M8 17v-3", key: "17ska0" }]
 ];
-const ChartColumn = createLucideIcon("chart-column", __iconNode$O);
-const __iconNode$N = [
+const ChartColumn = createLucideIcon("chart-column", __iconNode$S);
+const __iconNode$R = [
   ["path", { d: "M3 3v16a2 2 0 0 0 2 2h16", key: "c24i48" }],
   ["path", { d: "m19 9-5 5-4-4-3 3", key: "2osh9i" }]
 ];
-const ChartLine = createLucideIcon("chart-line", __iconNode$N);
-const __iconNode$M = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
-const Check = createLucideIcon("check", __iconNode$M);
-const __iconNode$L = [["path", { d: "m15 18-6-6 6-6", key: "1wnfg3" }]];
-const ChevronLeft = createLucideIcon("chevron-left", __iconNode$L);
-const __iconNode$K = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
-const ChevronDown = createLucideIcon("chevron-down", __iconNode$K);
-const __iconNode$J = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
-const ChevronRight = createLucideIcon("chevron-right", __iconNode$J);
-const __iconNode$I = [
+const ChartLine = createLucideIcon("chart-line", __iconNode$R);
+const __iconNode$Q = [["path", { d: "M20 6 9 17l-5-5", key: "1gmf2c" }]];
+const Check = createLucideIcon("check", __iconNode$Q);
+const __iconNode$P = [["path", { d: "m15 18-6-6 6-6", key: "1wnfg3" }]];
+const ChevronLeft = createLucideIcon("chevron-left", __iconNode$P);
+const __iconNode$O = [["path", { d: "m6 9 6 6 6-6", key: "qrunsl" }]];
+const ChevronDown = createLucideIcon("chevron-down", __iconNode$O);
+const __iconNode$N = [["path", { d: "m9 18 6-6-6-6", key: "mthhwq" }]];
+const ChevronRight = createLucideIcon("chevron-right", __iconNode$N);
+const __iconNode$M = [
   ["path", { d: "m11 17-5-5 5-5", key: "13zhaf" }],
   ["path", { d: "m18 17-5-5 5-5", key: "h8a8et" }]
 ];
-const ChevronsLeft = createLucideIcon("chevrons-left", __iconNode$I);
-const __iconNode$H = [
+const ChevronsLeft = createLucideIcon("chevrons-left", __iconNode$M);
+const __iconNode$L = [
   ["path", { d: "m6 17 5-5-5-5", key: "xnjwq" }],
   ["path", { d: "m13 17 5-5-5-5", key: "17xmmf" }]
 ];
-const ChevronsRight = createLucideIcon("chevrons-right", __iconNode$H);
-const __iconNode$G = [
+const ChevronsRight = createLucideIcon("chevrons-right", __iconNode$L);
+const __iconNode$K = [
   ["path", { d: "m7 15 5 5 5-5", key: "1hf1tw" }],
   ["path", { d: "m7 9 5-5 5 5", key: "sgt6xg" }]
 ];
-const ChevronsUpDown = createLucideIcon("chevrons-up-down", __iconNode$G);
-const __iconNode$F = [
+const ChevronsUpDown = createLucideIcon("chevrons-up-down", __iconNode$K);
+const __iconNode$J = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["line", { x1: "12", x2: "12", y1: "8", y2: "12", key: "1pkeuh" }],
   ["line", { x1: "12", x2: "12.01", y1: "16", y2: "16", key: "4dfq90" }]
 ];
-const CircleAlert = createLucideIcon("circle-alert", __iconNode$F);
-const __iconNode$E = [
+const CircleAlert = createLucideIcon("circle-alert", __iconNode$J);
+const __iconNode$I = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "m9 12 2 2 4-4", key: "dzmm74" }]
 ];
-const CircleCheck = createLucideIcon("circle-check", __iconNode$E);
-const __iconNode$D = [
+const CircleCheck = createLucideIcon("circle-check", __iconNode$I);
+const __iconNode$H = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "m15 9-6 6", key: "1uzhvr" }],
   ["path", { d: "m9 9 6 6", key: "z0biqf" }]
 ];
-const CircleX = createLucideIcon("circle-x", __iconNode$D);
-const __iconNode$C = [
+const CircleX = createLucideIcon("circle-x", __iconNode$H);
+const __iconNode$G = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "M12 6v6l4 2", key: "mmk7yg" }]
 ];
-const Clock = createLucideIcon("clock", __iconNode$C);
-const __iconNode$B = [
+const Clock = createLucideIcon("clock", __iconNode$G);
+const __iconNode$F = [
   ["rect", { width: "18", height: "18", x: "3", y: "3", rx: "2", key: "afitv7" }],
   ["path", { d: "M9 3v18", key: "fh3hqa" }],
   ["path", { d: "M15 3v18", key: "14nvp0" }]
 ];
-const Columns3 = createLucideIcon("columns-3", __iconNode$B);
-const __iconNode$A = [
+const Columns3 = createLucideIcon("columns-3", __iconNode$F);
+const __iconNode$E = [
   ["path", { d: "M12 15V3", key: "m9g1x1" }],
   ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }],
   ["path", { d: "m7 10 5 5 5-5", key: "brsn70" }]
 ];
-const Download = createLucideIcon("download", __iconNode$A);
-const __iconNode$z = [
+const Download = createLucideIcon("download", __iconNode$E);
+const __iconNode$D = [
   [
     "path",
     {
@@ -26579,8 +26583,8 @@ const __iconNode$z = [
   ["path", { d: "M14 2v5a1 1 0 0 0 1 1h5", key: "wfsgrz" }],
   ["path", { d: "m9 15 2 2 4-4", key: "1grp1n" }]
 ];
-const FileCheck = createLucideIcon("file-check", __iconNode$z);
-const __iconNode$y = [
+const FileCheck = createLucideIcon("file-check", __iconNode$D);
+const __iconNode$C = [
   [
     "path",
     {
@@ -26592,8 +26596,8 @@ const __iconNode$y = [
   ["path", { d: "M12 18v-6", key: "17g6i2" }],
   ["path", { d: "m9 15 3 3 3-3", key: "1npd3o" }]
 ];
-const FileDown = createLucideIcon("file-down", __iconNode$y);
-const __iconNode$x = [
+const FileDown = createLucideIcon("file-down", __iconNode$C);
+const __iconNode$B = [
   [
     "path",
     {
@@ -26605,8 +26609,8 @@ const __iconNode$x = [
   ["path", { d: "M2 15h10", key: "jfw4w8" }],
   ["path", { d: "m9 18 3-3-3-3", key: "112psh" }]
 ];
-const FileInput = createLucideIcon("file-input", __iconNode$x);
-const __iconNode$w = [
+const FileInput = createLucideIcon("file-input", __iconNode$B);
+const __iconNode$A = [
   [
     "path",
     {
@@ -26619,8 +26623,8 @@ const __iconNode$w = [
   ["path", { d: "M16 13H8", key: "t4e002" }],
   ["path", { d: "M16 17H8", key: "z1uh3a" }]
 ];
-const FileText = createLucideIcon("file-text", __iconNode$w);
-const __iconNode$v = [
+const FileText = createLucideIcon("file-text", __iconNode$A);
+const __iconNode$z = [
   [
     "path",
     {
@@ -26629,27 +26633,27 @@ const __iconNode$v = [
     }
   ]
 ];
-const Flag = createLucideIcon("flag", __iconNode$v);
-const __iconNode$u = [
+const Flag = createLucideIcon("flag", __iconNode$z);
+const __iconNode$y = [
   ["circle", { cx: "12", cy: "12", r: "10", key: "1mglay" }],
   ["path", { d: "M12 2a14.5 14.5 0 0 0 0 20 14.5 14.5 0 0 0 0-20", key: "13o1zl" }],
   ["path", { d: "M2 12h20", key: "9i4pu4" }]
 ];
-const Globe = createLucideIcon("globe", __iconNode$u);
-const __iconNode$t = [
+const Globe = createLucideIcon("globe", __iconNode$y);
+const __iconNode$x = [
   ["line", { x1: "4", x2: "20", y1: "9", y2: "9", key: "4lhtct" }],
   ["line", { x1: "4", x2: "20", y1: "15", y2: "15", key: "vyu0kd" }],
   ["line", { x1: "10", x2: "8", y1: "3", y2: "21", key: "1ggp8o" }],
   ["line", { x1: "16", x2: "14", y1: "3", y2: "21", key: "weycgp" }]
 ];
-const Hash = createLucideIcon("hash", __iconNode$t);
-const __iconNode$s = [
+const Hash = createLucideIcon("hash", __iconNode$x);
+const __iconNode$w = [
   ["path", { d: "M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8", key: "1357e3" }],
   ["path", { d: "M3 3v5h5", key: "1xhq8a" }],
   ["path", { d: "M12 7v5l4 2", key: "1fdv2h" }]
 ];
-const History = createLucideIcon("history", __iconNode$s);
-const __iconNode$r = [
+const History = createLucideIcon("history", __iconNode$w);
+const __iconNode$v = [
   ["polyline", { points: "22 12 16 12 14 15 10 15 8 12 2 12", key: "o97t9d" }],
   [
     "path",
@@ -26659,15 +26663,15 @@ const __iconNode$r = [
     }
   ]
 ];
-const Inbox = createLucideIcon("inbox", __iconNode$r);
-const __iconNode$q = [
+const Inbox = createLucideIcon("inbox", __iconNode$v);
+const __iconNode$u = [
   ["rect", { width: "7", height: "9", x: "3", y: "3", rx: "1", key: "10lvy0" }],
   ["rect", { width: "7", height: "5", x: "14", y: "3", rx: "1", key: "16une8" }],
   ["rect", { width: "7", height: "9", x: "14", y: "12", rx: "1", key: "1hutg5" }],
   ["rect", { width: "7", height: "5", x: "3", y: "16", rx: "1", key: "ldoo1y" }]
 ];
-const LayoutDashboard = createLucideIcon("layout-dashboard", __iconNode$q);
-const __iconNode$p = [
+const LayoutDashboard = createLucideIcon("layout-dashboard", __iconNode$u);
+const __iconNode$t = [
   [
     "path",
     {
@@ -26678,14 +26682,14 @@ const __iconNode$p = [
   ["path", { d: "M9 18h6", key: "x1upvd" }],
   ["path", { d: "M10 22h4", key: "ceow96" }]
 ];
-const Lightbulb = createLucideIcon("lightbulb", __iconNode$p);
-const __iconNode$o = [
+const Lightbulb = createLucideIcon("lightbulb", __iconNode$t);
+const __iconNode$s = [
   ["rect", { width: "20", height: "14", x: "2", y: "3", rx: "2", key: "48i651" }],
   ["line", { x1: "8", x2: "16", y1: "21", y2: "21", key: "1svkeh" }],
   ["line", { x1: "12", x2: "12", y1: "17", y2: "21", key: "vw1qmm" }]
 ];
-const Monitor = createLucideIcon("monitor", __iconNode$o);
-const __iconNode$n = [
+const Monitor = createLucideIcon("monitor", __iconNode$s);
+const __iconNode$r = [
   [
     "path",
     {
@@ -26694,8 +26698,8 @@ const __iconNode$n = [
     }
   ]
 ];
-const Moon = createLucideIcon("moon", __iconNode$n);
-const __iconNode$m = [
+const Moon = createLucideIcon("moon", __iconNode$r);
+const __iconNode$q = [
   ["path", { d: "M12 22V12", key: "d0xqtd" }],
   ["path", { d: "M16 17h6", key: "1ook5g" }],
   ["path", { d: "M19 14v6", key: "1ckrd5" }],
@@ -26709,8 +26713,8 @@ const __iconNode$m = [
   ["path", { d: "M3.29 7 12 12l8.71-5", key: "19ckod" }],
   ["path", { d: "m7.5 4.27 8.997 5.148", key: "9yrvtv" }]
 ];
-const PackagePlus = createLucideIcon("package-plus", __iconNode$m);
-const __iconNode$l = [
+const PackagePlus = createLucideIcon("package-plus", __iconNode$q);
+const __iconNode$p = [
   [
     "path",
     {
@@ -26722,8 +26726,8 @@ const __iconNode$l = [
   ["polyline", { points: "3.29 7 12 12 20.71 7", key: "ousv84" }],
   ["path", { d: "m7.5 4.27 9 5.15", key: "1c824w" }]
 ];
-const Package = createLucideIcon("package", __iconNode$l);
-const __iconNode$k = [
+const Package = createLucideIcon("package", __iconNode$p);
+const __iconNode$o = [
   [
     "path",
     {
@@ -26733,19 +26737,19 @@ const __iconNode$k = [
   ],
   ["path", { d: "m15 5 4 4", key: "1mk7zo" }]
 ];
-const Pencil = createLucideIcon("pencil", __iconNode$k);
-const __iconNode$j = [
+const Pencil = createLucideIcon("pencil", __iconNode$o);
+const __iconNode$n = [
   ["line", { x1: "19", x2: "5", y1: "5", y2: "19", key: "1x9vlm" }],
   ["circle", { cx: "6.5", cy: "6.5", r: "2.5", key: "4mh3h7" }],
   ["circle", { cx: "17.5", cy: "17.5", r: "2.5", key: "1mdrzq" }]
 ];
-const Percent = createLucideIcon("percent", __iconNode$j);
-const __iconNode$i = [
+const Percent = createLucideIcon("percent", __iconNode$n);
+const __iconNode$m = [
   ["path", { d: "M5 12h14", key: "1ays0h" }],
   ["path", { d: "M12 5v14", key: "s699le" }]
 ];
-const Plus = createLucideIcon("plus", __iconNode$i);
-const __iconNode$h = [
+const Plus = createLucideIcon("plus", __iconNode$m);
+const __iconNode$l = [
   [
     "path",
     {
@@ -26756,8 +26760,23 @@ const __iconNode$h = [
   ["path", { d: "M6 9V3a1 1 0 0 1 1-1h10a1 1 0 0 1 1 1v6", key: "1itne7" }],
   ["rect", { x: "6", y: "14", width: "12", height: "8", rx: "1", key: "1ue0tg" }]
 ];
-const Printer = createLucideIcon("printer", __iconNode$h);
-const __iconNode$g = [
+const Printer = createLucideIcon("printer", __iconNode$l);
+const __iconNode$k = [
+  ["rect", { width: "5", height: "5", x: "3", y: "3", rx: "1", key: "1tu5fj" }],
+  ["rect", { width: "5", height: "5", x: "16", y: "3", rx: "1", key: "1v8r4q" }],
+  ["rect", { width: "5", height: "5", x: "3", y: "16", rx: "1", key: "1x03jg" }],
+  ["path", { d: "M21 16h-3a2 2 0 0 0-2 2v3", key: "177gqh" }],
+  ["path", { d: "M21 21v.01", key: "ents32" }],
+  ["path", { d: "M12 7v3a2 2 0 0 1-2 2H7", key: "8crl2c" }],
+  ["path", { d: "M3 12h.01", key: "nlz23k" }],
+  ["path", { d: "M12 3h.01", key: "n36tog" }],
+  ["path", { d: "M12 16v.01", key: "133mhm" }],
+  ["path", { d: "M16 12h1", key: "1slzba" }],
+  ["path", { d: "M21 12v.01", key: "1lwtk9" }],
+  ["path", { d: "M12 21v-1", key: "1880an" }]
+];
+const QrCode = createLucideIcon("qr-code", __iconNode$k);
+const __iconNode$j = [
   ["path", { d: "M12 17V7", key: "pyj7ub" }],
   ["path", { d: "M16 8h-6a2 2 0 0 0 0 4h4a2 2 0 0 1 0 4H8", key: "1elt7d" }],
   [
@@ -26768,29 +26787,36 @@ const __iconNode$g = [
     }
   ]
 ];
-const Receipt = createLucideIcon("receipt", __iconNode$g);
-const __iconNode$f = [
+const Receipt = createLucideIcon("receipt", __iconNode$j);
+const __iconNode$i = [
+  ["path", { d: "M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8", key: "v9h5vc" }],
+  ["path", { d: "M21 3v5h-5", key: "1q7to0" }],
+  ["path", { d: "M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16", key: "3uifl3" }],
+  ["path", { d: "M8 16H3v5", key: "1cv678" }]
+];
+const RefreshCw = createLucideIcon("refresh-cw", __iconNode$i);
+const __iconNode$h = [
   ["path", { d: "M12 3v18", key: "108xh3" }],
   ["path", { d: "m19 8 3 8a5 5 0 0 1-6 0zV7", key: "zcdpyk" }],
   ["path", { d: "M3 7h1a17 17 0 0 0 8-2 17 17 0 0 0 8 2h1", key: "1yorad" }],
   ["path", { d: "m5 8 3 8a5 5 0 0 1-6 0zV7", key: "eua70x" }],
   ["path", { d: "M7 21h10", key: "1b0cd5" }]
 ];
-const Scale = createLucideIcon("scale", __iconNode$f);
-const __iconNode$e = [
+const Scale = createLucideIcon("scale", __iconNode$h);
+const __iconNode$g = [
   ["circle", { cx: "6", cy: "6", r: "3", key: "1lh9wr" }],
   ["path", { d: "M8.12 8.12 12 12", key: "1alkpv" }],
   ["path", { d: "M20 4 8.12 15.88", key: "xgtan2" }],
   ["circle", { cx: "6", cy: "18", r: "3", key: "fqmcym" }],
   ["path", { d: "M14.8 14.8 20 20", key: "ptml3r" }]
 ];
-const Scissors = createLucideIcon("scissors", __iconNode$e);
-const __iconNode$d = [
+const Scissors = createLucideIcon("scissors", __iconNode$g);
+const __iconNode$f = [
   ["path", { d: "m21 21-4.34-4.34", key: "14j7rj" }],
   ["circle", { cx: "11", cy: "11", r: "8", key: "4ej97u" }]
 ];
-const Search = createLucideIcon("search", __iconNode$d);
-const __iconNode$c = [
+const Search = createLucideIcon("search", __iconNode$f);
+const __iconNode$e = [
   [
     "path",
     {
@@ -26800,8 +26826,8 @@ const __iconNode$c = [
   ],
   ["circle", { cx: "12", cy: "12", r: "3", key: "1v7zrd" }]
 ];
-const Settings = createLucideIcon("settings", __iconNode$c);
-const __iconNode$b = [
+const Settings = createLucideIcon("settings", __iconNode$e);
+const __iconNode$d = [
   ["path", { d: "M16 10a4 4 0 0 1-8 0", key: "1ltviw" }],
   ["path", { d: "M3.103 6.034h17.794", key: "awc11p" }],
   [
@@ -26812,8 +26838,8 @@ const __iconNode$b = [
     }
   ]
 ];
-const ShoppingBag = createLucideIcon("shopping-bag", __iconNode$b);
-const __iconNode$a = [
+const ShoppingBag = createLucideIcon("shopping-bag", __iconNode$d);
+const __iconNode$c = [
   ["circle", { cx: "8", cy: "21", r: "1", key: "jimo8o" }],
   ["circle", { cx: "19", cy: "21", r: "1", key: "13723u" }],
   [
@@ -26824,8 +26850,13 @@ const __iconNode$a = [
     }
   ]
 ];
-const ShoppingCart = createLucideIcon("shopping-cart", __iconNode$a);
-const __iconNode$9 = [
+const ShoppingCart = createLucideIcon("shopping-cart", __iconNode$c);
+const __iconNode$b = [
+  ["rect", { width: "14", height: "20", x: "5", y: "2", rx: "2", ry: "2", key: "1yt0o3" }],
+  ["path", { d: "M12 18h.01", key: "mhygvu" }]
+];
+const Smartphone = createLucideIcon("smartphone", __iconNode$b);
+const __iconNode$a = [
   ["circle", { cx: "12", cy: "12", r: "4", key: "4exip2" }],
   ["path", { d: "M12 2v2", key: "tus03m" }],
   ["path", { d: "M12 20v2", key: "1lh1kg" }],
@@ -26836,26 +26867,26 @@ const __iconNode$9 = [
   ["path", { d: "m6.34 17.66-1.41 1.41", key: "1m8zz5" }],
   ["path", { d: "m19.07 4.93-1.41 1.41", key: "1shlcs" }]
 ];
-const Sun = createLucideIcon("sun", __iconNode$9);
-const __iconNode$8 = [
+const Sun = createLucideIcon("sun", __iconNode$a);
+const __iconNode$9 = [
   ["path", { d: "M10 11v6", key: "nco0om" }],
   ["path", { d: "M14 11v6", key: "outv1u" }],
   ["path", { d: "M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6", key: "miytrc" }],
   ["path", { d: "M3 6h18", key: "d0wm0j" }],
   ["path", { d: "M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2", key: "e791ji" }]
 ];
-const Trash2 = createLucideIcon("trash-2", __iconNode$8);
-const __iconNode$7 = [
+const Trash2 = createLucideIcon("trash-2", __iconNode$9);
+const __iconNode$8 = [
   ["path", { d: "M16 17h6v-6", key: "t6n2it" }],
   ["path", { d: "m22 17-8.5-8.5-5 5L2 7", key: "x473p" }]
 ];
-const TrendingDown = createLucideIcon("trending-down", __iconNode$7);
-const __iconNode$6 = [
+const TrendingDown = createLucideIcon("trending-down", __iconNode$8);
+const __iconNode$7 = [
   ["path", { d: "M16 7h6v6", key: "box55l" }],
   ["path", { d: "m22 7-8.5 8.5-5-5L2 17", key: "1t1m79" }]
 ];
-const TrendingUp = createLucideIcon("trending-up", __iconNode$6);
-const __iconNode$5 = [
+const TrendingUp = createLucideIcon("trending-up", __iconNode$7);
+const __iconNode$6 = [
   [
     "path",
     {
@@ -26866,28 +26897,28 @@ const __iconNode$5 = [
   ["path", { d: "M12 9v4", key: "juzpu7" }],
   ["path", { d: "M12 17h.01", key: "p32p05" }]
 ];
-const TriangleAlert = createLucideIcon("triangle-alert", __iconNode$5);
-const __iconNode$4 = [
+const TriangleAlert = createLucideIcon("triangle-alert", __iconNode$6);
+const __iconNode$5 = [
   ["path", { d: "M12 3v12", key: "1x0j5s" }],
   ["path", { d: "m17 8-5-5-5 5", key: "7q97r8" }],
   ["path", { d: "M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4", key: "ih7n3h" }]
 ];
-const Upload = createLucideIcon("upload", __iconNode$4);
-const __iconNode$3 = [
+const Upload = createLucideIcon("upload", __iconNode$5);
+const __iconNode$4 = [
   ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
   ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }],
   ["line", { x1: "19", x2: "19", y1: "8", y2: "14", key: "1bvyxn" }],
   ["line", { x1: "22", x2: "16", y1: "11", y2: "11", key: "1shjgl" }]
 ];
-const UserPlus = createLucideIcon("user-plus", __iconNode$3);
-const __iconNode$2 = [
+const UserPlus = createLucideIcon("user-plus", __iconNode$4);
+const __iconNode$3 = [
   ["path", { d: "M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2", key: "1yyitq" }],
   ["path", { d: "M16 3.128a4 4 0 0 1 0 7.744", key: "16gr8j" }],
   ["path", { d: "M22 21v-2a4 4 0 0 0-3-3.87", key: "kshegd" }],
   ["circle", { cx: "9", cy: "7", r: "4", key: "nufk8" }]
 ];
-const Users = createLucideIcon("users", __iconNode$2);
-const __iconNode$1 = [
+const Users = createLucideIcon("users", __iconNode$3);
+const __iconNode$2 = [
   [
     "path",
     {
@@ -26897,7 +26928,14 @@ const __iconNode$1 = [
   ],
   ["path", { d: "M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4", key: "xoc0q4" }]
 ];
-const Wallet = createLucideIcon("wallet", __iconNode$1);
+const Wallet = createLucideIcon("wallet", __iconNode$2);
+const __iconNode$1 = [
+  ["path", { d: "M12 20h.01", key: "zekei9" }],
+  ["path", { d: "M2 8.82a15 15 0 0 1 20 0", key: "dnpr2z" }],
+  ["path", { d: "M5 12.859a10 10 0 0 1 14 0", key: "1x1e6c" }],
+  ["path", { d: "M8.5 16.429a5 5 0 0 1 7 0", key: "1bycff" }]
+];
+const Wifi = createLucideIcon("wifi", __iconNode$1);
 const __iconNode = [
   ["path", { d: "M18 6 6 18", key: "1bl5f8" }],
   ["path", { d: "m6 6 12 12", key: "d8bk6v" }]
@@ -34647,12 +34685,12 @@ var getResolverOptions = (fieldsNames, _fields, criteriaMode, shouldUseNativeVal
 };
 var isRegex = (value) => value instanceof RegExp;
 var getRuleValue = (rule) => isUndefined(rule) ? rule : isRegex(rule) ? rule.source : isObject$2(rule) ? isRegex(rule.value) ? rule.value.source : rule.value : rule;
-var getValidationModes = (mode) => ({
-  isOnSubmit: !mode || mode === VALIDATION_MODE.onSubmit,
-  isOnBlur: mode === VALIDATION_MODE.onBlur,
-  isOnChange: mode === VALIDATION_MODE.onChange,
-  isOnAll: mode === VALIDATION_MODE.all,
-  isOnTouch: mode === VALIDATION_MODE.onTouched
+var getValidationModes = (mode2) => ({
+  isOnSubmit: !mode2 || mode2 === VALIDATION_MODE.onSubmit,
+  isOnBlur: mode2 === VALIDATION_MODE.onBlur,
+  isOnChange: mode2 === VALIDATION_MODE.onChange,
+  isOnAll: mode2 === VALIDATION_MODE.all,
+  isOnTouch: mode2 === VALIDATION_MODE.onTouched
 });
 const ASYNC_FUNCTION = "AsyncFunction";
 var hasPromiseValidation = (fieldReference) => {
@@ -34747,14 +34785,14 @@ var shouldRenderFormState = (formStateData, _proxyFormState, updateFormState, is
   return !keys.length || isRoot && keys.length >= Object.keys(_proxyFormState).length || keys.find((key) => _proxyFormState[key] === (!isRoot || VALIDATION_MODE.all));
 };
 var shouldSubscribeByName = (name, signalName, exact) => !name || !signalName || name === signalName || convertToArrayPayload(name).some((currentName) => currentName && (exact ? currentName === signalName || currentName.startsWith(signalName + ".") : currentName.startsWith(signalName) || signalName.startsWith(currentName)));
-var skipValidation = (isBlurEvent, isTouched, isSubmitted, reValidateMode, mode) => {
-  if (mode.isOnAll) {
+var skipValidation = (isBlurEvent, isTouched, isSubmitted, reValidateMode, mode2) => {
+  if (mode2.isOnAll) {
     return false;
-  } else if (!isSubmitted && mode.isOnTouch) {
+  } else if (!isSubmitted && mode2.isOnTouch) {
     return !(isTouched || isBlurEvent);
-  } else if (isSubmitted ? reValidateMode.isOnBlur : mode.isOnBlur) {
+  } else if (isSubmitted ? reValidateMode.isOnBlur : mode2.isOnBlur) {
     return !isBlurEvent;
-  } else if (isSubmitted ? reValidateMode.isOnChange : mode.isOnChange) {
+  } else if (isSubmitted ? reValidateMode.isOnChange : mode2.isOnChange) {
     return isBlurEvent;
   }
   return true;
@@ -35095,11 +35133,11 @@ function createFormControl(props = {}) {
     });
   };
   const hasExplicitNullIntermediate = (name) => {
-    const segments = isKey$1(name) ? [name] : stringToPath(name);
+    const segments2 = isKey$1(name) ? [name] : stringToPath(name);
     let formValues = _formValues;
     let defaultValues = _defaultValues;
-    for (let i2 = 0; i2 < segments.length - 1; i2++) {
-      const key = segments[i2];
+    for (let i2 = 0; i2 < segments2.length - 1; i2++) {
+      const key = segments2[i2];
       formValues = isNullOrUndefined(formValues) ? formValues : formValues[key];
       defaultValues = isNullOrUndefined(defaultValues) ? defaultValues : defaultValues[key];
       if (formValues === null && defaultValues !== null) {
@@ -37158,8 +37196,8 @@ const dateSource = `(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468
 const date$3 = /* @__PURE__ */ new RegExp(`^${dateSource}$`);
 function timeSource(args) {
   const hhmm = `(?:[01]\\d|2[0-3]):[0-5]\\d`;
-  const regex = typeof args.precision === "number" ? args.precision === -1 ? `${hhmm}` : args.precision === 0 ? `${hhmm}:[0-5]\\d` : `${hhmm}:[0-5]\\d\\.\\d{${args.precision}}` : `${hhmm}(?::[0-5]\\d(?:\\.\\d+)?)?`;
-  return regex;
+  const regex2 = typeof args.precision === "number" ? args.precision === -1 ? `${hhmm}` : args.precision === 0 ? `${hhmm}:[0-5]\\d` : `${hhmm}:[0-5]\\d\\.\\d{${args.precision}}` : `${hhmm}(?::[0-5]\\d(?:\\.\\d+)?)?`;
+  return regex2;
 }
 function time$2(args) {
   return new RegExp(`^${timeSource(args)}$`);
@@ -37175,8 +37213,8 @@ function datetime$1(args) {
   return new RegExp(`^${dateSource}T(?:${timeRegex})$`);
 }
 const string$2 = (params) => {
-  const regex = params ? `[\\s\\S]{${params?.minimum ?? 0},${params?.maximum ?? ""}}` : `[\\s\\S]*`;
-  return new RegExp(`^${regex}$`);
+  const regex2 = params ? `[\\s\\S]{${params?.minimum ?? 0},${params?.maximum ?? ""}}` : `[\\s\\S]*`;
+  return new RegExp(`^${regex2}$`);
 };
 const integer = /^-?\d+$/;
 const number$4 = /^-?\d+(?:\.\d+)?$/;
@@ -37604,7 +37642,7 @@ class Doc {
     return new F(...args, lines.join("\n"));
   }
 }
-const version = {
+const version$1 = {
   major: 4,
   minor: 4,
   patch: 3
@@ -37614,7 +37652,7 @@ const $ZodType = /* @__PURE__ */ $constructor("$ZodType", (inst, def) => {
   inst ?? (inst = {});
   inst._zod.def = def;
   inst._zod.bag = inst._zod.bag || {};
-  inst._zod.version = version;
+  inst._zod.version = version$1;
   const checks = [...inst._zod.def.checks ?? []];
   if (inst._zod.traits.has("$ZodCheck")) {
     checks.unshift(inst);
@@ -39787,9 +39825,9 @@ const stringProcessor = (schema, ctx, _json, _params) => {
       json.pattern = regexes[0].source;
     else if (regexes.length > 1) {
       json.allOf = [
-        ...regexes.map((regex) => ({
+        ...regexes.map((regex2) => ({
           ...ctx.target === "draft-07" || ctx.target === "draft-04" || ctx.target === "openapi-3.0" ? { type: "string" } : {},
-          pattern: regex.source
+          pattern: regex2.source
         }))
       ];
     }
@@ -68762,7 +68800,7 @@ const ACTIVITY_ICON = {
   supplier_created: UserPlus,
   price_changed: TrendingUp
 };
-function timeAgo(ts) {
+function timeAgo$1(ts) {
   const diffMs = Date.now() - new Date(ts).getTime();
   const minutes = Math.round(diffMs / 6e4);
   if (minutes < 1) return "الآن";
@@ -68783,7 +68821,7 @@ function RecentActivitySection() {
         /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex min-w-0 flex-1 items-center justify-between gap-2", children: [
           /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col", children: [
             /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-sm text-foreground", children: activity.label }),
-            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: timeAgo(activity.ts) })
+            /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "text-xs text-muted-foreground", children: timeAgo$1(activity.ts) })
           ] }),
           activity.detail != null && /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "tabular-nums text-sm font-medium text-foreground", children: formatCurrency(activity.detail) })
         ] })
@@ -74842,6 +74880,2352 @@ function useRestoreBackup() {
     }
   });
 }
+const mobileApi = {
+  getStatus: () => apiClient.get("/api/mobile/status"),
+  enable: () => apiClient.post("/api/mobile/enable"),
+  disable: () => apiClient.post("/api/mobile/disable"),
+  createPairingCode: () => apiClient.post("/api/mobile/pairing-code"),
+  getDevices: () => apiClient.get("/api/mobile/devices"),
+  revokeDevice: (id) => apiClient.delete(`/api/mobile/devices/${id}`)
+};
+function useMobileStatus() {
+  return useQuery({
+    queryKey: queryKeys.mobile.status,
+    queryFn: mobileApi.getStatus,
+    refetchInterval: 1e4
+    // picks up phones pairing / LAN address changes
+  });
+}
+function useMobileDevices(refetchMs = 1e4) {
+  return useQuery({
+    queryKey: queryKeys.mobile.devices,
+    queryFn: mobileApi.getDevices,
+    refetchInterval: refetchMs
+  });
+}
+function useToggleMobileAccess() {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: (enable) => enable ? mobileApi.enable() : mobileApi.disable(),
+    onSuccess: (status) => {
+      toast.success(status.enabled ? "تم تفعيل الاتصال بالهاتف" : "تم إيقاف الاتصال بالهاتف");
+      queryClient2.setQueryData(queryKeys.mobile.status, status);
+    },
+    onError: (error) => toast.error("تعذّر تغيير حالة الاتصال", { description: error.message })
+  });
+}
+function useCreatePairingCode() {
+  return useMutation({
+    mutationFn: mobileApi.createPairingCode,
+    onError: (error) => toast.error("تعذّر إنشاء رمز الاقتران", { description: error.message })
+  });
+}
+function useRevokeDevice() {
+  const queryClient2 = useQueryClient();
+  return useMutation({
+    mutationFn: (id) => mobileApi.revokeDevice(id),
+    onSuccess: () => {
+      toast.success("تم فصل الجهاز — لن يتمكن من الاتصال بعد الآن");
+      queryClient2.invalidateQueries({ queryKey: queryKeys.mobile.devices });
+      queryClient2.invalidateQueries({ queryKey: queryKeys.mobile.status });
+    },
+    onError: (error) => toast.error("تعذّر فصل الجهاز", { description: error.message })
+  });
+}
+var browser = {};
+var canPromise;
+var hasRequiredCanPromise;
+function requireCanPromise() {
+  if (hasRequiredCanPromise) return canPromise;
+  hasRequiredCanPromise = 1;
+  canPromise = function() {
+    return typeof Promise === "function" && Promise.prototype && Promise.prototype.then;
+  };
+  return canPromise;
+}
+var qrcode = {};
+var utils$1 = {};
+var hasRequiredUtils$1;
+function requireUtils$1() {
+  if (hasRequiredUtils$1) return utils$1;
+  hasRequiredUtils$1 = 1;
+  let toSJISFunction;
+  const CODEWORDS_COUNT = [
+    0,
+    // Not used
+    26,
+    44,
+    70,
+    100,
+    134,
+    172,
+    196,
+    242,
+    292,
+    346,
+    404,
+    466,
+    532,
+    581,
+    655,
+    733,
+    815,
+    901,
+    991,
+    1085,
+    1156,
+    1258,
+    1364,
+    1474,
+    1588,
+    1706,
+    1828,
+    1921,
+    2051,
+    2185,
+    2323,
+    2465,
+    2611,
+    2761,
+    2876,
+    3034,
+    3196,
+    3362,
+    3532,
+    3706
+  ];
+  utils$1.getSymbolSize = function getSymbolSize(version2) {
+    if (!version2) throw new Error('"version" cannot be null or undefined');
+    if (version2 < 1 || version2 > 40) throw new Error('"version" should be in range from 1 to 40');
+    return version2 * 4 + 17;
+  };
+  utils$1.getSymbolTotalCodewords = function getSymbolTotalCodewords(version2) {
+    return CODEWORDS_COUNT[version2];
+  };
+  utils$1.getBCHDigit = function(data) {
+    let digit = 0;
+    while (data !== 0) {
+      digit++;
+      data >>>= 1;
+    }
+    return digit;
+  };
+  utils$1.setToSJISFunction = function setToSJISFunction(f) {
+    if (typeof f !== "function") {
+      throw new Error('"toSJISFunc" is not a valid function.');
+    }
+    toSJISFunction = f;
+  };
+  utils$1.isKanjiModeEnabled = function() {
+    return typeof toSJISFunction !== "undefined";
+  };
+  utils$1.toSJIS = function toSJIS(kanji) {
+    return toSJISFunction(kanji);
+  };
+  return utils$1;
+}
+var errorCorrectionLevel = {};
+var hasRequiredErrorCorrectionLevel;
+function requireErrorCorrectionLevel() {
+  if (hasRequiredErrorCorrectionLevel) return errorCorrectionLevel;
+  hasRequiredErrorCorrectionLevel = 1;
+  (function(exports) {
+    exports.L = { bit: 1 };
+    exports.M = { bit: 0 };
+    exports.Q = { bit: 3 };
+    exports.H = { bit: 2 };
+    function fromString(string2) {
+      if (typeof string2 !== "string") {
+        throw new Error("Param is not a string");
+      }
+      const lcStr = string2.toLowerCase();
+      switch (lcStr) {
+        case "l":
+        case "low":
+          return exports.L;
+        case "m":
+        case "medium":
+          return exports.M;
+        case "q":
+        case "quartile":
+          return exports.Q;
+        case "h":
+        case "high":
+          return exports.H;
+        default:
+          throw new Error("Unknown EC Level: " + string2);
+      }
+    }
+    exports.isValid = function isValid(level) {
+      return level && typeof level.bit !== "undefined" && level.bit >= 0 && level.bit < 4;
+    };
+    exports.from = function from2(value, defaultValue) {
+      if (exports.isValid(value)) {
+        return value;
+      }
+      try {
+        return fromString(value);
+      } catch (e) {
+        return defaultValue;
+      }
+    };
+  })(errorCorrectionLevel);
+  return errorCorrectionLevel;
+}
+var bitBuffer;
+var hasRequiredBitBuffer;
+function requireBitBuffer() {
+  if (hasRequiredBitBuffer) return bitBuffer;
+  hasRequiredBitBuffer = 1;
+  function BitBuffer() {
+    this.buffer = [];
+    this.length = 0;
+  }
+  BitBuffer.prototype = {
+    get: function(index2) {
+      const bufIndex = Math.floor(index2 / 8);
+      return (this.buffer[bufIndex] >>> 7 - index2 % 8 & 1) === 1;
+    },
+    put: function(num, length) {
+      for (let i2 = 0; i2 < length; i2++) {
+        this.putBit((num >>> length - i2 - 1 & 1) === 1);
+      }
+    },
+    getLengthInBits: function() {
+      return this.length;
+    },
+    putBit: function(bit) {
+      const bufIndex = Math.floor(this.length / 8);
+      if (this.buffer.length <= bufIndex) {
+        this.buffer.push(0);
+      }
+      if (bit) {
+        this.buffer[bufIndex] |= 128 >>> this.length % 8;
+      }
+      this.length++;
+    }
+  };
+  bitBuffer = BitBuffer;
+  return bitBuffer;
+}
+var bitMatrix;
+var hasRequiredBitMatrix;
+function requireBitMatrix() {
+  if (hasRequiredBitMatrix) return bitMatrix;
+  hasRequiredBitMatrix = 1;
+  function BitMatrix(size2) {
+    if (!size2 || size2 < 1) {
+      throw new Error("BitMatrix size must be defined and greater than 0");
+    }
+    this.size = size2;
+    this.data = new Uint8Array(size2 * size2);
+    this.reservedBit = new Uint8Array(size2 * size2);
+  }
+  BitMatrix.prototype.set = function(row, col, value, reserved) {
+    const index2 = row * this.size + col;
+    this.data[index2] = value;
+    if (reserved) this.reservedBit[index2] = true;
+  };
+  BitMatrix.prototype.get = function(row, col) {
+    return this.data[row * this.size + col];
+  };
+  BitMatrix.prototype.xor = function(row, col, value) {
+    this.data[row * this.size + col] ^= value;
+  };
+  BitMatrix.prototype.isReserved = function(row, col) {
+    return this.reservedBit[row * this.size + col];
+  };
+  bitMatrix = BitMatrix;
+  return bitMatrix;
+}
+var alignmentPattern = {};
+var hasRequiredAlignmentPattern;
+function requireAlignmentPattern() {
+  if (hasRequiredAlignmentPattern) return alignmentPattern;
+  hasRequiredAlignmentPattern = 1;
+  (function(exports) {
+    const getSymbolSize = requireUtils$1().getSymbolSize;
+    exports.getRowColCoords = function getRowColCoords(version2) {
+      if (version2 === 1) return [];
+      const posCount = Math.floor(version2 / 7) + 2;
+      const size2 = getSymbolSize(version2);
+      const intervals = size2 === 145 ? 26 : Math.ceil((size2 - 13) / (2 * posCount - 2)) * 2;
+      const positions = [size2 - 7];
+      for (let i2 = 1; i2 < posCount - 1; i2++) {
+        positions[i2] = positions[i2 - 1] - intervals;
+      }
+      positions.push(6);
+      return positions.reverse();
+    };
+    exports.getPositions = function getPositions(version2) {
+      const coords = [];
+      const pos = exports.getRowColCoords(version2);
+      const posLength = pos.length;
+      for (let i2 = 0; i2 < posLength; i2++) {
+        for (let j = 0; j < posLength; j++) {
+          if (i2 === 0 && j === 0 || // top-left
+          i2 === 0 && j === posLength - 1 || // bottom-left
+          i2 === posLength - 1 && j === 0) {
+            continue;
+          }
+          coords.push([pos[i2], pos[j]]);
+        }
+      }
+      return coords;
+    };
+  })(alignmentPattern);
+  return alignmentPattern;
+}
+var finderPattern = {};
+var hasRequiredFinderPattern;
+function requireFinderPattern() {
+  if (hasRequiredFinderPattern) return finderPattern;
+  hasRequiredFinderPattern = 1;
+  const getSymbolSize = requireUtils$1().getSymbolSize;
+  const FINDER_PATTERN_SIZE = 7;
+  finderPattern.getPositions = function getPositions(version2) {
+    const size2 = getSymbolSize(version2);
+    return [
+      // top-left
+      [0, 0],
+      // top-right
+      [size2 - FINDER_PATTERN_SIZE, 0],
+      // bottom-left
+      [0, size2 - FINDER_PATTERN_SIZE]
+    ];
+  };
+  return finderPattern;
+}
+var maskPattern = {};
+var hasRequiredMaskPattern;
+function requireMaskPattern() {
+  if (hasRequiredMaskPattern) return maskPattern;
+  hasRequiredMaskPattern = 1;
+  (function(exports) {
+    exports.Patterns = {
+      PATTERN000: 0,
+      PATTERN001: 1,
+      PATTERN010: 2,
+      PATTERN011: 3,
+      PATTERN100: 4,
+      PATTERN101: 5,
+      PATTERN110: 6,
+      PATTERN111: 7
+    };
+    const PenaltyScores = {
+      N1: 3,
+      N2: 3,
+      N3: 40,
+      N4: 10
+    };
+    exports.isValid = function isValid(mask) {
+      return mask != null && mask !== "" && !isNaN(mask) && mask >= 0 && mask <= 7;
+    };
+    exports.from = function from2(value) {
+      return exports.isValid(value) ? parseInt(value, 10) : void 0;
+    };
+    exports.getPenaltyN1 = function getPenaltyN1(data) {
+      const size2 = data.size;
+      let points = 0;
+      let sameCountCol = 0;
+      let sameCountRow = 0;
+      let lastCol = null;
+      let lastRow = null;
+      for (let row = 0; row < size2; row++) {
+        sameCountCol = sameCountRow = 0;
+        lastCol = lastRow = null;
+        for (let col = 0; col < size2; col++) {
+          let module = data.get(row, col);
+          if (module === lastCol) {
+            sameCountCol++;
+          } else {
+            if (sameCountCol >= 5) points += PenaltyScores.N1 + (sameCountCol - 5);
+            lastCol = module;
+            sameCountCol = 1;
+          }
+          module = data.get(col, row);
+          if (module === lastRow) {
+            sameCountRow++;
+          } else {
+            if (sameCountRow >= 5) points += PenaltyScores.N1 + (sameCountRow - 5);
+            lastRow = module;
+            sameCountRow = 1;
+          }
+        }
+        if (sameCountCol >= 5) points += PenaltyScores.N1 + (sameCountCol - 5);
+        if (sameCountRow >= 5) points += PenaltyScores.N1 + (sameCountRow - 5);
+      }
+      return points;
+    };
+    exports.getPenaltyN2 = function getPenaltyN2(data) {
+      const size2 = data.size;
+      let points = 0;
+      for (let row = 0; row < size2 - 1; row++) {
+        for (let col = 0; col < size2 - 1; col++) {
+          const last = data.get(row, col) + data.get(row, col + 1) + data.get(row + 1, col) + data.get(row + 1, col + 1);
+          if (last === 4 || last === 0) points++;
+        }
+      }
+      return points * PenaltyScores.N2;
+    };
+    exports.getPenaltyN3 = function getPenaltyN3(data) {
+      const size2 = data.size;
+      let points = 0;
+      let bitsCol = 0;
+      let bitsRow = 0;
+      for (let row = 0; row < size2; row++) {
+        bitsCol = bitsRow = 0;
+        for (let col = 0; col < size2; col++) {
+          bitsCol = bitsCol << 1 & 2047 | data.get(row, col);
+          if (col >= 10 && (bitsCol === 1488 || bitsCol === 93)) points++;
+          bitsRow = bitsRow << 1 & 2047 | data.get(col, row);
+          if (col >= 10 && (bitsRow === 1488 || bitsRow === 93)) points++;
+        }
+      }
+      return points * PenaltyScores.N3;
+    };
+    exports.getPenaltyN4 = function getPenaltyN4(data) {
+      let darkCount = 0;
+      const modulesCount = data.data.length;
+      for (let i2 = 0; i2 < modulesCount; i2++) darkCount += data.data[i2];
+      const k2 = Math.abs(Math.ceil(darkCount * 100 / modulesCount / 5) - 10);
+      return k2 * PenaltyScores.N4;
+    };
+    function getMaskAt(maskPattern2, i2, j) {
+      switch (maskPattern2) {
+        case exports.Patterns.PATTERN000:
+          return (i2 + j) % 2 === 0;
+        case exports.Patterns.PATTERN001:
+          return i2 % 2 === 0;
+        case exports.Patterns.PATTERN010:
+          return j % 3 === 0;
+        case exports.Patterns.PATTERN011:
+          return (i2 + j) % 3 === 0;
+        case exports.Patterns.PATTERN100:
+          return (Math.floor(i2 / 2) + Math.floor(j / 3)) % 2 === 0;
+        case exports.Patterns.PATTERN101:
+          return i2 * j % 2 + i2 * j % 3 === 0;
+        case exports.Patterns.PATTERN110:
+          return (i2 * j % 2 + i2 * j % 3) % 2 === 0;
+        case exports.Patterns.PATTERN111:
+          return (i2 * j % 3 + (i2 + j) % 2) % 2 === 0;
+        default:
+          throw new Error("bad maskPattern:" + maskPattern2);
+      }
+    }
+    exports.applyMask = function applyMask(pattern, data) {
+      const size2 = data.size;
+      for (let col = 0; col < size2; col++) {
+        for (let row = 0; row < size2; row++) {
+          if (data.isReserved(row, col)) continue;
+          data.xor(row, col, getMaskAt(pattern, row, col));
+        }
+      }
+    };
+    exports.getBestMask = function getBestMask(data, setupFormatFunc) {
+      const numPatterns = Object.keys(exports.Patterns).length;
+      let bestPattern = 0;
+      let lowerPenalty = Infinity;
+      for (let p = 0; p < numPatterns; p++) {
+        setupFormatFunc(p);
+        exports.applyMask(p, data);
+        const penalty = exports.getPenaltyN1(data) + exports.getPenaltyN2(data) + exports.getPenaltyN3(data) + exports.getPenaltyN4(data);
+        exports.applyMask(p, data);
+        if (penalty < lowerPenalty) {
+          lowerPenalty = penalty;
+          bestPattern = p;
+        }
+      }
+      return bestPattern;
+    };
+  })(maskPattern);
+  return maskPattern;
+}
+var errorCorrectionCode = {};
+var hasRequiredErrorCorrectionCode;
+function requireErrorCorrectionCode() {
+  if (hasRequiredErrorCorrectionCode) return errorCorrectionCode;
+  hasRequiredErrorCorrectionCode = 1;
+  const ECLevel = requireErrorCorrectionLevel();
+  const EC_BLOCKS_TABLE = [
+    // L  M  Q  H
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    1,
+    2,
+    2,
+    1,
+    2,
+    2,
+    4,
+    1,
+    2,
+    4,
+    4,
+    2,
+    4,
+    4,
+    4,
+    2,
+    4,
+    6,
+    5,
+    2,
+    4,
+    6,
+    6,
+    2,
+    5,
+    8,
+    8,
+    4,
+    5,
+    8,
+    8,
+    4,
+    5,
+    8,
+    11,
+    4,
+    8,
+    10,
+    11,
+    4,
+    9,
+    12,
+    16,
+    4,
+    9,
+    16,
+    16,
+    6,
+    10,
+    12,
+    18,
+    6,
+    10,
+    17,
+    16,
+    6,
+    11,
+    16,
+    19,
+    6,
+    13,
+    18,
+    21,
+    7,
+    14,
+    21,
+    25,
+    8,
+    16,
+    20,
+    25,
+    8,
+    17,
+    23,
+    25,
+    9,
+    17,
+    23,
+    34,
+    9,
+    18,
+    25,
+    30,
+    10,
+    20,
+    27,
+    32,
+    12,
+    21,
+    29,
+    35,
+    12,
+    23,
+    34,
+    37,
+    12,
+    25,
+    34,
+    40,
+    13,
+    26,
+    35,
+    42,
+    14,
+    28,
+    38,
+    45,
+    15,
+    29,
+    40,
+    48,
+    16,
+    31,
+    43,
+    51,
+    17,
+    33,
+    45,
+    54,
+    18,
+    35,
+    48,
+    57,
+    19,
+    37,
+    51,
+    60,
+    19,
+    38,
+    53,
+    63,
+    20,
+    40,
+    56,
+    66,
+    21,
+    43,
+    59,
+    70,
+    22,
+    45,
+    62,
+    74,
+    24,
+    47,
+    65,
+    77,
+    25,
+    49,
+    68,
+    81
+  ];
+  const EC_CODEWORDS_TABLE = [
+    // L  M  Q  H
+    7,
+    10,
+    13,
+    17,
+    10,
+    16,
+    22,
+    28,
+    15,
+    26,
+    36,
+    44,
+    20,
+    36,
+    52,
+    64,
+    26,
+    48,
+    72,
+    88,
+    36,
+    64,
+    96,
+    112,
+    40,
+    72,
+    108,
+    130,
+    48,
+    88,
+    132,
+    156,
+    60,
+    110,
+    160,
+    192,
+    72,
+    130,
+    192,
+    224,
+    80,
+    150,
+    224,
+    264,
+    96,
+    176,
+    260,
+    308,
+    104,
+    198,
+    288,
+    352,
+    120,
+    216,
+    320,
+    384,
+    132,
+    240,
+    360,
+    432,
+    144,
+    280,
+    408,
+    480,
+    168,
+    308,
+    448,
+    532,
+    180,
+    338,
+    504,
+    588,
+    196,
+    364,
+    546,
+    650,
+    224,
+    416,
+    600,
+    700,
+    224,
+    442,
+    644,
+    750,
+    252,
+    476,
+    690,
+    816,
+    270,
+    504,
+    750,
+    900,
+    300,
+    560,
+    810,
+    960,
+    312,
+    588,
+    870,
+    1050,
+    336,
+    644,
+    952,
+    1110,
+    360,
+    700,
+    1020,
+    1200,
+    390,
+    728,
+    1050,
+    1260,
+    420,
+    784,
+    1140,
+    1350,
+    450,
+    812,
+    1200,
+    1440,
+    480,
+    868,
+    1290,
+    1530,
+    510,
+    924,
+    1350,
+    1620,
+    540,
+    980,
+    1440,
+    1710,
+    570,
+    1036,
+    1530,
+    1800,
+    570,
+    1064,
+    1590,
+    1890,
+    600,
+    1120,
+    1680,
+    1980,
+    630,
+    1204,
+    1770,
+    2100,
+    660,
+    1260,
+    1860,
+    2220,
+    720,
+    1316,
+    1950,
+    2310,
+    750,
+    1372,
+    2040,
+    2430
+  ];
+  errorCorrectionCode.getBlocksCount = function getBlocksCount(version2, errorCorrectionLevel2) {
+    switch (errorCorrectionLevel2) {
+      case ECLevel.L:
+        return EC_BLOCKS_TABLE[(version2 - 1) * 4 + 0];
+      case ECLevel.M:
+        return EC_BLOCKS_TABLE[(version2 - 1) * 4 + 1];
+      case ECLevel.Q:
+        return EC_BLOCKS_TABLE[(version2 - 1) * 4 + 2];
+      case ECLevel.H:
+        return EC_BLOCKS_TABLE[(version2 - 1) * 4 + 3];
+      default:
+        return void 0;
+    }
+  };
+  errorCorrectionCode.getTotalCodewordsCount = function getTotalCodewordsCount(version2, errorCorrectionLevel2) {
+    switch (errorCorrectionLevel2) {
+      case ECLevel.L:
+        return EC_CODEWORDS_TABLE[(version2 - 1) * 4 + 0];
+      case ECLevel.M:
+        return EC_CODEWORDS_TABLE[(version2 - 1) * 4 + 1];
+      case ECLevel.Q:
+        return EC_CODEWORDS_TABLE[(version2 - 1) * 4 + 2];
+      case ECLevel.H:
+        return EC_CODEWORDS_TABLE[(version2 - 1) * 4 + 3];
+      default:
+        return void 0;
+    }
+  };
+  return errorCorrectionCode;
+}
+var polynomial = {};
+var galoisField = {};
+var hasRequiredGaloisField;
+function requireGaloisField() {
+  if (hasRequiredGaloisField) return galoisField;
+  hasRequiredGaloisField = 1;
+  const EXP_TABLE = new Uint8Array(512);
+  const LOG_TABLE = new Uint8Array(256);
+  (function initTables() {
+    let x2 = 1;
+    for (let i2 = 0; i2 < 255; i2++) {
+      EXP_TABLE[i2] = x2;
+      LOG_TABLE[x2] = i2;
+      x2 <<= 1;
+      if (x2 & 256) {
+        x2 ^= 285;
+      }
+    }
+    for (let i2 = 255; i2 < 512; i2++) {
+      EXP_TABLE[i2] = EXP_TABLE[i2 - 255];
+    }
+  })();
+  galoisField.log = function log2(n2) {
+    if (n2 < 1) throw new Error("log(" + n2 + ")");
+    return LOG_TABLE[n2];
+  };
+  galoisField.exp = function exp2(n2) {
+    return EXP_TABLE[n2];
+  };
+  galoisField.mul = function mul(x2, y2) {
+    if (x2 === 0 || y2 === 0) return 0;
+    return EXP_TABLE[LOG_TABLE[x2] + LOG_TABLE[y2]];
+  };
+  return galoisField;
+}
+var hasRequiredPolynomial;
+function requirePolynomial() {
+  if (hasRequiredPolynomial) return polynomial;
+  hasRequiredPolynomial = 1;
+  (function(exports) {
+    const GF = requireGaloisField();
+    exports.mul = function mul(p1, p2) {
+      const coeff = new Uint8Array(p1.length + p2.length - 1);
+      for (let i2 = 0; i2 < p1.length; i2++) {
+        for (let j = 0; j < p2.length; j++) {
+          coeff[i2 + j] ^= GF.mul(p1[i2], p2[j]);
+        }
+      }
+      return coeff;
+    };
+    exports.mod = function mod(divident, divisor) {
+      let result = new Uint8Array(divident);
+      while (result.length - divisor.length >= 0) {
+        const coeff = result[0];
+        for (let i2 = 0; i2 < divisor.length; i2++) {
+          result[i2] ^= GF.mul(divisor[i2], coeff);
+        }
+        let offset2 = 0;
+        while (offset2 < result.length && result[offset2] === 0) offset2++;
+        result = result.slice(offset2);
+      }
+      return result;
+    };
+    exports.generateECPolynomial = function generateECPolynomial(degree) {
+      let poly = new Uint8Array([1]);
+      for (let i2 = 0; i2 < degree; i2++) {
+        poly = exports.mul(poly, new Uint8Array([1, GF.exp(i2)]));
+      }
+      return poly;
+    };
+  })(polynomial);
+  return polynomial;
+}
+var reedSolomonEncoder;
+var hasRequiredReedSolomonEncoder;
+function requireReedSolomonEncoder() {
+  if (hasRequiredReedSolomonEncoder) return reedSolomonEncoder;
+  hasRequiredReedSolomonEncoder = 1;
+  const Polynomial = requirePolynomial();
+  function ReedSolomonEncoder(degree) {
+    this.genPoly = void 0;
+    this.degree = degree;
+    if (this.degree) this.initialize(this.degree);
+  }
+  ReedSolomonEncoder.prototype.initialize = function initialize(degree) {
+    this.degree = degree;
+    this.genPoly = Polynomial.generateECPolynomial(this.degree);
+  };
+  ReedSolomonEncoder.prototype.encode = function encode2(data) {
+    if (!this.genPoly) {
+      throw new Error("Encoder not initialized");
+    }
+    const paddedData = new Uint8Array(data.length + this.degree);
+    paddedData.set(data);
+    const remainder = Polynomial.mod(paddedData, this.genPoly);
+    const start = this.degree - remainder.length;
+    if (start > 0) {
+      const buff = new Uint8Array(this.degree);
+      buff.set(remainder, start);
+      return buff;
+    }
+    return remainder;
+  };
+  reedSolomonEncoder = ReedSolomonEncoder;
+  return reedSolomonEncoder;
+}
+var version = {};
+var mode = {};
+var versionCheck = {};
+var hasRequiredVersionCheck;
+function requireVersionCheck() {
+  if (hasRequiredVersionCheck) return versionCheck;
+  hasRequiredVersionCheck = 1;
+  versionCheck.isValid = function isValid(version2) {
+    return !isNaN(version2) && version2 >= 1 && version2 <= 40;
+  };
+  return versionCheck;
+}
+var regex = {};
+var hasRequiredRegex;
+function requireRegex() {
+  if (hasRequiredRegex) return regex;
+  hasRequiredRegex = 1;
+  const numeric = "[0-9]+";
+  const alphanumeric2 = "[A-Z $%*+\\-./:]+";
+  let kanji = "(?:[u3000-u303F]|[u3040-u309F]|[u30A0-u30FF]|[uFF00-uFFEF]|[u4E00-u9FAF]|[u2605-u2606]|[u2190-u2195]|u203B|[u2010u2015u2018u2019u2025u2026u201Cu201Du2225u2260]|[u0391-u0451]|[u00A7u00A8u00B1u00B4u00D7u00F7])+";
+  kanji = kanji.replace(/u/g, "\\u");
+  const byte = "(?:(?![A-Z0-9 $%*+\\-./:]|" + kanji + ")(?:.|[\r\n]))+";
+  regex.KANJI = new RegExp(kanji, "g");
+  regex.BYTE_KANJI = new RegExp("[^A-Z0-9 $%*+\\-./:]+", "g");
+  regex.BYTE = new RegExp(byte, "g");
+  regex.NUMERIC = new RegExp(numeric, "g");
+  regex.ALPHANUMERIC = new RegExp(alphanumeric2, "g");
+  const TEST_KANJI = new RegExp("^" + kanji + "$");
+  const TEST_NUMERIC = new RegExp("^" + numeric + "$");
+  const TEST_ALPHANUMERIC = new RegExp("^[A-Z0-9 $%*+\\-./:]+$");
+  regex.testKanji = function testKanji(str) {
+    return TEST_KANJI.test(str);
+  };
+  regex.testNumeric = function testNumeric(str) {
+    return TEST_NUMERIC.test(str);
+  };
+  regex.testAlphanumeric = function testAlphanumeric(str) {
+    return TEST_ALPHANUMERIC.test(str);
+  };
+  return regex;
+}
+var hasRequiredMode;
+function requireMode() {
+  if (hasRequiredMode) return mode;
+  hasRequiredMode = 1;
+  (function(exports) {
+    const VersionCheck = requireVersionCheck();
+    const Regex = requireRegex();
+    exports.NUMERIC = {
+      id: "Numeric",
+      bit: 1 << 0,
+      ccBits: [10, 12, 14]
+    };
+    exports.ALPHANUMERIC = {
+      id: "Alphanumeric",
+      bit: 1 << 1,
+      ccBits: [9, 11, 13]
+    };
+    exports.BYTE = {
+      id: "Byte",
+      bit: 1 << 2,
+      ccBits: [8, 16, 16]
+    };
+    exports.KANJI = {
+      id: "Kanji",
+      bit: 1 << 3,
+      ccBits: [8, 10, 12]
+    };
+    exports.MIXED = {
+      bit: -1
+    };
+    exports.getCharCountIndicator = function getCharCountIndicator(mode2, version2) {
+      if (!mode2.ccBits) throw new Error("Invalid mode: " + mode2);
+      if (!VersionCheck.isValid(version2)) {
+        throw new Error("Invalid version: " + version2);
+      }
+      if (version2 >= 1 && version2 < 10) return mode2.ccBits[0];
+      else if (version2 < 27) return mode2.ccBits[1];
+      return mode2.ccBits[2];
+    };
+    exports.getBestModeForData = function getBestModeForData(dataStr) {
+      if (Regex.testNumeric(dataStr)) return exports.NUMERIC;
+      else if (Regex.testAlphanumeric(dataStr)) return exports.ALPHANUMERIC;
+      else if (Regex.testKanji(dataStr)) return exports.KANJI;
+      else return exports.BYTE;
+    };
+    exports.toString = function toString2(mode2) {
+      if (mode2 && mode2.id) return mode2.id;
+      throw new Error("Invalid mode");
+    };
+    exports.isValid = function isValid(mode2) {
+      return mode2 && mode2.bit && mode2.ccBits;
+    };
+    function fromString(string2) {
+      if (typeof string2 !== "string") {
+        throw new Error("Param is not a string");
+      }
+      const lcStr = string2.toLowerCase();
+      switch (lcStr) {
+        case "numeric":
+          return exports.NUMERIC;
+        case "alphanumeric":
+          return exports.ALPHANUMERIC;
+        case "kanji":
+          return exports.KANJI;
+        case "byte":
+          return exports.BYTE;
+        default:
+          throw new Error("Unknown mode: " + string2);
+      }
+    }
+    exports.from = function from2(value, defaultValue) {
+      if (exports.isValid(value)) {
+        return value;
+      }
+      try {
+        return fromString(value);
+      } catch (e) {
+        return defaultValue;
+      }
+    };
+  })(mode);
+  return mode;
+}
+var hasRequiredVersion;
+function requireVersion() {
+  if (hasRequiredVersion) return version;
+  hasRequiredVersion = 1;
+  (function(exports) {
+    const Utils = requireUtils$1();
+    const ECCode = requireErrorCorrectionCode();
+    const ECLevel = requireErrorCorrectionLevel();
+    const Mode = requireMode();
+    const VersionCheck = requireVersionCheck();
+    const G18 = 1 << 12 | 1 << 11 | 1 << 10 | 1 << 9 | 1 << 8 | 1 << 5 | 1 << 2 | 1 << 0;
+    const G18_BCH = Utils.getBCHDigit(G18);
+    function getBestVersionForDataLength(mode2, length, errorCorrectionLevel2) {
+      for (let currentVersion = 1; currentVersion <= 40; currentVersion++) {
+        if (length <= exports.getCapacity(currentVersion, errorCorrectionLevel2, mode2)) {
+          return currentVersion;
+        }
+      }
+      return void 0;
+    }
+    function getReservedBitsCount(mode2, version2) {
+      return Mode.getCharCountIndicator(mode2, version2) + 4;
+    }
+    function getTotalBitsFromDataArray(segments2, version2) {
+      let totalBits = 0;
+      segments2.forEach(function(data) {
+        const reservedBits = getReservedBitsCount(data.mode, version2);
+        totalBits += reservedBits + data.getBitsLength();
+      });
+      return totalBits;
+    }
+    function getBestVersionForMixedData(segments2, errorCorrectionLevel2) {
+      for (let currentVersion = 1; currentVersion <= 40; currentVersion++) {
+        const length = getTotalBitsFromDataArray(segments2, currentVersion);
+        if (length <= exports.getCapacity(currentVersion, errorCorrectionLevel2, Mode.MIXED)) {
+          return currentVersion;
+        }
+      }
+      return void 0;
+    }
+    exports.from = function from2(value, defaultValue) {
+      if (VersionCheck.isValid(value)) {
+        return parseInt(value, 10);
+      }
+      return defaultValue;
+    };
+    exports.getCapacity = function getCapacity(version2, errorCorrectionLevel2, mode2) {
+      if (!VersionCheck.isValid(version2)) {
+        throw new Error("Invalid QR Code version");
+      }
+      if (typeof mode2 === "undefined") mode2 = Mode.BYTE;
+      const totalCodewords = Utils.getSymbolTotalCodewords(version2);
+      const ecTotalCodewords = ECCode.getTotalCodewordsCount(version2, errorCorrectionLevel2);
+      const dataTotalCodewordsBits = (totalCodewords - ecTotalCodewords) * 8;
+      if (mode2 === Mode.MIXED) return dataTotalCodewordsBits;
+      const usableBits = dataTotalCodewordsBits - getReservedBitsCount(mode2, version2);
+      switch (mode2) {
+        case Mode.NUMERIC:
+          return Math.floor(usableBits / 10 * 3);
+        case Mode.ALPHANUMERIC:
+          return Math.floor(usableBits / 11 * 2);
+        case Mode.KANJI:
+          return Math.floor(usableBits / 13);
+        case Mode.BYTE:
+        default:
+          return Math.floor(usableBits / 8);
+      }
+    };
+    exports.getBestVersionForData = function getBestVersionForData(data, errorCorrectionLevel2) {
+      let seg;
+      const ecl = ECLevel.from(errorCorrectionLevel2, ECLevel.M);
+      if (Array.isArray(data)) {
+        if (data.length > 1) {
+          return getBestVersionForMixedData(data, ecl);
+        }
+        if (data.length === 0) {
+          return 1;
+        }
+        seg = data[0];
+      } else {
+        seg = data;
+      }
+      return getBestVersionForDataLength(seg.mode, seg.getLength(), ecl);
+    };
+    exports.getEncodedBits = function getEncodedBits(version2) {
+      if (!VersionCheck.isValid(version2) || version2 < 7) {
+        throw new Error("Invalid QR Code version");
+      }
+      let d = version2 << 12;
+      while (Utils.getBCHDigit(d) - G18_BCH >= 0) {
+        d ^= G18 << Utils.getBCHDigit(d) - G18_BCH;
+      }
+      return version2 << 12 | d;
+    };
+  })(version);
+  return version;
+}
+var formatInfo = {};
+var hasRequiredFormatInfo;
+function requireFormatInfo() {
+  if (hasRequiredFormatInfo) return formatInfo;
+  hasRequiredFormatInfo = 1;
+  const Utils = requireUtils$1();
+  const G15 = 1 << 10 | 1 << 8 | 1 << 5 | 1 << 4 | 1 << 2 | 1 << 1 | 1 << 0;
+  const G15_MASK = 1 << 14 | 1 << 12 | 1 << 10 | 1 << 4 | 1 << 1;
+  const G15_BCH = Utils.getBCHDigit(G15);
+  formatInfo.getEncodedBits = function getEncodedBits(errorCorrectionLevel2, mask) {
+    const data = errorCorrectionLevel2.bit << 3 | mask;
+    let d = data << 10;
+    while (Utils.getBCHDigit(d) - G15_BCH >= 0) {
+      d ^= G15 << Utils.getBCHDigit(d) - G15_BCH;
+    }
+    return (data << 10 | d) ^ G15_MASK;
+  };
+  return formatInfo;
+}
+var segments = {};
+var numericData;
+var hasRequiredNumericData;
+function requireNumericData() {
+  if (hasRequiredNumericData) return numericData;
+  hasRequiredNumericData = 1;
+  const Mode = requireMode();
+  function NumericData(data) {
+    this.mode = Mode.NUMERIC;
+    this.data = data.toString();
+  }
+  NumericData.getBitsLength = function getBitsLength(length) {
+    return 10 * Math.floor(length / 3) + (length % 3 ? length % 3 * 3 + 1 : 0);
+  };
+  NumericData.prototype.getLength = function getLength() {
+    return this.data.length;
+  };
+  NumericData.prototype.getBitsLength = function getBitsLength() {
+    return NumericData.getBitsLength(this.data.length);
+  };
+  NumericData.prototype.write = function write(bitBuffer2) {
+    let i2, group, value;
+    for (i2 = 0; i2 + 3 <= this.data.length; i2 += 3) {
+      group = this.data.substr(i2, 3);
+      value = parseInt(group, 10);
+      bitBuffer2.put(value, 10);
+    }
+    const remainingNum = this.data.length - i2;
+    if (remainingNum > 0) {
+      group = this.data.substr(i2);
+      value = parseInt(group, 10);
+      bitBuffer2.put(value, remainingNum * 3 + 1);
+    }
+  };
+  numericData = NumericData;
+  return numericData;
+}
+var alphanumericData;
+var hasRequiredAlphanumericData;
+function requireAlphanumericData() {
+  if (hasRequiredAlphanumericData) return alphanumericData;
+  hasRequiredAlphanumericData = 1;
+  const Mode = requireMode();
+  const ALPHA_NUM_CHARS = [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "A",
+    "B",
+    "C",
+    "D",
+    "E",
+    "F",
+    "G",
+    "H",
+    "I",
+    "J",
+    "K",
+    "L",
+    "M",
+    "N",
+    "O",
+    "P",
+    "Q",
+    "R",
+    "S",
+    "T",
+    "U",
+    "V",
+    "W",
+    "X",
+    "Y",
+    "Z",
+    " ",
+    "$",
+    "%",
+    "*",
+    "+",
+    "-",
+    ".",
+    "/",
+    ":"
+  ];
+  function AlphanumericData(data) {
+    this.mode = Mode.ALPHANUMERIC;
+    this.data = data;
+  }
+  AlphanumericData.getBitsLength = function getBitsLength(length) {
+    return 11 * Math.floor(length / 2) + 6 * (length % 2);
+  };
+  AlphanumericData.prototype.getLength = function getLength() {
+    return this.data.length;
+  };
+  AlphanumericData.prototype.getBitsLength = function getBitsLength() {
+    return AlphanumericData.getBitsLength(this.data.length);
+  };
+  AlphanumericData.prototype.write = function write(bitBuffer2) {
+    let i2;
+    for (i2 = 0; i2 + 2 <= this.data.length; i2 += 2) {
+      let value = ALPHA_NUM_CHARS.indexOf(this.data[i2]) * 45;
+      value += ALPHA_NUM_CHARS.indexOf(this.data[i2 + 1]);
+      bitBuffer2.put(value, 11);
+    }
+    if (this.data.length % 2) {
+      bitBuffer2.put(ALPHA_NUM_CHARS.indexOf(this.data[i2]), 6);
+    }
+  };
+  alphanumericData = AlphanumericData;
+  return alphanumericData;
+}
+var byteData;
+var hasRequiredByteData;
+function requireByteData() {
+  if (hasRequiredByteData) return byteData;
+  hasRequiredByteData = 1;
+  const Mode = requireMode();
+  function ByteData(data) {
+    this.mode = Mode.BYTE;
+    if (typeof data === "string") {
+      this.data = new TextEncoder().encode(data);
+    } else {
+      this.data = new Uint8Array(data);
+    }
+  }
+  ByteData.getBitsLength = function getBitsLength(length) {
+    return length * 8;
+  };
+  ByteData.prototype.getLength = function getLength() {
+    return this.data.length;
+  };
+  ByteData.prototype.getBitsLength = function getBitsLength() {
+    return ByteData.getBitsLength(this.data.length);
+  };
+  ByteData.prototype.write = function(bitBuffer2) {
+    for (let i2 = 0, l = this.data.length; i2 < l; i2++) {
+      bitBuffer2.put(this.data[i2], 8);
+    }
+  };
+  byteData = ByteData;
+  return byteData;
+}
+var kanjiData;
+var hasRequiredKanjiData;
+function requireKanjiData() {
+  if (hasRequiredKanjiData) return kanjiData;
+  hasRequiredKanjiData = 1;
+  const Mode = requireMode();
+  const Utils = requireUtils$1();
+  function KanjiData(data) {
+    this.mode = Mode.KANJI;
+    this.data = data;
+  }
+  KanjiData.getBitsLength = function getBitsLength(length) {
+    return length * 13;
+  };
+  KanjiData.prototype.getLength = function getLength() {
+    return this.data.length;
+  };
+  KanjiData.prototype.getBitsLength = function getBitsLength() {
+    return KanjiData.getBitsLength(this.data.length);
+  };
+  KanjiData.prototype.write = function(bitBuffer2) {
+    let i2;
+    for (i2 = 0; i2 < this.data.length; i2++) {
+      let value = Utils.toSJIS(this.data[i2]);
+      if (value >= 33088 && value <= 40956) {
+        value -= 33088;
+      } else if (value >= 57408 && value <= 60351) {
+        value -= 49472;
+      } else {
+        throw new Error(
+          "Invalid SJIS character: " + this.data[i2] + "\nMake sure your charset is UTF-8"
+        );
+      }
+      value = (value >>> 8 & 255) * 192 + (value & 255);
+      bitBuffer2.put(value, 13);
+    }
+  };
+  kanjiData = KanjiData;
+  return kanjiData;
+}
+var dijkstra = { exports: {} };
+var hasRequiredDijkstra;
+function requireDijkstra() {
+  if (hasRequiredDijkstra) return dijkstra.exports;
+  hasRequiredDijkstra = 1;
+  (function(module) {
+    var dijkstra2 = {
+      single_source_shortest_paths: function(graph, s2, d) {
+        var predecessors = {};
+        var costs = {};
+        costs[s2] = 0;
+        var open = dijkstra2.PriorityQueue.make();
+        open.push(s2, 0);
+        var closest, u2, v, cost_of_s_to_u, adjacent_nodes, cost_of_e, cost_of_s_to_u_plus_cost_of_e, cost_of_s_to_v, first_visit;
+        while (!open.empty()) {
+          closest = open.pop();
+          u2 = closest.value;
+          cost_of_s_to_u = closest.cost;
+          adjacent_nodes = graph[u2] || {};
+          for (v in adjacent_nodes) {
+            if (adjacent_nodes.hasOwnProperty(v)) {
+              cost_of_e = adjacent_nodes[v];
+              cost_of_s_to_u_plus_cost_of_e = cost_of_s_to_u + cost_of_e;
+              cost_of_s_to_v = costs[v];
+              first_visit = typeof costs[v] === "undefined";
+              if (first_visit || cost_of_s_to_v > cost_of_s_to_u_plus_cost_of_e) {
+                costs[v] = cost_of_s_to_u_plus_cost_of_e;
+                open.push(v, cost_of_s_to_u_plus_cost_of_e);
+                predecessors[v] = u2;
+              }
+            }
+          }
+        }
+        if (typeof d !== "undefined" && typeof costs[d] === "undefined") {
+          var msg = ["Could not find a path from ", s2, " to ", d, "."].join("");
+          throw new Error(msg);
+        }
+        return predecessors;
+      },
+      extract_shortest_path_from_predecessor_list: function(predecessors, d) {
+        var nodes = [];
+        var u2 = d;
+        while (u2) {
+          nodes.push(u2);
+          predecessors[u2];
+          u2 = predecessors[u2];
+        }
+        nodes.reverse();
+        return nodes;
+      },
+      find_path: function(graph, s2, d) {
+        var predecessors = dijkstra2.single_source_shortest_paths(graph, s2, d);
+        return dijkstra2.extract_shortest_path_from_predecessor_list(
+          predecessors,
+          d
+        );
+      },
+      /**
+       * A very naive priority queue implementation.
+       */
+      PriorityQueue: {
+        make: function(opts) {
+          var T = dijkstra2.PriorityQueue, t2 = {}, key;
+          opts = opts || {};
+          for (key in T) {
+            if (T.hasOwnProperty(key)) {
+              t2[key] = T[key];
+            }
+          }
+          t2.queue = [];
+          t2.sorter = opts.sorter || T.default_sorter;
+          return t2;
+        },
+        default_sorter: function(a2, b) {
+          return a2.cost - b.cost;
+        },
+        /**
+         * Add a new item to the queue and ensure the highest priority element
+         * is at the front of the queue.
+         */
+        push: function(value, cost) {
+          var item = { value, cost };
+          this.queue.push(item);
+          this.queue.sort(this.sorter);
+        },
+        /**
+         * Return the highest priority element in the queue.
+         */
+        pop: function() {
+          return this.queue.shift();
+        },
+        empty: function() {
+          return this.queue.length === 0;
+        }
+      }
+    };
+    {
+      module.exports = dijkstra2;
+    }
+  })(dijkstra);
+  return dijkstra.exports;
+}
+var hasRequiredSegments;
+function requireSegments() {
+  if (hasRequiredSegments) return segments;
+  hasRequiredSegments = 1;
+  (function(exports) {
+    const Mode = requireMode();
+    const NumericData = requireNumericData();
+    const AlphanumericData = requireAlphanumericData();
+    const ByteData = requireByteData();
+    const KanjiData = requireKanjiData();
+    const Regex = requireRegex();
+    const Utils = requireUtils$1();
+    const dijkstra2 = requireDijkstra();
+    function getStringByteLength(str) {
+      return unescape(encodeURIComponent(str)).length;
+    }
+    function getSegments(regex2, mode2, str) {
+      const segments2 = [];
+      let result;
+      while ((result = regex2.exec(str)) !== null) {
+        segments2.push({
+          data: result[0],
+          index: result.index,
+          mode: mode2,
+          length: result[0].length
+        });
+      }
+      return segments2;
+    }
+    function getSegmentsFromString(dataStr) {
+      const numSegs = getSegments(Regex.NUMERIC, Mode.NUMERIC, dataStr);
+      const alphaNumSegs = getSegments(Regex.ALPHANUMERIC, Mode.ALPHANUMERIC, dataStr);
+      let byteSegs;
+      let kanjiSegs;
+      if (Utils.isKanjiModeEnabled()) {
+        byteSegs = getSegments(Regex.BYTE, Mode.BYTE, dataStr);
+        kanjiSegs = getSegments(Regex.KANJI, Mode.KANJI, dataStr);
+      } else {
+        byteSegs = getSegments(Regex.BYTE_KANJI, Mode.BYTE, dataStr);
+        kanjiSegs = [];
+      }
+      const segs = numSegs.concat(alphaNumSegs, byteSegs, kanjiSegs);
+      return segs.sort(function(s1, s2) {
+        return s1.index - s2.index;
+      }).map(function(obj) {
+        return {
+          data: obj.data,
+          mode: obj.mode,
+          length: obj.length
+        };
+      });
+    }
+    function getSegmentBitsLength(length, mode2) {
+      switch (mode2) {
+        case Mode.NUMERIC:
+          return NumericData.getBitsLength(length);
+        case Mode.ALPHANUMERIC:
+          return AlphanumericData.getBitsLength(length);
+        case Mode.KANJI:
+          return KanjiData.getBitsLength(length);
+        case Mode.BYTE:
+          return ByteData.getBitsLength(length);
+      }
+    }
+    function mergeSegments(segs) {
+      return segs.reduce(function(acc, curr) {
+        const prevSeg = acc.length - 1 >= 0 ? acc[acc.length - 1] : null;
+        if (prevSeg && prevSeg.mode === curr.mode) {
+          acc[acc.length - 1].data += curr.data;
+          return acc;
+        }
+        acc.push(curr);
+        return acc;
+      }, []);
+    }
+    function buildNodes(segs) {
+      const nodes = [];
+      for (let i2 = 0; i2 < segs.length; i2++) {
+        const seg = segs[i2];
+        switch (seg.mode) {
+          case Mode.NUMERIC:
+            nodes.push([
+              seg,
+              { data: seg.data, mode: Mode.ALPHANUMERIC, length: seg.length },
+              { data: seg.data, mode: Mode.BYTE, length: seg.length }
+            ]);
+            break;
+          case Mode.ALPHANUMERIC:
+            nodes.push([
+              seg,
+              { data: seg.data, mode: Mode.BYTE, length: seg.length }
+            ]);
+            break;
+          case Mode.KANJI:
+            nodes.push([
+              seg,
+              { data: seg.data, mode: Mode.BYTE, length: getStringByteLength(seg.data) }
+            ]);
+            break;
+          case Mode.BYTE:
+            nodes.push([
+              { data: seg.data, mode: Mode.BYTE, length: getStringByteLength(seg.data) }
+            ]);
+        }
+      }
+      return nodes;
+    }
+    function buildGraph(nodes, version2) {
+      const table = {};
+      const graph = { start: {} };
+      let prevNodeIds = ["start"];
+      for (let i2 = 0; i2 < nodes.length; i2++) {
+        const nodeGroup = nodes[i2];
+        const currentNodeIds = [];
+        for (let j = 0; j < nodeGroup.length; j++) {
+          const node = nodeGroup[j];
+          const key = "" + i2 + j;
+          currentNodeIds.push(key);
+          table[key] = { node, lastCount: 0 };
+          graph[key] = {};
+          for (let n2 = 0; n2 < prevNodeIds.length; n2++) {
+            const prevNodeId = prevNodeIds[n2];
+            if (table[prevNodeId] && table[prevNodeId].node.mode === node.mode) {
+              graph[prevNodeId][key] = getSegmentBitsLength(table[prevNodeId].lastCount + node.length, node.mode) - getSegmentBitsLength(table[prevNodeId].lastCount, node.mode);
+              table[prevNodeId].lastCount += node.length;
+            } else {
+              if (table[prevNodeId]) table[prevNodeId].lastCount = node.length;
+              graph[prevNodeId][key] = getSegmentBitsLength(node.length, node.mode) + 4 + Mode.getCharCountIndicator(node.mode, version2);
+            }
+          }
+        }
+        prevNodeIds = currentNodeIds;
+      }
+      for (let n2 = 0; n2 < prevNodeIds.length; n2++) {
+        graph[prevNodeIds[n2]].end = 0;
+      }
+      return { map: graph, table };
+    }
+    function buildSingleSegment(data, modesHint) {
+      let mode2;
+      const bestMode = Mode.getBestModeForData(data);
+      mode2 = Mode.from(modesHint, bestMode);
+      if (mode2 !== Mode.BYTE && mode2.bit < bestMode.bit) {
+        throw new Error('"' + data + '" cannot be encoded with mode ' + Mode.toString(mode2) + ".\n Suggested mode is: " + Mode.toString(bestMode));
+      }
+      if (mode2 === Mode.KANJI && !Utils.isKanjiModeEnabled()) {
+        mode2 = Mode.BYTE;
+      }
+      switch (mode2) {
+        case Mode.NUMERIC:
+          return new NumericData(data);
+        case Mode.ALPHANUMERIC:
+          return new AlphanumericData(data);
+        case Mode.KANJI:
+          return new KanjiData(data);
+        case Mode.BYTE:
+          return new ByteData(data);
+      }
+    }
+    exports.fromArray = function fromArray(array2) {
+      return array2.reduce(function(acc, seg) {
+        if (typeof seg === "string") {
+          acc.push(buildSingleSegment(seg, null));
+        } else if (seg.data) {
+          acc.push(buildSingleSegment(seg.data, seg.mode));
+        }
+        return acc;
+      }, []);
+    };
+    exports.fromString = function fromString(data, version2) {
+      const segs = getSegmentsFromString(data, Utils.isKanjiModeEnabled());
+      const nodes = buildNodes(segs);
+      const graph = buildGraph(nodes, version2);
+      const path = dijkstra2.find_path(graph.map, "start", "end");
+      const optimizedSegs = [];
+      for (let i2 = 1; i2 < path.length - 1; i2++) {
+        optimizedSegs.push(graph.table[path[i2]].node);
+      }
+      return exports.fromArray(mergeSegments(optimizedSegs));
+    };
+    exports.rawSplit = function rawSplit(data) {
+      return exports.fromArray(
+        getSegmentsFromString(data, Utils.isKanjiModeEnabled())
+      );
+    };
+  })(segments);
+  return segments;
+}
+var hasRequiredQrcode;
+function requireQrcode() {
+  if (hasRequiredQrcode) return qrcode;
+  hasRequiredQrcode = 1;
+  const Utils = requireUtils$1();
+  const ECLevel = requireErrorCorrectionLevel();
+  const BitBuffer = requireBitBuffer();
+  const BitMatrix = requireBitMatrix();
+  const AlignmentPattern = requireAlignmentPattern();
+  const FinderPattern = requireFinderPattern();
+  const MaskPattern = requireMaskPattern();
+  const ECCode = requireErrorCorrectionCode();
+  const ReedSolomonEncoder = requireReedSolomonEncoder();
+  const Version = requireVersion();
+  const FormatInfo = requireFormatInfo();
+  const Mode = requireMode();
+  const Segments = requireSegments();
+  function setupFinderPattern(matrix, version2) {
+    const size2 = matrix.size;
+    const pos = FinderPattern.getPositions(version2);
+    for (let i2 = 0; i2 < pos.length; i2++) {
+      const row = pos[i2][0];
+      const col = pos[i2][1];
+      for (let r2 = -1; r2 <= 7; r2++) {
+        if (row + r2 <= -1 || size2 <= row + r2) continue;
+        for (let c2 = -1; c2 <= 7; c2++) {
+          if (col + c2 <= -1 || size2 <= col + c2) continue;
+          if (r2 >= 0 && r2 <= 6 && (c2 === 0 || c2 === 6) || c2 >= 0 && c2 <= 6 && (r2 === 0 || r2 === 6) || r2 >= 2 && r2 <= 4 && c2 >= 2 && c2 <= 4) {
+            matrix.set(row + r2, col + c2, true, true);
+          } else {
+            matrix.set(row + r2, col + c2, false, true);
+          }
+        }
+      }
+    }
+  }
+  function setupTimingPattern(matrix) {
+    const size2 = matrix.size;
+    for (let r2 = 8; r2 < size2 - 8; r2++) {
+      const value = r2 % 2 === 0;
+      matrix.set(r2, 6, value, true);
+      matrix.set(6, r2, value, true);
+    }
+  }
+  function setupAlignmentPattern(matrix, version2) {
+    const pos = AlignmentPattern.getPositions(version2);
+    for (let i2 = 0; i2 < pos.length; i2++) {
+      const row = pos[i2][0];
+      const col = pos[i2][1];
+      for (let r2 = -2; r2 <= 2; r2++) {
+        for (let c2 = -2; c2 <= 2; c2++) {
+          if (r2 === -2 || r2 === 2 || c2 === -2 || c2 === 2 || r2 === 0 && c2 === 0) {
+            matrix.set(row + r2, col + c2, true, true);
+          } else {
+            matrix.set(row + r2, col + c2, false, true);
+          }
+        }
+      }
+    }
+  }
+  function setupVersionInfo(matrix, version2) {
+    const size2 = matrix.size;
+    const bits = Version.getEncodedBits(version2);
+    let row, col, mod;
+    for (let i2 = 0; i2 < 18; i2++) {
+      row = Math.floor(i2 / 3);
+      col = i2 % 3 + size2 - 8 - 3;
+      mod = (bits >> i2 & 1) === 1;
+      matrix.set(row, col, mod, true);
+      matrix.set(col, row, mod, true);
+    }
+  }
+  function setupFormatInfo(matrix, errorCorrectionLevel2, maskPattern2) {
+    const size2 = matrix.size;
+    const bits = FormatInfo.getEncodedBits(errorCorrectionLevel2, maskPattern2);
+    let i2, mod;
+    for (i2 = 0; i2 < 15; i2++) {
+      mod = (bits >> i2 & 1) === 1;
+      if (i2 < 6) {
+        matrix.set(i2, 8, mod, true);
+      } else if (i2 < 8) {
+        matrix.set(i2 + 1, 8, mod, true);
+      } else {
+        matrix.set(size2 - 15 + i2, 8, mod, true);
+      }
+      if (i2 < 8) {
+        matrix.set(8, size2 - i2 - 1, mod, true);
+      } else if (i2 < 9) {
+        matrix.set(8, 15 - i2 - 1 + 1, mod, true);
+      } else {
+        matrix.set(8, 15 - i2 - 1, mod, true);
+      }
+    }
+    matrix.set(size2 - 8, 8, 1, true);
+  }
+  function setupData(matrix, data) {
+    const size2 = matrix.size;
+    let inc = -1;
+    let row = size2 - 1;
+    let bitIndex = 7;
+    let byteIndex = 0;
+    for (let col = size2 - 1; col > 0; col -= 2) {
+      if (col === 6) col--;
+      while (true) {
+        for (let c2 = 0; c2 < 2; c2++) {
+          if (!matrix.isReserved(row, col - c2)) {
+            let dark = false;
+            if (byteIndex < data.length) {
+              dark = (data[byteIndex] >>> bitIndex & 1) === 1;
+            }
+            matrix.set(row, col - c2, dark);
+            bitIndex--;
+            if (bitIndex === -1) {
+              byteIndex++;
+              bitIndex = 7;
+            }
+          }
+        }
+        row += inc;
+        if (row < 0 || size2 <= row) {
+          row -= inc;
+          inc = -inc;
+          break;
+        }
+      }
+    }
+  }
+  function createData(version2, errorCorrectionLevel2, segments2) {
+    const buffer = new BitBuffer();
+    segments2.forEach(function(data) {
+      buffer.put(data.mode.bit, 4);
+      buffer.put(data.getLength(), Mode.getCharCountIndicator(data.mode, version2));
+      data.write(buffer);
+    });
+    const totalCodewords = Utils.getSymbolTotalCodewords(version2);
+    const ecTotalCodewords = ECCode.getTotalCodewordsCount(version2, errorCorrectionLevel2);
+    const dataTotalCodewordsBits = (totalCodewords - ecTotalCodewords) * 8;
+    if (buffer.getLengthInBits() + 4 <= dataTotalCodewordsBits) {
+      buffer.put(0, 4);
+    }
+    while (buffer.getLengthInBits() % 8 !== 0) {
+      buffer.putBit(0);
+    }
+    const remainingByte = (dataTotalCodewordsBits - buffer.getLengthInBits()) / 8;
+    for (let i2 = 0; i2 < remainingByte; i2++) {
+      buffer.put(i2 % 2 ? 17 : 236, 8);
+    }
+    return createCodewords(buffer, version2, errorCorrectionLevel2);
+  }
+  function createCodewords(bitBuffer2, version2, errorCorrectionLevel2) {
+    const totalCodewords = Utils.getSymbolTotalCodewords(version2);
+    const ecTotalCodewords = ECCode.getTotalCodewordsCount(version2, errorCorrectionLevel2);
+    const dataTotalCodewords = totalCodewords - ecTotalCodewords;
+    const ecTotalBlocks = ECCode.getBlocksCount(version2, errorCorrectionLevel2);
+    const blocksInGroup2 = totalCodewords % ecTotalBlocks;
+    const blocksInGroup1 = ecTotalBlocks - blocksInGroup2;
+    const totalCodewordsInGroup1 = Math.floor(totalCodewords / ecTotalBlocks);
+    const dataCodewordsInGroup1 = Math.floor(dataTotalCodewords / ecTotalBlocks);
+    const dataCodewordsInGroup2 = dataCodewordsInGroup1 + 1;
+    const ecCount = totalCodewordsInGroup1 - dataCodewordsInGroup1;
+    const rs = new ReedSolomonEncoder(ecCount);
+    let offset2 = 0;
+    const dcData = new Array(ecTotalBlocks);
+    const ecData = new Array(ecTotalBlocks);
+    let maxDataSize = 0;
+    const buffer = new Uint8Array(bitBuffer2.buffer);
+    for (let b = 0; b < ecTotalBlocks; b++) {
+      const dataSize = b < blocksInGroup1 ? dataCodewordsInGroup1 : dataCodewordsInGroup2;
+      dcData[b] = buffer.slice(offset2, offset2 + dataSize);
+      ecData[b] = rs.encode(dcData[b]);
+      offset2 += dataSize;
+      maxDataSize = Math.max(maxDataSize, dataSize);
+    }
+    const data = new Uint8Array(totalCodewords);
+    let index2 = 0;
+    let i2, r2;
+    for (i2 = 0; i2 < maxDataSize; i2++) {
+      for (r2 = 0; r2 < ecTotalBlocks; r2++) {
+        if (i2 < dcData[r2].length) {
+          data[index2++] = dcData[r2][i2];
+        }
+      }
+    }
+    for (i2 = 0; i2 < ecCount; i2++) {
+      for (r2 = 0; r2 < ecTotalBlocks; r2++) {
+        data[index2++] = ecData[r2][i2];
+      }
+    }
+    return data;
+  }
+  function createSymbol(data, version2, errorCorrectionLevel2, maskPattern2) {
+    let segments2;
+    if (Array.isArray(data)) {
+      segments2 = Segments.fromArray(data);
+    } else if (typeof data === "string") {
+      let estimatedVersion = version2;
+      if (!estimatedVersion) {
+        const rawSegments = Segments.rawSplit(data);
+        estimatedVersion = Version.getBestVersionForData(rawSegments, errorCorrectionLevel2);
+      }
+      segments2 = Segments.fromString(data, estimatedVersion || 40);
+    } else {
+      throw new Error("Invalid data");
+    }
+    const bestVersion = Version.getBestVersionForData(segments2, errorCorrectionLevel2);
+    if (!bestVersion) {
+      throw new Error("The amount of data is too big to be stored in a QR Code");
+    }
+    if (!version2) {
+      version2 = bestVersion;
+    } else if (version2 < bestVersion) {
+      throw new Error(
+        "\nThe chosen QR Code version cannot contain this amount of data.\nMinimum version required to store current data is: " + bestVersion + ".\n"
+      );
+    }
+    const dataBits = createData(version2, errorCorrectionLevel2, segments2);
+    const moduleCount = Utils.getSymbolSize(version2);
+    const modules = new BitMatrix(moduleCount);
+    setupFinderPattern(modules, version2);
+    setupTimingPattern(modules);
+    setupAlignmentPattern(modules, version2);
+    setupFormatInfo(modules, errorCorrectionLevel2, 0);
+    if (version2 >= 7) {
+      setupVersionInfo(modules, version2);
+    }
+    setupData(modules, dataBits);
+    if (isNaN(maskPattern2)) {
+      maskPattern2 = MaskPattern.getBestMask(
+        modules,
+        setupFormatInfo.bind(null, modules, errorCorrectionLevel2)
+      );
+    }
+    MaskPattern.applyMask(maskPattern2, modules);
+    setupFormatInfo(modules, errorCorrectionLevel2, maskPattern2);
+    return {
+      modules,
+      version: version2,
+      errorCorrectionLevel: errorCorrectionLevel2,
+      maskPattern: maskPattern2,
+      segments: segments2
+    };
+  }
+  qrcode.create = function create2(data, options2) {
+    if (typeof data === "undefined" || data === "") {
+      throw new Error("No input text");
+    }
+    let errorCorrectionLevel2 = ECLevel.M;
+    let version2;
+    let mask;
+    if (typeof options2 !== "undefined") {
+      errorCorrectionLevel2 = ECLevel.from(options2.errorCorrectionLevel, ECLevel.M);
+      version2 = Version.from(options2.version);
+      mask = MaskPattern.from(options2.maskPattern);
+      if (options2.toSJISFunc) {
+        Utils.setToSJISFunction(options2.toSJISFunc);
+      }
+    }
+    return createSymbol(data, version2, errorCorrectionLevel2, mask);
+  };
+  return qrcode;
+}
+var canvas = {};
+var utils = {};
+var hasRequiredUtils;
+function requireUtils() {
+  if (hasRequiredUtils) return utils;
+  hasRequiredUtils = 1;
+  (function(exports) {
+    function hex2rgba(hex2) {
+      if (typeof hex2 === "number") {
+        hex2 = hex2.toString();
+      }
+      if (typeof hex2 !== "string") {
+        throw new Error("Color should be defined as hex string");
+      }
+      let hexCode = hex2.slice().replace("#", "").split("");
+      if (hexCode.length < 3 || hexCode.length === 5 || hexCode.length > 8) {
+        throw new Error("Invalid hex color: " + hex2);
+      }
+      if (hexCode.length === 3 || hexCode.length === 4) {
+        hexCode = Array.prototype.concat.apply([], hexCode.map(function(c2) {
+          return [c2, c2];
+        }));
+      }
+      if (hexCode.length === 6) hexCode.push("F", "F");
+      const hexValue = parseInt(hexCode.join(""), 16);
+      return {
+        r: hexValue >> 24 & 255,
+        g: hexValue >> 16 & 255,
+        b: hexValue >> 8 & 255,
+        a: hexValue & 255,
+        hex: "#" + hexCode.slice(0, 6).join("")
+      };
+    }
+    exports.getOptions = function getOptions(options2) {
+      if (!options2) options2 = {};
+      if (!options2.color) options2.color = {};
+      const margin = typeof options2.margin === "undefined" || options2.margin === null || options2.margin < 0 ? 4 : options2.margin;
+      const width = options2.width && options2.width >= 21 ? options2.width : void 0;
+      const scale = options2.scale || 4;
+      return {
+        width,
+        scale: width ? 4 : scale,
+        margin,
+        color: {
+          dark: hex2rgba(options2.color.dark || "#000000ff"),
+          light: hex2rgba(options2.color.light || "#ffffffff")
+        },
+        type: options2.type,
+        rendererOpts: options2.rendererOpts || {}
+      };
+    };
+    exports.getScale = function getScale2(qrSize, opts) {
+      return opts.width && opts.width >= qrSize + opts.margin * 2 ? opts.width / (qrSize + opts.margin * 2) : opts.scale;
+    };
+    exports.getImageWidth = function getImageWidth(qrSize, opts) {
+      const scale = exports.getScale(qrSize, opts);
+      return Math.floor((qrSize + opts.margin * 2) * scale);
+    };
+    exports.qrToImageData = function qrToImageData(imgData, qr, opts) {
+      const size2 = qr.modules.size;
+      const data = qr.modules.data;
+      const scale = exports.getScale(size2, opts);
+      const symbolSize = Math.floor((size2 + opts.margin * 2) * scale);
+      const scaledMargin = opts.margin * scale;
+      const palette = [opts.color.light, opts.color.dark];
+      for (let i2 = 0; i2 < symbolSize; i2++) {
+        for (let j = 0; j < symbolSize; j++) {
+          let posDst = (i2 * symbolSize + j) * 4;
+          let pxColor = opts.color.light;
+          if (i2 >= scaledMargin && j >= scaledMargin && i2 < symbolSize - scaledMargin && j < symbolSize - scaledMargin) {
+            const iSrc = Math.floor((i2 - scaledMargin) / scale);
+            const jSrc = Math.floor((j - scaledMargin) / scale);
+            pxColor = palette[data[iSrc * size2 + jSrc] ? 1 : 0];
+          }
+          imgData[posDst++] = pxColor.r;
+          imgData[posDst++] = pxColor.g;
+          imgData[posDst++] = pxColor.b;
+          imgData[posDst] = pxColor.a;
+        }
+      }
+    };
+  })(utils);
+  return utils;
+}
+var hasRequiredCanvas;
+function requireCanvas() {
+  if (hasRequiredCanvas) return canvas;
+  hasRequiredCanvas = 1;
+  (function(exports) {
+    const Utils = requireUtils();
+    function clearCanvas(ctx, canvas2, size2) {
+      ctx.clearRect(0, 0, canvas2.width, canvas2.height);
+      if (!canvas2.style) canvas2.style = {};
+      canvas2.height = size2;
+      canvas2.width = size2;
+      canvas2.style.height = size2 + "px";
+      canvas2.style.width = size2 + "px";
+    }
+    function getCanvasElement() {
+      try {
+        return document.createElement("canvas");
+      } catch (e) {
+        throw new Error("You need to specify a canvas element");
+      }
+    }
+    exports.render = function render(qrData, canvas2, options2) {
+      let opts = options2;
+      let canvasEl = canvas2;
+      if (typeof opts === "undefined" && (!canvas2 || !canvas2.getContext)) {
+        opts = canvas2;
+        canvas2 = void 0;
+      }
+      if (!canvas2) {
+        canvasEl = getCanvasElement();
+      }
+      opts = Utils.getOptions(opts);
+      const size2 = Utils.getImageWidth(qrData.modules.size, opts);
+      const ctx = canvasEl.getContext("2d");
+      const image = ctx.createImageData(size2, size2);
+      Utils.qrToImageData(image.data, qrData, opts);
+      clearCanvas(ctx, canvasEl, size2);
+      ctx.putImageData(image, 0, 0);
+      return canvasEl;
+    };
+    exports.renderToDataURL = function renderToDataURL(qrData, canvas2, options2) {
+      let opts = options2;
+      if (typeof opts === "undefined" && (!canvas2 || !canvas2.getContext)) {
+        opts = canvas2;
+        canvas2 = void 0;
+      }
+      if (!opts) opts = {};
+      const canvasEl = exports.render(qrData, canvas2, opts);
+      const type = opts.type || "image/png";
+      const rendererOpts = opts.rendererOpts || {};
+      return canvasEl.toDataURL(type, rendererOpts.quality);
+    };
+  })(canvas);
+  return canvas;
+}
+var svgTag = {};
+var hasRequiredSvgTag;
+function requireSvgTag() {
+  if (hasRequiredSvgTag) return svgTag;
+  hasRequiredSvgTag = 1;
+  const Utils = requireUtils();
+  function getColorAttrib(color2, attrib) {
+    const alpha = color2.a / 255;
+    const str = attrib + '="' + color2.hex + '"';
+    return alpha < 1 ? str + " " + attrib + '-opacity="' + alpha.toFixed(2).slice(1) + '"' : str;
+  }
+  function svgCmd(cmd, x2, y2) {
+    let str = cmd + x2;
+    if (typeof y2 !== "undefined") str += " " + y2;
+    return str;
+  }
+  function qrToPath(data, size2, margin) {
+    let path = "";
+    let moveBy = 0;
+    let newRow = false;
+    let lineLength = 0;
+    for (let i2 = 0; i2 < data.length; i2++) {
+      const col = Math.floor(i2 % size2);
+      const row = Math.floor(i2 / size2);
+      if (!col && !newRow) newRow = true;
+      if (data[i2]) {
+        lineLength++;
+        if (!(i2 > 0 && col > 0 && data[i2 - 1])) {
+          path += newRow ? svgCmd("M", col + margin, 0.5 + row + margin) : svgCmd("m", moveBy, 0);
+          moveBy = 0;
+          newRow = false;
+        }
+        if (!(col + 1 < size2 && data[i2 + 1])) {
+          path += svgCmd("h", lineLength);
+          lineLength = 0;
+        }
+      } else {
+        moveBy++;
+      }
+    }
+    return path;
+  }
+  svgTag.render = function render(qrData, options2, cb) {
+    const opts = Utils.getOptions(options2);
+    const size2 = qrData.modules.size;
+    const data = qrData.modules.data;
+    const qrcodesize = size2 + opts.margin * 2;
+    const bg = !opts.color.light.a ? "" : "<path " + getColorAttrib(opts.color.light, "fill") + ' d="M0 0h' + qrcodesize + "v" + qrcodesize + 'H0z"/>';
+    const path = "<path " + getColorAttrib(opts.color.dark, "stroke") + ' d="' + qrToPath(data, size2, opts.margin) + '"/>';
+    const viewBox = 'viewBox="0 0 ' + qrcodesize + " " + qrcodesize + '"';
+    const width = !opts.width ? "" : 'width="' + opts.width + '" height="' + opts.width + '" ';
+    const svgTag2 = '<svg xmlns="http://www.w3.org/2000/svg" ' + width + viewBox + ' shape-rendering="crispEdges">' + bg + path + "</svg>\n";
+    if (typeof cb === "function") {
+      cb(null, svgTag2);
+    }
+    return svgTag2;
+  };
+  return svgTag;
+}
+var hasRequiredBrowser;
+function requireBrowser() {
+  if (hasRequiredBrowser) return browser;
+  hasRequiredBrowser = 1;
+  const canPromise2 = requireCanPromise();
+  const QRCode2 = requireQrcode();
+  const CanvasRenderer = requireCanvas();
+  const SvgRenderer = requireSvgTag();
+  function renderCanvas(renderFunc, canvas2, text2, opts, cb) {
+    const args = [].slice.call(arguments, 1);
+    const argsNum = args.length;
+    const isLastArgCb = typeof args[argsNum - 1] === "function";
+    if (!isLastArgCb && !canPromise2()) {
+      throw new Error("Callback required as last argument");
+    }
+    if (isLastArgCb) {
+      if (argsNum < 2) {
+        throw new Error("Too few arguments provided");
+      }
+      if (argsNum === 2) {
+        cb = text2;
+        text2 = canvas2;
+        canvas2 = opts = void 0;
+      } else if (argsNum === 3) {
+        if (canvas2.getContext && typeof cb === "undefined") {
+          cb = opts;
+          opts = void 0;
+        } else {
+          cb = opts;
+          opts = text2;
+          text2 = canvas2;
+          canvas2 = void 0;
+        }
+      }
+    } else {
+      if (argsNum < 1) {
+        throw new Error("Too few arguments provided");
+      }
+      if (argsNum === 1) {
+        text2 = canvas2;
+        canvas2 = opts = void 0;
+      } else if (argsNum === 2 && !canvas2.getContext) {
+        opts = text2;
+        text2 = canvas2;
+        canvas2 = void 0;
+      }
+      return new Promise(function(resolve, reject) {
+        try {
+          const data = QRCode2.create(text2, opts);
+          resolve(renderFunc(data, canvas2, opts));
+        } catch (e) {
+          reject(e);
+        }
+      });
+    }
+    try {
+      const data = QRCode2.create(text2, opts);
+      cb(null, renderFunc(data, canvas2, opts));
+    } catch (e) {
+      cb(e);
+    }
+  }
+  browser.create = QRCode2.create;
+  browser.toCanvas = renderCanvas.bind(null, CanvasRenderer.render);
+  browser.toDataURL = renderCanvas.bind(null, CanvasRenderer.renderToDataURL);
+  browser.toString = renderCanvas.bind(null, function(data, _, opts) {
+    return SvgRenderer.render(data, opts);
+  });
+  return browser;
+}
+var browserExports = requireBrowser();
+const QRCode = /* @__PURE__ */ getDefaultExportFromCjs(browserExports);
+function formatRemaining(ms) {
+  const total = Math.max(0, Math.ceil(ms / 1e3));
+  return `${Math.floor(total / 60)}:${String(total % 60).padStart(2, "0")}`;
+}
+function PairPhoneDialog({ status }) {
+  const [open, setOpen] = reactExports.useState(false);
+  const [qr, setQr] = reactExports.useState(null);
+  const [expiresAt, setExpiresAt] = reactExports.useState(null);
+  const [now, setNow] = reactExports.useState(Date.now());
+  const createCode = useCreatePairingCode();
+  const devices = useMobileDevices(open ? 2e3 : false);
+  const knownDevices = reactExports.useRef(null);
+  function generate() {
+    createCode.mutate(void 0, {
+      onSuccess: async (code) => {
+        setQr(await QRCode.toDataURL(code.payload, { width: 280, margin: 1, errorCorrectionLevel: "M" }));
+        setExpiresAt(new Date(code.expiresAt).getTime());
+      }
+    });
+  }
+  reactExports.useEffect(() => {
+    if (open) {
+      knownDevices.current = null;
+      generate();
+    } else {
+      setQr(null);
+      setExpiresAt(null);
+    }
+  }, [open]);
+  reactExports.useEffect(() => {
+    if (!open) return;
+    const timer = setInterval(() => setNow(Date.now()), 1e3);
+    return () => clearInterval(timer);
+  }, [open]);
+  reactExports.useEffect(() => {
+    if (!open || !devices.data) return;
+    if (knownDevices.current == null) {
+      knownDevices.current = devices.data.length;
+    } else if (devices.data.length > knownDevices.current) {
+      setOpen(false);
+    }
+  }, [devices.data, open]);
+  const remaining = expiresAt ? expiresAt - now : 0;
+  const expired = expiresAt != null && remaining <= 0;
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs(Dialog, { open, onOpenChange: setOpen, children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTrigger, { asChild: true, children: /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { size: "sm", disabled: !status.running, children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsx(QrCode, { className: "size-4" }),
+      "إضافة هاتف"
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogContent, { children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs(DialogHeader, { children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogTitle, { children: "اقتران هاتف جديد" }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(DialogDescription, { children: "افتح تطبيق Spice ERP على الهاتف (متصل بنفس شبكة الواي فاي) وامسح الرمز. الرمز لمرة واحدة وصالح 5 دقائق." })
+      ] }),
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-col items-center gap-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "flex size-[300px] items-center justify-center rounded-lg border border-border bg-white p-2", children: qr && !expired ? /* @__PURE__ */ jsxRuntimeExports.jsx("img", { src: qr, alt: "رمز الاقتران", className: "size-[280px]" }) : /* @__PURE__ */ jsxRuntimeExports.jsx("span", { className: "px-6 text-center text-sm text-neutral-500", children: createCode.isPending ? "جاري إنشاء الرمز..." : expired ? "انتهت صلاحية الرمز" : "" }) }),
+        expiresAt && !expired && /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-xs text-muted-foreground tabular-nums", children: [
+          "ينتهي خلال ",
+          formatRemaining(remaining)
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(Button, { type: "button", variant: "outline", size: "sm", onClick: generate, disabled: createCode.isPending, children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(RefreshCw, { className: "size-3.5" }),
+          "رمز جديد"
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("p", { className: "text-center text-xs text-muted-foreground", children: [
+          "العنوان على الشبكة: ",
+          status.hosts.map((h) => `${h.address}:${status.port}`).join(" · ") || "—"
+        ] })
+      ] })
+    ] })
+  ] });
+}
+function timeAgo(value) {
+  if (!value) return "—";
+  const ms = Date.now() - (/* @__PURE__ */ new Date(`${value.replace(" ", "T")}Z`)).getTime();
+  const minutes = Math.round(ms / 6e4);
+  if (minutes < 1) return "الآن";
+  if (minutes < 60) return `منذ ${minutes} دقيقة`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `منذ ${hours} ساعة`;
+  return formatDate(value);
+}
+function MobileAccessTab() {
+  const status = useMobileStatus();
+  const devices = useMobileDevices();
+  const toggle = useToggleMobileAccess();
+  const revoke = useRevokeDevice();
+  if (status.isLoading) return /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingState, { rows: 3 });
+  if (status.error || !status.data) {
+    return /* @__PURE__ */ jsxRuntimeExports.jsx(ErrorState, { message: status.error?.message ?? "تعذّر تحميل الحالة", onRetry: () => status.refetch() });
+  }
+  const s2 = status.data;
+  function handleRevoke(id, name) {
+    if (!window.confirm(`فصل الجهاز «${name}»؟ لن يتمكن من الاتصال إلا بعد اقتران جديد.`)) return;
+    revoke.mutate(id);
+  }
+  return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "space-y-4", children: [
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { className: "space-y-4 p-5", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-wrap items-center justify-between gap-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-sm font-medium", children: [
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Wifi, { className: "size-4" }),
+            "الاتصال بالهاتف عبر الشبكة المحلية",
+            /* @__PURE__ */ jsxRuntimeExports.jsx(Badge, { variant: s2.running ? "success" : "secondary", children: s2.running ? "مفعّل" : "متوقف" })
+          ] }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "mt-1 text-sm text-muted-foreground", children: "يسمح لتطبيق الهاتف بالاتصال بهذا الجهاز عبر الواي فاي (نفس المودم). يعمل فقط أثناء تشغيل البرنامج، ولا يُسمح إلا للهواتف المقترنة." })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(
+          Button,
+          {
+            variant: s2.enabled ? "outline" : "default",
+            onClick: () => toggle.mutate(!s2.enabled),
+            disabled: toggle.isPending,
+            children: toggle.isPending ? "جاري التنفيذ..." : s2.enabled ? "إيقاف" : "تفعيل"
+          }
+        )
+      ] }),
+      s2.running && /* @__PURE__ */ jsxRuntimeExports.jsxs("dl", { className: "grid grid-cols-1 gap-3 rounded-md border border-border bg-muted/40 p-3 text-sm sm:grid-cols-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("dt", { className: "text-xs text-muted-foreground", children: "العنوان على الشبكة" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: "tabular-nums font-medium", dir: "ltr", children: s2.hosts.length ? s2.hosts.map((h) => `${h.address}:${s2.port}`).join(" · ") : "لا توجد شبكة متصلة" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("dt", { className: "text-xs text-muted-foreground", children: "الاكتشاف التلقائي" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: "font-medium", children: s2.discovery ? "يعمل — الهاتف يجد الجهاز تلقائياً" : "غير متاح — استخدم رمز QR" })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("dt", { className: "text-xs text-muted-foreground", children: "اسم الجهاز" }),
+          /* @__PURE__ */ jsxRuntimeExports.jsx("dd", { className: "font-medium", children: s2.desktopName })
+        ] })
+      ] })
+    ] }) }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(Card, { children: /* @__PURE__ */ jsxRuntimeExports.jsxs(CardContent, { className: "space-y-3 p-5", children: [
+      /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-3", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center gap-2 text-sm font-medium", children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx(Smartphone, { className: "size-4" }),
+          "الهواتف المقترنة"
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsx(PairPhoneDialog, { status: s2 })
+      ] }),
+      devices.isLoading ? /* @__PURE__ */ jsxRuntimeExports.jsx(LoadingState, { rows: 2 }) : !devices.data || devices.data.length === 0 ? /* @__PURE__ */ jsxRuntimeExports.jsx("p", { className: "text-sm text-muted-foreground", children: s2.running ? "لا توجد هواتف مقترنة بعد — اضغط «إضافة هاتف» وامسح الرمز." : "فعّل الاتصال أولاً ثم أضف هاتفاً." }) : /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "divide-y divide-border rounded-md border border-border", children: devices.data.map((d) => /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex items-center justify-between gap-3 px-3 py-2.5", children: [
+        /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { children: [
+          /* @__PURE__ */ jsxRuntimeExports.jsx("div", { className: "text-sm font-medium text-foreground", children: d.name }),
+          /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "text-xs text-muted-foreground", children: [
+            "آخر ظهور: ",
+            timeAgo(d.last_seen_at),
+            " · اقترن في ",
+            formatDate(d.created_at)
+          ] })
+        ] }),
+        /* @__PURE__ */ jsxRuntimeExports.jsxs(
+          Button,
+          {
+            variant: "ghost",
+            size: "sm",
+            className: "text-destructive hover:text-destructive",
+            onClick: () => handleRevoke(d.id, d.name),
+            disabled: revoke.isPending,
+            children: [
+              /* @__PURE__ */ jsxRuntimeExports.jsx(Trash2, { className: "size-4" }),
+              "فصل"
+            ]
+          }
+        )
+      ] }, d.id)) })
+    ] }) })
+  ] });
+}
 const businessProfileSchema = object$1({
   businessName: string$1().trim().max(200).optional().or(literal("")),
   address: string$1().trim().max(300).optional().or(literal("")),
@@ -75031,13 +77415,15 @@ function DataBackupTab() {
 function SettingsPage() {
   const [tab, setTab] = reactExports.useState("profile");
   return /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "flex flex-1 flex-col", children: [
-    /* @__PURE__ */ jsxRuntimeExports.jsx(PageHeader, { title: "الإعدادات", subtitle: "بيانات الشركة والنسخ الاحتياطي" }),
+    /* @__PURE__ */ jsxRuntimeExports.jsx(PageHeader, { title: "الإعدادات", subtitle: "بيانات الشركة والنسخ الاحتياطي والهاتف المحمول" }),
     /* @__PURE__ */ jsxRuntimeExports.jsxs("div", { className: "mb-4 flex gap-2", children: [
       /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: tab === "profile" ? "default" : "ghost", size: "sm", onClick: () => setTab("profile"), children: "ملف الشركة" }),
-      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: tab === "backup" ? "default" : "ghost", size: "sm", onClick: () => setTab("backup"), children: "النسخ الاحتياطي" })
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: tab === "backup" ? "default" : "ghost", size: "sm", onClick: () => setTab("backup"), children: "النسخ الاحتياطي" }),
+      /* @__PURE__ */ jsxRuntimeExports.jsx(Button, { variant: tab === "mobile" ? "default" : "ghost", size: "sm", onClick: () => setTab("mobile"), children: "الهاتف المحمول" })
     ] }),
     tab === "profile" && /* @__PURE__ */ jsxRuntimeExports.jsx(BusinessProfileTab, {}),
-    tab === "backup" && /* @__PURE__ */ jsxRuntimeExports.jsx(DataBackupTab, {})
+    tab === "backup" && /* @__PURE__ */ jsxRuntimeExports.jsx(DataBackupTab, {}),
+    tab === "mobile" && /* @__PURE__ */ jsxRuntimeExports.jsx(MobileAccessTab, {})
   ] });
 }
 function invalidateInvoice(queryClient2, customerId, invoiceId) {
