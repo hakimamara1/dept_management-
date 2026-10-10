@@ -102,6 +102,29 @@ AI call (stubbed, no paid call made), a real phone camera.
 - `contract-check.mjs` covers barcode lookup, batch create replay, validation, update, status transitions (date-derived states
   are not user-settable), delete.
 
+### Phase 6 result (done): hardening and release
+
+**Security pass (findings → fixes, all verified by `contract-check.mjs`, 61 checks):**
+- The gateway allowed whole modules (e.g. all of `/api/products`, `/uploads`, supplier/customer create/delete, adjustments).
+  It is now an **exact method + path table of what the app calls**; everything else is refused, case/trailing-slash variants included.
+- Failed-token attempts are throttled per address; a phone that unpairs **revokes itself on the desktop** too.
+- A pairing **link** could silently pair the phone with any server. It now asks for confirmation, and only private
+  addresses (10.x / 172.16–31.x / 192.168.x / link-local / `*.local`) are accepted at all.
+- `allowBackup` is off (the token was already excluded from backups).
+- Pre-existing, **not changed**: the desktop's loopback API is unauthenticated with open CORS (flagged in `docs/mobile.md`).
+
+**Release:** signed APK `mobile/dist/Spice-ERP-1.0.0.apk` (arm64-v8a + x86_64, ~90 MB, v1.0.0 / versionCode 1), release key in the
+git-ignored `mobile/credentials/`; icon, adaptive icon, splash, notification icon; Gradle memory raised by a config plugin
+(release builds ran out of Metaspace at the generated default). Smoke-tested on the emulator as a standalone release build:
+pair-by-link with confirmation, live data, 10 expiry reminders scheduled, unpair → device gone on the desktop, update over the
+installed app, refused link explained.
+
+**Polish:** the debt-verdict sentences and all numbers/dates now follow ar / fr / en (Arabic output regression-checked as
+identical; fr/en show "DA"); dark mode verified on Home, Expiry and the price chart; haptic success feedback; version in Settings.
+
+**Not verified here (needs your hands):** a real phone (camera, barcode, mDNS across a real router, reminder delivery at 09:00),
+and the Windows installer's firewall rule — see the checklist in `docs/mobile.md`.
+
 ## 4. New / changed screens
 
 ### Parties (replaces Suppliers + Customers tabs)

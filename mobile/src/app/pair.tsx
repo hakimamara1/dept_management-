@@ -69,6 +69,8 @@ export default function PairScreen() {
     return (
       <Screen scroll={false}>
         <CenteredMessage title={t('connection.scanTitle')} body={t('connection.cameraNeeded')}>
+          {/* A refused link (bad / public address) must be explained even before the camera is allowed. */}
+          {error ? <AppText style={{ textAlign: 'center', color: '#b3261e' }} accessibilityRole="alert">{error}</AppText> : null}
           <AppButton label={t('connection.grantCamera')} onPress={requestPermission} />
         </CenteredMessage>
       </Screen>

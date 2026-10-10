@@ -19,7 +19,8 @@
         "android.permission.CAMERA",
         "android.permission.INTERNET",
         "android.permission.ACCESS_WIFI_STATE",
-        "android.permission.CHANGE_WIFI_MULTICAST_STATE"
+        "android.permission.CHANGE_WIFI_MULTICAST_STATE",
+        "android.permission.RECORD_AUDIO"
       ],
       "allowBackup": false,
       "adaptiveIcon": {
@@ -69,8 +70,15 @@
           "backgroundColor": "#0f7a73"
         }
       ],
-      "./plugins/withReleaseSigning"
+      "./plugins/withReleaseSigning",
+      "./plugins/withGradleMemory"
     ],
-    "icon": "./assets/icon.png"
+    "icon": "./assets/icon.png",
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a8798b02-f8ac-412f-bb52-d0cc9e438558"
+      }
+    }
   }
 }
