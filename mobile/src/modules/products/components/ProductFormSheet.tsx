@@ -15,7 +15,22 @@ import { useProductMutations, useProducts } from '../hooks/useProducts'
 const UNITS = ['piece', 'kg', 'box', 'liter', 'g'] as const
 
 /** Create (no `product`) or edit catalogue fields. The sale price of an existing product has its own sheet. */
-export function ProductFormSheet({ visible, onClose, product, onSaved }: { visible: boolean; onClose: () => void; product?: Product; onSaved?: (id: number) => void }) {
+export function ProductFormSheet({
+  visible,
+  onClose,
+  product,
+  onSaved,
+  initialBarcode,
+  initialName
+}: {
+  visible: boolean
+  onClose: () => void
+  product?: Product
+  onSaved?: (id: number) => void
+  /** Create mode only: seeds the barcode (e.g. just scanned) / the name (e.g. just typed in a search). */
+  initialBarcode?: string
+  initialName?: string
+}) {
   const { t } = useI18n()
   const { colors } = useTheme()
   const m = useProductMutations()
@@ -31,14 +46,14 @@ export function ProductFormSheet({ visible, onClose, product, onSaved }: { visib
   // Re-seed whenever the sheet opens; one key per open so a retry of the same save replays, never duplicates.
   useEffect(() => {
     if (!visible) return
-    setName(product?.name ?? '')
+    setName(product?.name ?? initialName ?? '')
     setUnit(product?.unit ?? 'piece')
-    setBarcode(product?.barcode ?? '')
+    setBarcode(product?.barcode ?? initialBarcode ?? '')
     setCategory(product?.category ?? '')
     setPrice('')
     setError(null)
     key.current = newIdempotencyKey()
-  }, [visible, product])
+  }, [visible, product, initialBarcode, initialName])
 
   const busy = m.create.isPending || m.update.isPending
 

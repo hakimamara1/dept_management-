@@ -32,6 +32,7 @@ export default function TabsLayout() {
       {tab('invoices', t('tabs.invoices'), 'receipt-outline', 'receipt')}
       {tab('parties', t('tabs.parties'), 'people-outline', 'people')}
       {tab('products', t('tabs.products'), 'pricetags-outline', 'pricetags')}
+      {tab('expiry', t('tabs.expiry'), 'hourglass-outline', 'hourglass')}
       {/* Settings is reached from the header gear, not from the tab bar. */}
       <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>

@@ -31,7 +31,7 @@ const CODE_LENGTH = 20;
 // Least privilege: the phone only gets the modules it has screens for.
 // Everything else — notably /api/settings (restore/backup replace or export the
 // whole database), /api/accounting and /api/mobile admin — is unreachable.
-const ALLOWED_PREFIXES = /^\/(api\/(invoices|products|suppliers|customers|payments|dashboard|reports)|uploads)(\/|$)/;
+const ALLOWED_PREFIXES = /^\/(api\/(invoices|products|suppliers|customers|payments|dashboard|reports|expiration-batches)|uploads)(\/|$)/;
 // Inside an allowed prefix, admin-style operations the phone never needs. Case-INsensitive on purpose:
 // Express matches routes case-insensitively, so /api/products/MERGE would otherwise reach the handler.
 const DENIED_PATHS = /^\/api\/products\/merge(\/|$)/i;

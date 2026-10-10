@@ -135,5 +135,34 @@ for (const merge of ['/api/products/merge', '/api/products/MERGE', '/api/product
   check(`merge is blocked on the gateway (${merge})`, r.status === 403, `HTTP ${r.status}`)
 }
 
+// ── barcode lookup + expiry batches (phone: Expiry tab) ──
+const bc = String(Date.now())
+const bcProduct = (await call('POST', '/api/products', { key: randomUUID().replace(/-/g, ''), body: { name: `__contract_bc_${bc}`, barcode: bc, unit: 'piece' }, expect: 200 })).data
+const byCode = (await call('GET', `/api/products?barcode=${bc}`, { expect: 200 })).data
+check('barcode lookup finds exactly that product', byCode.length === 1 && byCode[0].id === bcProduct.id, `${byCode.length} rows`)
+const noCode = (await call('GET', '/api/products?barcode=0000000000000', { expect: 200 })).data
+check('unknown barcode → empty list', Array.isArray(noCode) && noCode.length === 0)
+
+const allBatches = await call('GET', '/api/expiration-batches', { expect: 200 })
+check('expiry list is reachable through the gateway', Array.isArray(allBatches.data))
+const bKey = randomUUID().replace(/-/g, '')
+const bBody = { productId: bcProduct.id, batchNumber: `CHK-${bc}`, expirationDate: '2099-01-15', quantity: 3, location: 'Shelf' }
+const b1 = await call('POST', '/api/expiration-batches', { key: bKey, body: bBody, expect: 200 })
+const b2 = await call('POST', '/api/expiration-batches', { key: bKey, body: bBody, expect: 200 })
+check('batch create retry replays (one batch)', b2.replay && b1.data.id === b2.data.id)
+check('batch carries the product + live status', b1.data.product_name === `__contract_bc_${bc}` && b1.data.computed_status === 'ACTIVE')
+const bad = await call('POST', '/api/expiration-batches', { key: randomUUID().replace(/-/g, ''), body: { productId: bcProduct.id, batchNumber: 'X', expirationDate: '2020-01-01', manufacturingDate: '2021-01-01' } })
+check('expiry before manufacturing is rejected (400)', bad.status === 400, `HTTP ${bad.status}`)
+const upd2 = await call('PATCH', `/api/expiration-batches/${b1.data.id}`, { key: randomUUID().replace(/-/g, ''), body: { quantity: 5, location: 'Fridge' }, expect: 200 })
+check('batch updated', Number(upd2.data.quantity) === 5 && upd2.data.location === 'Fridge')
+const sold = await call('PATCH', `/api/expiration-batches/${b1.data.id}/status`, { key: randomUUID().replace(/-/g, ''), body: { status: 'SOLD' }, expect: 200 })
+check('mark sold → SOLD', sold.data.computed_status === 'SOLD')
+const reopened = await call('PATCH', `/api/expiration-batches/${b1.data.id}/status`, { key: randomUUID().replace(/-/g, ''), body: { status: 'ACTIVE' }, expect: 200 })
+check('reopen → date-derived status again', reopened.data.computed_status === 'ACTIVE')
+const derived = await call('PATCH', `/api/expiration-batches/${b1.data.id}/status`, { key: randomUUID().replace(/-/g, ''), body: { status: 'EXPIRED' } })
+check('date-derived statuses are not user-settable (400)', derived.status === 400, `HTTP ${derived.status}`)
+await call('DELETE', `/api/expiration-batches/${b1.data.id}`, { key: randomUUID().replace(/-/g, ''), expect: 200 })
+check('deleted batch is gone (404)', (await call('GET', `/api/expiration-batches/${b1.data.id}`)).status === 404)
+
 console.log(failures ? `\n${failures} FAILED` : '\nall contract checks passed')
 process.exit(failures ? 1 : 0)

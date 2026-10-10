@@ -9,6 +9,8 @@ import { radius, spacing, useTheme } from '@/shared/theme/useTheme'
 import { DebtSummary } from '@/modules/reports/components/DebtSummary'
 import { useConnectionStore } from '@/modules/connection/store'
 import { usePendingInvoices } from '@/modules/invoices/hooks/useInvoices'
+import { useExpiryBatches } from '@/modules/expiry/hooks/useExpiry'
+import { groupBatches } from '@/modules/expiry/lib/urgency'
 
 type IconName = keyof typeof Ionicons.glyphMap
 
@@ -48,8 +50,11 @@ function QuickAction({ icon, label, badge, onPress }: { icon: IconName; label: s
 export default function HomeScreen() {
   const { t } = useI18n()
   const router = useRouter()
+  const { colors } = useTheme()
   const connection = useConnectionStore((s) => s.connection)
   const pending = usePendingInvoices()
+  const expiry = useExpiryBatches()
+  const expiryGroups = expiry.data ? groupBatches(expiry.data) : null
 
   return (
     <Screen>
@@ -61,6 +66,34 @@ export default function HomeScreen() {
         <QuickAction icon="documents-outline" label={t('home.pendingCount')} badge={pending.data?.length} onPress={() => router.push('/invoices')} />
         <QuickAction icon="cash-outline" label={t('money.recordPayment')} onPress={() => router.push('/parties')} />
       </View>
+
+      {expiryGroups && (expiryGroups.expired.length > 0 || expiryGroups.week.length > 0) ? (
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('home.expiry')}
+          onPress={() => router.push('/expiry')}
+          style={({ pressed }) => ({
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.md,
+            padding: spacing.lg,
+            borderRadius: radius.lg,
+            borderWidth: 1,
+            borderColor: expiryGroups.expired.length > 0 ? colors.destructive : colors.warning,
+            backgroundColor: pressed ? colors.accent : colors.card
+          })}
+        >
+          <Ionicons name={expiryGroups.expired.length > 0 ? 'close-circle' : 'alert-circle'} size={28} color={expiryGroups.expired.length > 0 ? colors.destructive : colors.warning} />
+          <View style={{ flex: 1, gap: 2 }}>
+            <AppText variant="heading">{t('home.expiry')}</AppText>
+            <AppText variant="muted">
+              {expiryGroups.expired.length > 0 ? `${t('expiry.bucket.expired')}: ${expiryGroups.expired.length}` : ''}
+              {expiryGroups.expired.length > 0 && expiryGroups.week.length > 0 ? ' · ' : ''}
+              {expiryGroups.week.length > 0 ? `${t('expiry.bucket.week')}: ${expiryGroups.week.length}` : ''}
+            </AppText>
+          </View>
+        </Pressable>
+      ) : null}
 
       <DebtSummary />
     </Screen>

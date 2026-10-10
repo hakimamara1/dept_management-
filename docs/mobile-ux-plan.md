@@ -83,6 +83,25 @@ AI call (stubbed, no paid call made), a real phone camera.
 - `contract-check.mjs` covers all of the above (create replay, price update, histories, merge blocked).
 - Deep links to a detail screen keep the list underneath (`initialRouteName: 'index'` on every tab stack).
 
+### Phase 5 result (done): Expiry
+
+- **New tab Expiry** (bar: Home · Invoices · Accounts · Products · Expiry). Count chips (All / Expired / ≤ 7 d / ≤ 30 d / Later /
+  Closed), search by product, batch number or barcode, and urgency groups. Days are counted by **calendar date** on the phone
+  (the server's value truncates a fractional day), with correct Arabic number forms (يومين / أيام / يوماً).
+- **Add / edit batch:** product by search, **barcode scan** or **create on the spot**; batch number; expiry with the system
+  calendar and quick picks (+1 m / +3 m / +6 m / +1 y); optional manufacturing date, quantity, location, notes. Validation mirrors
+  the server (expiry after manufacturing).
+- **Batch actions:** mark sold, discard, reopen, edit, delete (confirmation). Idempotency keys on every write.
+- **Reminders (local notifications):** 09:00 at 30 / 7 / 1 days before expiry, one notification per day and offset listing how
+  many batches (so a big catalogue produces a handful, not hundreds; capped at 48). Rebuilt from the latest data each time the
+  list loads; permission is asked once, in context; on/off switch in Settings; tapping opens the Expiry tab.
+  **Limit:** no server push exists on a LAN, so reminders reflect what the phone last loaded.
+- **Home:** an "expiring soon" strip when something is expired or due within 7 days.
+- **Backend (additive):** `GET /api/products?barcode=` (exact match); gateway allow-list now includes `/api/expiration-batches`.
+- **Needed a dev-client rebuild** for `expo-notifications` and `@react-native-community/datetimepicker`.
+- `contract-check.mjs` covers barcode lookup, batch create replay, validation, update, status transitions (date-derived states
+  are not user-settable), delete.
+
 ## 4. New / changed screens
 
 ### Parties (replaces Suppliers + Customers tabs)

@@ -8,6 +8,7 @@ import { useTheme } from '@/shared/theme/useTheme'
 import { reconnect } from '@/modules/connection/services/connectionManager'
 import { useConnectionBootstrap } from '@/modules/connection/hooks/useConnectionBootstrap'
 import { useConnectionStore } from '@/modules/connection/store'
+import { useExpiryReminderSync } from '@/modules/expiry/hooks/useExpiryReminderSync'
 
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: 1, staleTime: 15_000, refetchOnReconnect: true } },
@@ -42,6 +43,7 @@ function useConnectionRouting() {
 function Root() {
   useConnectionBootstrap()
   useConnectionRouting()
+  useExpiryReminderSync()
   const { colors, isDark } = useTheme()
   const status = useConnectionStore((s) => s.status)
   const connectedOnce = useRef(false)

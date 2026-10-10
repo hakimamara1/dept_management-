@@ -5,18 +5,22 @@ const db = require('../config/database');
 const productService = require('../services/productService');
 const { normalizeArabic } = require('../utils/arabicNormalizer');
 
-// GET /api/products?query=&sort=name|newest — full browsable list (no LIMIT),
+// GET /api/products?query=&sort=name|newest&barcode= — full browsable list (no LIMIT),
 // unlike /search below which stays capped/fast for picker use. `sort`
 // is whitelisted (never interpolated from the request) since ORDER BY
 // can't be parameterized as a bound value.
 router.get('/', (req, res) => {
     try {
-        const { query, sort } = req.query;
+        const { query, sort, barcode } = req.query;
         const orderBy = sort === 'newest' ? 'p.created_at DESC' : 'p.name ASC';
 
         const params = [];
         let where = '';
-        if (query) {
+        if (barcode) {
+            // Exact barcode lookup (the phone scans a code); independent of the name search below.
+            where = 'WHERE p.barcode = ?';
+            params.push(String(barcode).trim());
+        } else if (query) {
             const normalized = normalizeArabic(query);
             where = 'WHERE p.name LIKE ? OR pa.normalized_alias LIKE ?';
             params.push(`%${query}%`, `%${normalized}%`);

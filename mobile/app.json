@@ -45,6 +45,13 @@
             "usesCleartextTraffic": true
           }
         }
+      ],
+      "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {
+          "color": "#0f7a73"
+        }
       ]
     ]
   }
