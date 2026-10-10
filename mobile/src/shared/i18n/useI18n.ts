@@ -1,5 +1,6 @@
 import { I18nManager } from 'react-native'
 import { create } from 'zustand'
+import { setFormatLanguage } from '@/shared/lib/format'
 import { readJson, removeKey, writeJson } from '@/shared/lib/secureJson'
 import { dictionaries, type Language, type TranslationKey } from './dictionaries'
 
@@ -41,11 +42,13 @@ export const useLanguageStore = create<LanguageState>((set) => ({
   hydrate: async () => {
     const saved = await readJson<Language>(STORAGE_KEY)
     const language = saved && saved in dictionaries ? saved : 'ar' // Arabic by default, like the desktop
+    setFormatLanguage(language)
     set({ language, hydrated: true })
     return syncDirection(language)
   },
   setLanguage: async (language) => {
     await writeJson(STORAGE_KEY, language)
+    setFormatLanguage(language)
     set({ language })
     return syncDirection(language)
   }

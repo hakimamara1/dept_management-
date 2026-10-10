@@ -130,7 +130,6 @@ function AccountView({
                 visible
                 onClose={() => setSheet(false)}
                 party={type}
-                action="payment"
                 partyId={partyId}
                 partyName={name ?? ''}
                 currentBalance={balance ?? 0}

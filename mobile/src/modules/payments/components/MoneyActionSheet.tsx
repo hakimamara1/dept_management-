@@ -4,18 +4,18 @@ import { ApiError, newIdempotencyKey } from '@/shared/api/client'
 import { AppButton, AppText, Card, Segmented, TextField } from '@/shared/components/ui'
 import { FormSheet } from '@/shared/components/FormSheet'
 import { useI18n } from '@/shared/i18n/useI18n'
+import { errorText } from '@/shared/lib/errorMessage'
 import { formatCurrency } from '@/shared/lib/format'
 import { parseNumber, todayISO } from '@/shared/lib/numbers'
 import { toast } from '@/shared/lib/toast'
 import { useTheme } from '@/shared/theme/useTheme'
-import { useMoneyMutation, type MoneyAction, type MoneyParty } from '../hooks/useMoneyMutation'
+import { useMoneyMutation, type MoneyParty } from '../hooks/useMoneyMutation'
 import type { PaymentMethod } from '../types'
 
 interface Props {
   visible: boolean
   onClose: () => void
   party: MoneyParty
-  action: MoneyAction
   partyId: number
   partyName: string
   /** What the party owes right now — used to show the resulting balance and cap supplier payments. */
@@ -27,34 +27,32 @@ interface Props {
  * minted each time the user reaches the review step, so a retry of the *same* review replays safely
  * while an edited amount can never be mistaken for an earlier attempt.
  */
-export function MoneyActionSheet({ visible, onClose, party, action, partyId, partyName, currentBalance }: Props) {
+export function MoneyActionSheet({ visible, onClose, party, partyId, partyName, currentBalance }: Props) {
   const { t } = useI18n()
   const { colors } = useTheme()
-  const mutation = useMoneyMutation(party, action, partyId)
+  const mutation = useMoneyMutation(party, partyId)
   const [step, setStep] = useState<'form' | 'review'>('form')
   const [amountText, setAmountText] = useState('')
   const [method, setMethod] = useState<PaymentMethod>('cash')
   const [note, setNote] = useState('')
-  const [sign, setSign] = useState<'increase' | 'decrease'>('decrease')
   const [error, setError] = useState<string | null>(null)
   const [key, setKey] = useState('')
 
   useEffect(() => {
     if (visible) {
-      setStep('form'); setAmountText(''); setMethod('cash'); setNote(''); setSign('decrease'); setError(null)
+      setStep('form'); setAmountText(''); setMethod('cash'); setNote(''); setError(null)
     }
   }, [visible])
 
   const magnitude = parseNumber(amountText)
-  // A payment lowers the debt; an adjustment is signed by the user's choice.
-  const delta = action === 'payment' ? -magnitude : sign === 'increase' ? magnitude : -magnitude
+  // A payment always lowers what is owed.
+  const delta = -magnitude
   const newBalance = currentBalance + delta
-  const title = action === 'payment' ? t('money.recordPayment') : t('money.adjustBalance')
+  const title = t('money.recordPayment')
 
   function review() {
     if (!Number.isFinite(magnitude) || magnitude <= 0) return setError(t('money.errorAmount'))
-    if (action === 'adjust' && !note.trim()) return setError(t('money.errorReason'))
-    if (party === 'supplier' && action === 'payment' && magnitude > currentBalance + 0.001) return setError(t('money.errorExceeds'))
+    if (party === 'supplier' && magnitude > currentBalance + 0.001) return setError(t('money.errorExceeds'))
     setError(null)
     setKey(newIdempotencyKey())
     setStep('review')
@@ -62,7 +60,7 @@ export function MoneyActionSheet({ visible, onClose, party, action, partyId, par
 
   function submit() {
     mutation.mutate(
-      { amount: action === 'payment' ? magnitude : delta, method, reference: undefined, notes: action === 'payment' ? note.trim() || undefined : undefined, reason: note.trim(), date: todayISO(), key },
+      { amount: magnitude, method, reference: undefined, notes: note.trim() || undefined, date: todayISO(), key },
       {
         onSuccess: () => { toast(t('money.done')); onClose() },
         onError: (e) => {
@@ -70,7 +68,7 @@ export function MoneyActionSheet({ visible, onClose, party, action, partyId, par
           // network failure the user stays on this review step and retries with the SAME key (replay,
           // never a second payment). Only a definitive rejection sends them back to edit.
           const unsure = e instanceof ApiError && (e.code === 'NETWORK' || e.code === 'TIMEOUT')
-          setError(unsure ? t('money.errorNetwork') : e.message)
+          setError(unsure ? t('money.errorNetwork') : errorText(e, t))
           if (!unsure) setStep('form')
         }
       }
@@ -82,22 +80,13 @@ export function MoneyActionSheet({ visible, onClose, party, action, partyId, par
       {step === 'form' ? (
         <>
           <AppText variant="caption">{t('suppliers.balance')}: {formatCurrency(currentBalance)}</AppText>
-          {action === 'adjust' && (
-            <Segmented<'increase' | 'decrease'>
-              value={sign}
-              onChange={setSign}
-              options={[{ value: 'decrease', label: t('money.decrease') }, { value: 'increase', label: t('money.increase') }]}
-            />
-          )}
           <TextField value={amountText} onChangeText={setAmountText} placeholder={t('money.amount')} keyboardType="decimal-pad" />
-          {action === 'payment' && (
-            <Segmented<PaymentMethod>
-              value={method}
-              onChange={setMethod}
-              options={[{ value: 'cash', label: t('money.cash') }, { value: 'bank_transfer', label: t('money.bank') }, { value: 'check', label: t('money.check') }]}
-            />
-          )}
-          <TextField value={note} onChangeText={setNote} placeholder={action === 'adjust' ? t('money.reason') : t('money.notes')} />
+          <Segmented<PaymentMethod>
+            value={method}
+            onChange={setMethod}
+            options={[{ value: 'cash', label: t('money.cash') }, { value: 'bank_transfer', label: t('money.bank') }, { value: 'check', label: t('money.check') }]}
+          />
+          <TextField value={note} onChangeText={setNote} placeholder={t('money.notes')} />
           {error && <AppText style={{ color: colors.destructive }} accessibilityRole="alert">{error}</AppText>}
           <AppButton label={t('money.review')} onPress={review} />
         </>

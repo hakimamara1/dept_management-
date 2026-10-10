@@ -2,7 +2,7 @@
   "expo": {
     "name": "Spice ERP",
     "slug": "spice-erp-mobile",
-    "version": "0.1.0",
+    "version": "1.0.0",
     "scheme": "spiceerp",
     "orientation": "portrait",
     "userInterfaceStyle": "automatic",
@@ -20,7 +20,13 @@
         "android.permission.INTERNET",
         "android.permission.ACCESS_WIFI_STATE",
         "android.permission.CHANGE_WIFI_MULTICAST_STATE"
-      ]
+      ],
+      "allowBackup": false,
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon-foreground.png",
+        "backgroundColor": "#0f7a73"
+      },
+      "versionCode": 1
     },
     "plugins": [
       "expo-router",
@@ -50,9 +56,21 @@
       [
         "expo-notifications",
         {
+          "icon": "./assets/notification-icon.png",
           "color": "#0f7a73"
         }
-      ]
-    ]
+      ],
+      [
+        "expo-splash-screen",
+        {
+          "image": "./assets/splash-icon.png",
+          "imageWidth": 200,
+          "resizeMode": "contain",
+          "backgroundColor": "#0f7a73"
+        }
+      ],
+      "./plugins/withReleaseSigning"
+    ],
+    "icon": "./assets/icon.png"
   }
 }

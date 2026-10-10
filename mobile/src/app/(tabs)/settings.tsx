@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react'
 import { Alert, I18nManager, Pressable, Switch, View } from 'react-native'
+import Constants from 'expo-constants'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
+import { api } from '@/shared/api/client'
 import { AppButton, AppText, Card, Screen } from '@/shared/components/ui'
 import { MIN_TOUCH, useTheme } from '@/shared/theme/useTheme'
-import { LANGUAGES } from '@/shared/i18n/dictionaries'
+import { LANGUAGES, dictionaries } from '@/shared/i18n/dictionaries'
 import { useI18n, useLanguageStore } from '@/shared/i18n/useI18n'
 import { restartApp } from '@/shared/lib/restart'
 import { useConnectionStore } from '@/modules/connection/store'
@@ -43,14 +45,22 @@ export default function SettingsScreen() {
     const needsRestart = await setLanguage(next)
     if (needsRestart) {
       // Layout direction only applies after a reload; if the platform won't reload, the user restarts manually.
-      Alert.alert(t('settings.restartForLayout'), '', [{ text: 'OK', onPress: () => { restartApp() } }])
+      Alert.alert(dictionaries[next]['settings.restartForLayout'], '', [{ text: 'OK', onPress: () => { restartApp() } }]) // in the NEW language
     }
   }
 
   function confirmUnpair() {
     Alert.alert(t('settings.unpair'), t('settings.unpairConfirm'), [
       { text: t('common.cancel'), style: 'cancel' },
-      { text: t('settings.unpair'), style: 'destructive', onPress: () => { clear() } }
+      {
+        text: t('settings.unpair'),
+        style: 'destructive',
+        onPress: async () => {
+          // Tell the desktop first so the token dies there too; if it is unreachable, still forget it here.
+          await api.post('/api/mobile/unpair', undefined, { timeoutMs: 4000 }).catch(() => {})
+          await clear()
+        }
+      }
     ])
   }
 
@@ -74,6 +84,9 @@ export default function SettingsScreen() {
         <AppText variant="muted">{connection?.desktopName}</AppText>
         <AppText variant="caption" style={{ writingDirection: 'ltr', textAlign: 'left' }}>
           {connection?.lastHost}:{connection?.port}
+        </AppText>
+        <AppText variant="caption" style={{ writingDirection: 'ltr', textAlign: 'left' }}>
+          Spice ERP v{Constants.expoConfig?.version ?? '—'}
         </AppText>
       </Card>
 

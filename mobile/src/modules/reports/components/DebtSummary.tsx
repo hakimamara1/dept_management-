@@ -18,10 +18,10 @@ const SERIES = {
 }
 
 function Body({ data }: { data: DebtAnalysis }) {
-  const { t } = useI18n()
+  const { t, language } = useI18n()
   const { width } = useWindowDimensions()
   const { isDark } = useTheme()
-  const verdict = useMemo(() => buildVerdict(data), [data])
+  const verdict = useMemo(() => buildVerdict(data, language), [data, language])
   const chartWidth = width - spacing.lg * 2 - spacing.lg * 2
   const c = data.current
   const isSuppliers = data.scope === 'suppliers'

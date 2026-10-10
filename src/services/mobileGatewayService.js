@@ -23,23 +23,64 @@ const PAIR_TTL_MS = 5 * 60 * 1000;
 const MAX_PAIR_ATTEMPTS = 5;
 const PAIR_RATE = { windowMs: 60 * 1000, max: 10 };
 const OCR_RATE = { windowMs: 10 * 60 * 1000, max: 10 };
+const AUTH_FAIL_RATE = { windowMs: 60 * 1000, max: 30 };
 const TOUCH_THROTTLE_MS = 30 * 1000;
 // No look-alike characters (0/O, 1/I/L) in case a code is ever typed by hand.
 const CODE_ALPHABET = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
 const CODE_LENGTH = 20;
 
-// Least privilege: the phone only gets the modules it has screens for.
-// Everything else — notably /api/settings (restore/backup replace or export the
-// whole database), /api/accounting and /api/mobile admin — is unreachable.
-const ALLOWED_PREFIXES = /^\/(api\/(invoices|products|suppliers|customers|payments|dashboard|reports|expiration-batches)|uploads)(\/|$)/;
-// Inside an allowed prefix, admin-style operations the phone never needs. Case-INsensitive on purpose:
-// Express matches routes case-insensitively, so /api/products/MERGE would otherwise reach the handler.
-const DENIED_PATHS = /^\/api\/products\/merge(\/|$)/i;
+// Least privilege: the phone may call exactly what the Android app calls — method AND path — and nothing else.
+// Notably unreachable: /api/settings (restore/backup replace or export the whole database), /api/accounting,
+// /api/mobile admin, /uploads, creating/editing/deleting suppliers or customers, balance adjustments,
+// sales invoices, product merge. A token that leaks (or malware on the phone) can only do what the app can.
+//
+// Matching is strict and case-sensitive on the raw path with no trailing slash: Express routes are
+// case-insensitive, so anything that is not spelled exactly like this simply never reaches it.
+const PHONE_ROUTES = [
+    // reports + dashboard data
+    ['GET', /^\/api\/reports\/debt-analysis$/],
+    // suppliers: read, record a payment
+    ['GET', /^\/api\/suppliers$/],
+    ['GET', /^\/api\/suppliers\/\d+$/],
+    ['GET', /^\/api\/suppliers\/\d+\/ledger$/],
+    ['POST', /^\/api\/suppliers\/\d+\/payments$/],
+    // customers: read, record a collection
+    ['GET', /^\/api\/customers$/],
+    ['GET', /^\/api\/customers\/\d+$/],
+    ['GET', /^\/api\/customers\/\d+\/statement$/],
+    ['POST', /^\/api\/customers\/\d+\/payments$/],
+    // products: browse, history, create, edit, sale price
+    ['GET', /^\/api\/products$/],
+    ['GET', /^\/api\/products\/search$/],
+    ['GET', /^\/api\/products\/\d+$/],
+    ['GET', /^\/api\/products\/\d+\/(price-history|sales-price-history)$/],
+    ['POST', /^\/api\/products$/],
+    ['PATCH', /^\/api\/products\/\d+$/],
+    ['PATCH', /^\/api\/products\/\d+\/price$/],
+    // purchase invoices: scan, review, approve (Pending Review only — enforced by the backend)
+    ['GET', /^\/api\/invoices\/pending$/],
+    ['GET', /^\/api\/invoices\/\d+\/review$/],
+    ['POST', /^\/api\/invoices\/extract$/],
+    ['PATCH', /^\/api\/invoices\/\d+\/(notes|supplier)$/],
+    ['PATCH', /^\/api\/invoices\/\d+\/items\/\d+$/],
+    ['POST', /^\/api\/invoices\/\d+\/(items|approve)$/],
+    ['DELETE', /^\/api\/invoices\/\d+$/],
+    ['DELETE', /^\/api\/invoices\/\d+\/items\/\d+$/],
+    // expiry batches
+    ['GET', /^\/api\/expiration-batches$/],
+    ['POST', /^\/api\/expiration-batches$/],
+    ['PATCH', /^\/api\/expiration-batches\/\d+$/],
+    ['PATCH', /^\/api\/expiration-batches\/\d+\/status$/],
+    ['DELETE', /^\/api\/expiration-batches\/\d+$/]
+];
+
+const isPhoneRoute = (method, path) => PHONE_ROUTES.some(([m, re]) => m === method && re.test(path));
 
 let mainApp = null;
 let gateway = null;      // { server, port, bonjour }
 let pairing = null;      // { code, expiresAt, attempts }
 const pairHits = new Map();
+const authFails = new Map();
 const ocrHits = new Map();
 const lastTouch = new Map();
 const inFlight = new Set();
@@ -148,11 +189,24 @@ function handlePair(req, res) {
 }
 
 function authGuard(req, res, next) {
+    const ip = req.socket.remoteAddress;
+    // A real token is 256 random bits, so guessing is hopeless — this only stops a noisy client from
+    // hammering the database with lookups (and the log) from the LAN.
+    const recent = (authFails.get(ip) || []).filter((t) => Date.now() - t < AUTH_FAIL_RATE.windowMs);
+    authFails.set(ip, recent);
+    if (recent.length >= AUTH_FAIL_RATE.max) {
+        return res.status(429).json({ error: 'محاولات تسجيل دخول فاشلة كثيرة — انتظر دقيقة' });
+    }
+    const fail = (message) => {
+        recent.push(Date.now());
+        return res.status(401).json({ error: message });
+    };
+
     const m = /^Bearer (.+)$/.exec(req.get('authorization') || '');
-    if (!m) return res.status(401).json({ error: 'مطلوب تسجيل الدخول — اقرن الهاتف أولاً' });
+    if (!m) return fail('مطلوب تسجيل الدخول — اقرن الهاتف أولاً');
     const device = db.prepare('SELECT id, name FROM mobile_devices WHERE token_hash = ? AND revoked_at IS NULL')
         .get(hashToken(m[1]));
-    if (!device) return res.status(401).json({ error: 'الجهاز غير مصرّح — أعد الاقتران' });
+    if (!device) return fail('الجهاز غير مصرّح — أعد الاقتران');
     req.mobileDevice = device;
 
     // last_seen is informational: throttle so a busy phone doesn't write on every request.
@@ -165,6 +219,14 @@ function authGuard(req, res, next) {
     next();
 }
 
+// "Unpair" on the phone should kill the token on the desktop too — otherwise a phone that was handed on or sold
+// keeps a valid token until the owner notices. A device can only ever revoke ITSELF here.
+function handleUnpair(req, res) {
+    db.prepare('UPDATE mobile_devices SET revoked_at = CURRENT_TIMESTAMP WHERE id = ? AND revoked_at IS NULL').run(req.mobileDevice.id);
+    lastTouch.delete(req.mobileDevice.id);
+    res.json({ success: true });
+}
+
 function handleHandshake(req, res) {
     res.json({
         app: 'spice-erp', apiVersion: API_VERSION, appVersion: appVersion(),
@@ -174,9 +236,7 @@ function handleHandshake(req, res) {
 }
 
 function allowList(req, res, next) {
-    // Strict, case-sensitive allow-list: Express matches routes case-insensitively,
-    // so a deny-list could be dodged with /API/Settings/Restore.
-    if (!ALLOWED_PREFIXES.test(req.path) || DENIED_PATHS.test(req.path)) {
+    if (!isPhoneRoute(req.method, req.path)) {
         return res.status(403).json({ error: 'هذا المسار غير متاح للهاتف' });
     }
     next();
@@ -239,6 +299,7 @@ function buildGatewayApp() {
     gw.post('/api/mobile/pair', express.json({ limit: '10kb' }), handlePair);
     gw.use(authGuard);
     gw.get('/api/mobile/handshake', handleHandshake);
+    gw.post('/api/mobile/unpair', handleUnpair);
     gw.use(allowList);
     gw.use(ocrRateLimit);
     gw.use(idempotency);
@@ -386,5 +447,5 @@ function revokeDevice(id) {
 module.exports = {
     init, start, stop, enable, disable, getStatus,
     createPairingCode, listDevices, revokeDevice,
-    isPrivateAddress, isLoopback
+    isPrivateAddress, isLoopback, isPhoneRoute
 };
