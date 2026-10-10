@@ -99,6 +99,11 @@ cd android && ./gradlew assembleRelease -PreactNativeArchitectures=arm64-v8a,x86
 ```
 To ship an update: bump `expo.version` and `expo.android.versionCode` in `app.json`, rebuild, send the file.
 
+**Cloud build (EAS) vs local build:** `eas.json` has a `preview` profile that produces an APK. A cloud build is signed with
+*EAS's own* key, a local build with `mobile/credentials/` — an app signed by one cannot be updated by the other (the phone would
+have to uninstall first). Pick one for staff phones, or upload the local keystore to EAS (`eas credentials`) so both match.
+`expo doctor` must pass (`npx expo-doctor`) — it runs at the start of every cloud build.
+
 **Installing on a phone:** copy the APK to the phone (USB, WhatsApp, Drive…), open it, and allow *Install unknown apps* for
 that app when Android asks. Updates install over the existing app and keep the pairing (same signing key, same package).
 

@@ -9,12 +9,19 @@
 //   keyPassword=…
 //
 // Without that file the release build falls back to the debug key (installable, but not for distribution).
+const fs = require('fs')
+const path = require('path')
 const { withAppBuildGradle } = require('expo/config-plugins')
 
 const MARKER = 'spiceReleaseSigning'
 
 module.exports = function withReleaseSigning(config) {
   return withAppBuildGradle(config, (cfg) => {
+    // In a cloud build (EAS) the credentials folder does not exist — it is git-ignored — and EAS injects its own
+    // `release` signing config; defining a second one would clash. So: only wire this up when the keystore is here.
+    const credentials = path.join(__dirname, '..', 'credentials', 'signing.properties')
+    if (process.env.EAS_BUILD || !fs.existsSync(credentials)) return cfg
+
     let g = cfg.modResults.contents
     if (g.includes(MARKER)) return cfg
 

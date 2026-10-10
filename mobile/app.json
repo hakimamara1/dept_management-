@@ -14,7 +14,6 @@
     },
     "android": {
       "package": "com.spiceerp.mobile",
-      "supportsRtl": true,
       "permissions": [
         "android.permission.CAMERA",
         "android.permission.INTERNET",
@@ -32,7 +31,12 @@
     "plugins": [
       "expo-router",
       "expo-secure-store",
-      "expo-localization",
+      [
+        "expo-localization",
+        {
+          "supportsRTL": true
+        }
+      ],
       [
         "expo-camera",
         {
@@ -71,7 +75,8 @@
         }
       ],
       "./plugins/withReleaseSigning",
-      "./plugins/withGradleMemory"
+      "./plugins/withGradleMemory",
+      "expo-font"
     ],
     "icon": "./assets/icon.png",
     "extra": {
