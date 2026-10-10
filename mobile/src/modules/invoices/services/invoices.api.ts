@@ -1,3 +1,4 @@
+import { File } from 'expo-file-system'
 import { api } from '@/shared/api/client'
 import type {
   AddInvoiceItemInput,
@@ -12,8 +13,9 @@ export const invoicesApi = {
   /** Photo → AI extraction can take a minute; the backend limits it to 10 per 10 min per phone. */
   extract: (photo: { uri: string; name: string; type: string }, key: string) => {
     const form = new FormData()
-    // React Native's FormData accepts a { uri, name, type } descriptor as a file part.
-    form.append('invoice', photo as unknown as Blob)
+    // SDK 57's fetch only accepts standards Blobs — the old { uri, name, type } React Native part is rejected
+    // ("Unsupported FormDataPart implementation") before anything is sent. expo-file-system's File is a Blob.
+    form.append('invoice', new File(photo.uri))
     return api.post<{ invoiceId: number; status: string }>('/api/invoices/extract', undefined, {
       form,
       timeoutMs: 120_000,

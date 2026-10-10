@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { ActivityIndicator, Pressable, ScrollView, StyleSheet, Text, TextInput, View, type TextProps, type ViewStyle } from 'react-native'
 import { SafeAreaView } from 'react-native-safe-area-context'
-import { MIN_TOUCH, radius, spacing, useTheme } from '@/shared/theme/useTheme'
+import { MIN_TOUCH, elevation, radius, spacing, useTheme } from '@/shared/theme/useTheme'
 
 export function Screen({ children, scroll = true, padded = true }: { children: ReactNode; scroll?: boolean; padded?: boolean }) {
   const { colors } = useTheme()
@@ -26,9 +26,9 @@ export function AppText({ variant = 'body', style, ...props }: TextProps & { var
 }
 
 export function Card({ children, style }: { children: ReactNode; style?: ViewStyle }) {
-  const { colors } = useTheme()
+  const { colors, isDark } = useTheme()
   return (
-    <View style={[{ backgroundColor: colors.card, borderColor: colors.border, borderWidth: StyleSheet.hairlineWidth * 2, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm }, style]}>
+    <View style={[{ backgroundColor: colors.card, borderColor: colors.border, borderWidth: StyleSheet.hairlineWidth * 2, borderRadius: radius.lg, padding: spacing.lg, gap: spacing.sm }, isDark ? null : elevation.card, style]}>
       {children}
     </View>
   )
@@ -155,7 +155,23 @@ export function TextField({ value, onChangeText, placeholder, keyboardType, mult
   )
 }
 
-export function ListRow({ title, subtitle, trailing, trailingColor, onPress }: { title: string; subtitle?: string; trailing?: string; trailingColor?: string; onPress?: () => void }) {
+export function ListRow({
+  title,
+  subtitle,
+  trailing,
+  trailingCaption,
+  trailingColor,
+  leading,
+  onPress
+}: {
+  title: string
+  subtitle?: string
+  trailing?: string
+  trailingCaption?: string
+  trailingColor?: string
+  leading?: ReactNode
+  onPress?: () => void
+}) {
   const { colors } = useTheme()
   return (
     <Pressable
@@ -163,10 +179,9 @@ export function ListRow({ title, subtitle, trailing, trailingColor, onPress }: {
       disabled={!onPress}
       onPress={onPress}
       style={({ pressed }) => ({
-        minHeight: 56,
+        minHeight: 60,
         flexDirection: 'row',
         alignItems: 'center',
-        justifyContent: 'space-between',
         gap: spacing.md,
         paddingVertical: spacing.md,
         paddingHorizontal: spacing.lg,
@@ -175,11 +190,17 @@ export function ListRow({ title, subtitle, trailing, trailingColor, onPress }: {
         backgroundColor: pressed ? colors.muted : colors.card
       })}
     >
+      {leading}
       <View style={{ flex: 1, gap: 2 }}>
         <Text numberOfLines={1} style={{ color: colors.foreground, fontSize: 15, fontWeight: '600' }}>{title}</Text>
         {subtitle ? <Text numberOfLines={1} style={{ color: colors.mutedForeground, fontSize: 12 }}>{subtitle}</Text> : null}
       </View>
-      {trailing ? <Text style={{ color: trailingColor ?? colors.foreground, fontSize: 14, fontWeight: '600', fontVariant: ['tabular-nums'] }}>{trailing}</Text> : null}
+      {trailing ? (
+        <View style={{ alignItems: 'flex-end', gap: 2 }}>
+          <Text style={{ color: trailingColor ?? colors.foreground, fontSize: 14, fontWeight: '700', fontVariant: ['tabular-nums'] }}>{trailing}</Text>
+          {trailingCaption ? <Text style={{ color: colors.mutedForeground, fontSize: 11 }}>{trailingCaption}</Text> : null}
+        </View>
+      ) : null}
     </Pressable>
   )
 }

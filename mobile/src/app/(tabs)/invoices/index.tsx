@@ -1,7 +1,10 @@
 import { FlatList, View } from 'react-native'
 import { useRouter } from 'expo-router'
 import * as ImagePicker from 'expo-image-picker'
+import { Ionicons } from '@expo/vector-icons'
 import { AppButton, AppText, ListRow, Screen } from '@/shared/components/ui'
+import { IconBubble } from '@/shared/components/Badge'
+import { ScreenHeader } from '@/shared/components/ScreenHeader'
 import { EmptyBlock, QueryBoundary } from '@/shared/components/states'
 import { useI18n } from '@/shared/i18n/useI18n'
 import { formatCurrency, formatDate } from '@/shared/lib/format'
@@ -21,7 +24,7 @@ export default function InvoicesScreen() {
 
   return (
     <Screen scroll={false}>
-      <AppText variant="title">{t('tabs.invoices')}</AppText>
+      <ScreenHeader title={t('tabs.invoices')} />
       <View style={{ flexDirection: 'row', gap: 8 }}>
         <View style={{ flex: 1 }}><AppButton label={t('scan.scan')} onPress={() => router.push('/invoices/scan')} /></View>
         <View style={{ flex: 1 }}><AppButton variant="outline" label={t('scan.fromGallery')} onPress={pickFromGallery} /></View>
@@ -35,9 +38,10 @@ export default function InvoicesScreen() {
               keyExtractor={(i) => String(i.id)}
               refreshing={pending.isRefetching}
               onRefresh={() => pending.refetch()}
-              ListEmptyComponent={<EmptyBlock title={t('scan.nonePending')} />}
+              ListEmptyComponent={<EmptyBlock icon="checkmark-done-outline" title={t('scan.nonePending')} />}
               renderItem={({ item }) => (
                 <ListRow
+                  leading={<IconBubble><Ionicons name="document-text-outline" size={20} color={colors.primary} /></IconBubble>}
                   title={`${item.invoice_number}${item.supplier_name ? ` · ${item.supplier_name}` : ''}`}
                   subtitle={`${formatDate(item.invoice_date)} · ${item.pending_items ?? 0} ${t('scan.unmatched')}`}
                   trailing={formatCurrency(item.invoice_amount)}

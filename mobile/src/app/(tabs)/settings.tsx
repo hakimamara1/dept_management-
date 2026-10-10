@@ -1,5 +1,8 @@
-import { Alert, View } from 'react-native'
+import { Alert, I18nManager, Pressable, View } from 'react-native'
+import { Ionicons } from '@expo/vector-icons'
+import { useRouter } from 'expo-router'
 import { AppButton, AppText, Card, Screen } from '@/shared/components/ui'
+import { MIN_TOUCH, useTheme } from '@/shared/theme/useTheme'
 import { LANGUAGES } from '@/shared/i18n/dictionaries'
 import { useI18n, useLanguageStore } from '@/shared/i18n/useI18n'
 import { restartApp } from '@/shared/lib/restart'
@@ -7,6 +10,8 @@ import { useConnectionStore } from '@/modules/connection/store'
 
 export default function SettingsScreen() {
   const { t, language } = useI18n()
+  const { colors } = useTheme()
+  const router = useRouter()
   const setLanguage = useLanguageStore((s) => s.setLanguage)
   const connection = useConnectionStore((s) => s.connection)
   const clear = useConnectionStore((s) => s.clear)
@@ -29,7 +34,18 @@ export default function SettingsScreen() {
 
   return (
     <Screen>
-      <AppText variant="title">{t('tabs.settings')}</AppText>
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={t('common.back')}
+          onPress={() => router.canGoBack() ? router.back() : router.replace('/(tabs)/home')}
+          hitSlop={8}
+          style={{ width: MIN_TOUCH, height: MIN_TOUCH, alignItems: 'center', justifyContent: 'center', marginStart: -12 }}
+        >
+          <Ionicons name={I18nManager.isRTL ? 'chevron-forward' : 'chevron-back'} size={26} color={colors.primary} />
+        </Pressable>
+        <AppText variant="title">{t('tabs.settings')}</AppText>
+      </View>
 
       <Card>
         <AppText variant="heading">{t('connection.title')}</AppText>

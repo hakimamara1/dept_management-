@@ -5,7 +5,7 @@ import type { Product } from '@desktop-types/api'
 import { ListRow, TextField } from '@/shared/components/ui'
 import { useI18n } from '@/shared/i18n/useI18n'
 import { useDebounced } from '@/shared/lib/useDebounced'
-import { salesInvoicesApi } from '../services/salesInvoices.api'
+import { productsApi } from '@/modules/products/services/products.api'
 
 /**
  * Free-text name with catalogue suggestions. Sales lines are free text by design (no link to the
@@ -17,7 +17,8 @@ export function ProductSearchField({ value, onChangeText, onPick }: { value: str
   const q = useDebounced(value.trim(), 250)
   const results = useQuery({
     queryKey: ['product-search', q],
-    queryFn: () => salesInvoicesApi.searchProducts(q),
+    // The search route joins aliases, so one product can come back several times — keep the first row per id.
+    queryFn: async () => [...new Map((await productsApi.search(q)).map((p) => [p.id, p])).values()],
     enabled: open && q.length > 0
   })
 

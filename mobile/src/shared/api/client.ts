@@ -6,11 +6,14 @@ export type ApiErrorCode = 'NETWORK' | 'TIMEOUT' | 'HTTP' | 'NOT_PAIRED'
 export class ApiError extends Error {
   code: ApiErrorCode
   status: number
-  constructor(message: string, code: ApiErrorCode, status = 0) {
+  /** The underlying failure (e.g. the fetch error text) — for diagnostics, never shown as the user message. */
+  detail?: string
+  constructor(message: string, code: ApiErrorCode, status = 0, detail?: string) {
     super(message)
     this.name = 'ApiError'
     this.code = code
     this.status = status
+    this.detail = detail
   }
 }
 
@@ -49,7 +52,9 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     })
   } catch (err) {
     const aborted = err instanceof Error && err.name === 'AbortError'
-    throw new ApiError(aborted ? 'Request timed out' : 'Desktop not reachable', aborted ? 'TIMEOUT' : 'NETWORK')
+    const detail = err instanceof Error ? `${err.name}: ${err.message}` : String(err)
+    if (__DEV__) console.warn(`[api] ${options.method ?? 'GET'} ${path} failed — ${detail}`)
+    throw new ApiError(aborted ? 'Request timed out' : 'Desktop not reachable', aborted ? 'TIMEOUT' : 'NETWORK', 0, detail)
   } finally {
     clearTimeout(timer)
   }

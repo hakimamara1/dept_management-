@@ -3,13 +3,19 @@ import { Tabs } from 'expo-router'
 import { useI18n } from '@/shared/i18n/useI18n'
 import { useTheme } from '@/shared/theme/useTheme'
 
+type IconName = keyof typeof Ionicons.glyphMap
+
 export default function TabsLayout() {
   const { t } = useI18n()
   const { colors } = useTheme()
-  const tab = (name: string, title: string, icon: keyof typeof Ionicons.glyphMap) => (
+  // Filled icon when focused, outline otherwise — the active tab is never colour-only.
+  const tab = (name: string, title: string, icon: IconName, activeIcon: IconName) => (
     <Tabs.Screen
       name={name}
-      options={{ title, tabBarIcon: ({ color, size }) => <Ionicons name={icon} size={size} color={color} /> }}
+      options={{
+        title,
+        tabBarIcon: ({ color, size, focused }) => <Ionicons name={focused ? activeIcon : icon} size={size} color={color} />
+      }}
     />
   )
   return (
@@ -18,14 +24,15 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: colors.mutedForeground,
-        tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.border, minHeight: 56 }
+        tabBarLabelStyle: { fontSize: 12, fontWeight: '600' },
+        tabBarStyle: { backgroundColor: colors.card, borderTopColor: colors.border, minHeight: 60, paddingTop: 4 }
       }}
     >
-      {tab('home', t('tabs.home'), 'home-outline')}
-      {tab('invoices', t('tabs.invoices'), 'receipt-outline')}
-      {tab('suppliers', t('tabs.suppliers'), 'people-outline')}
-      {tab('customers', t('tabs.customers'), 'storefront-outline')}
-      {tab('settings', t('tabs.settings'), 'settings-outline')}
+      {tab('home', t('tabs.home'), 'home-outline', 'home')}
+      {tab('invoices', t('tabs.invoices'), 'receipt-outline', 'receipt')}
+      {tab('parties', t('tabs.parties'), 'people-outline', 'people')}
+      {/* Settings is reached from the header gear, not from the tab bar. */}
+      <Tabs.Screen name="settings" options={{ href: null }} />
     </Tabs>
   )
 }

@@ -5,6 +5,7 @@ import { CameraView, useCameraPermissions } from 'expo-camera'
 import { ApiError, newIdempotencyKey } from '@/shared/api/client'
 import { AppButton, AppText, CenteredMessage, Screen } from '@/shared/components/ui'
 import { useI18n } from '@/shared/i18n/useI18n'
+import { errorText } from '@/shared/lib/errorMessage'
 import { radius, spacing, useTheme } from '@/shared/theme/useTheme'
 import { useExtractInvoice } from '@/modules/invoices/hooks/useInvoices'
 import { preparePhoto } from '@/modules/invoices/lib/preparePhoto'
@@ -29,16 +30,22 @@ export default function ScanScreen() {
     extract.mutate(
       { photo: p, key: key.current },
       {
-        onSuccess: (res) => router.replace(`/invoices/${res.invoiceId}`),
+        // Navigation lives in the effect below, not here: per-call callbacks are dropped if the screen
+        // re-renders/unmounts during the long AI wait, which would leave the invoice "lost" on the desktop.
         onError: (e) => {
           // Nothing was created after a definitive rejection → fresh key. After a network failure/timeout
           // the desktop may still be reading the photo, so a retry must reuse the key (replay, no duplicate).
           if (e instanceof ApiError && e.code === 'HTTP') key.current = newIdempotencyKey()
-          Alert.alert(t('scan.failed'), e.message)
+          Alert.alert(t('scan.failed'), errorText(e, t))
         }
       }
     )
   }
+
+  useEffect(() => {
+    if (extract.isSuccess) router.replace(`/invoices/${extract.data.invoiceId}`)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [extract.isSuccess])
 
   async function handle(uri: string) {
     setPreparing(true)
@@ -47,7 +54,7 @@ export default function ScanScreen() {
       setPhoto(prepared)
       upload(prepared)
     } catch (e) {
-      Alert.alert(t('scan.failed'), e instanceof Error ? e.message : '')
+      Alert.alert(t('scan.failed'), errorText(e, t))
     } finally {
       setPreparing(false)
     }
@@ -82,8 +89,12 @@ export default function ScanScreen() {
     return (
       <Screen scroll={false}>
         <Stack.Screen options={{ title: t('scan.scan') }} />
-        <CenteredMessage title={t('scan.failed')} body={extract.error.message}>
+        <CenteredMessage
+          title={t('scan.failed')}
+          body={errorText(extract.error, t) + (extract.error instanceof ApiError && extract.error.code !== 'HTTP' ? `\n\n${t('scan.maybeReceived')}` : '')}
+        >
           <AppButton label={t('common.retry')} onPress={() => upload(photo)} />
+          <AppButton variant="outline" label={t('scan.openPending')} onPress={() => router.replace('/invoices')} />
           <AppButton variant="outline" label={t('scan.retake')} onPress={() => { setPhoto(null); extract.reset() }} />
         </CenteredMessage>
       </Screen>
@@ -95,7 +106,7 @@ export default function ScanScreen() {
     return (
       <Screen scroll={false}>
         <Stack.Screen options={{ title: t('scan.scan') }} />
-        <CenteredMessage title={t('scan.scan')} body={t('connection.cameraNeeded')}>
+        <CenteredMessage title={t('scan.scan')} body={t('scan.cameraNeeded')}>
           <AppButton label={t('connection.grantCamera')} onPress={requestPermission} />
         </CenteredMessage>
       </Screen>

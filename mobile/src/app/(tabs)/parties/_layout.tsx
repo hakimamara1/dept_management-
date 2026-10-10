@@ -1,7 +1,7 @@
 import { Stack } from 'expo-router'
 import { useTheme } from '@/shared/theme/useTheme'
 
-export default function StackLayout() {
+export default function PartiesLayout() {
   const { colors } = useTheme()
   return (
     <Stack
