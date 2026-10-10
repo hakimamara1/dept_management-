@@ -1,11 +1,17 @@
 import { useEffect } from 'react'
-import * as Notifications from 'expo-notifications'
 import { useRouter } from 'expo-router'
 import { useI18n } from '@/shared/i18n/useI18n'
 import { readJson, writeJson } from '@/shared/lib/secureJson'
 import { useConnectionStore } from '@/modules/connection/store'
 import { planReminders } from '../lib/reminders'
-import { cancelExpiryReminders, ensureNotificationPermission, hasNotificationPermission, replaceExpiryReminders } from '../services/notifications'
+import {
+  cancelExpiryReminders,
+  ensureNotificationPermission,
+  hasNotificationPermission,
+  onReminderTapped,
+  remindersSupported,
+  replaceExpiryReminders
+} from '../services/notifications'
 import { useReminderStore } from '../store'
 import { useExpiryBatches } from './useExpiry'
 
@@ -21,20 +27,19 @@ export function useExpiryReminderSync() {
   const status = useConnectionStore((s) => s.status)
   const enabled = useReminderStore((s) => s.enabled)
   const hydrate = useReminderStore((s) => s.hydrate)
-  const batches = useExpiryBatches(status === 'connected' && enabled)
+  // In Expo Go there are no local notifications; skip the extra request and scheduling entirely.
+  const batches = useExpiryBatches(status === 'connected' && enabled && remindersSupported)
 
   useEffect(() => { hydrate() }, [hydrate])
 
   // Tapping a reminder opens the Expiry tab.
-  useEffect(() => {
-    const sub = Notifications.addNotificationResponseReceivedListener(() => router.push('/expiry'))
-    return () => sub.remove()
-  }, [router])
+  useEffect(() => onReminderTapped(() => router.push('/expiry')), [router])
 
   useEffect(() => {
     let cancelled = false
     ;(async () => {
       try {
+        if (!remindersSupported) return
         if (!enabled) return void (await cancelExpiryReminders())
         if (!batches.data || cancelled) return
         const plan = planReminders(batches.data)

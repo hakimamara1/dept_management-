@@ -8,7 +8,7 @@ import { LANGUAGES } from '@/shared/i18n/dictionaries'
 import { useI18n, useLanguageStore } from '@/shared/i18n/useI18n'
 import { restartApp } from '@/shared/lib/restart'
 import { useConnectionStore } from '@/modules/connection/store'
-import { cancelExpiryReminders, ensureNotificationPermission, hasNotificationPermission } from '@/modules/expiry/services/notifications'
+import { cancelExpiryReminders, ensureNotificationPermission, hasNotificationPermission, remindersSupported } from '@/modules/expiry/services/notifications'
 import { useReminderStore } from '@/modules/expiry/store'
 
 export default function SettingsScreen() {
@@ -89,10 +89,10 @@ export default function SettingsScreen() {
       <Card>
         <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <AppText variant="heading" style={{ flex: 1 }}>{t('expiry.reminders')}</AppText>
-          <Switch value={remindersOn} onValueChange={toggleReminders} accessibilityLabel={t('expiry.reminders')} />
+          {remindersSupported ? <Switch value={remindersOn} onValueChange={toggleReminders} accessibilityLabel={t('expiry.reminders')} /> : null}
         </View>
-        <AppText variant="caption">{t('expiry.reminders.hint')}</AppText>
-        {remindersOn && blocked ? <AppText variant="caption" style={{ color: colors.destructive }}>{t('expiry.reminders.denied')}</AppText> : null}
+        <AppText variant="caption">{remindersSupported ? t('expiry.reminders.hint') : t('expiry.reminders.unsupported')}</AppText>
+        {remindersSupported && remindersOn && blocked ? <AppText variant="caption" style={{ color: colors.destructive }}>{t('expiry.reminders.denied')}</AppText> : null}
       </Card>
 
       <AppButton variant="destructive" label={t('settings.unpair')} onPress={confirmUnpair} />
